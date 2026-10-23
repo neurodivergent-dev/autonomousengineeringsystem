@@ -1,0 +1,3006 @@
+{
+  "generatedAt": 1792363563904,
+  "nodes": {
+    "i18next-local-inference/dashboard-client.tsx": {
+      "file": "i18next-local-inference/dashboard-client.tsx",
+      "objective": {
+        "language": "TypeScript (TSX)",
+        "lines": 1129,
+        "jsx": true,
+        "imports": 2,
+        "exports": 0,
+        "functions": 14,
+        "hooks": 0,
+        "components": 10,
+        "framework": "React",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "react ve react-dom/client kullanarak çeşitli bileşenleri yöneten orkestrasyon modülü."
+      },
+      "graph": {
+        "dependencies": [
+          "react",
+          "react-dom/client"
+        ],
+        "calls": [
+          "fetch",
+          "json",
+          "stringify",
+          "getReader",
+          "read",
+          "decode",
+          "indexOf",
+          "slice",
+          "trim",
+          "onMessage",
+          "parse",
+          "isArray",
+          "join",
+          "filter",
+          "map",
+          "split",
+          "values",
+          "some",
+          "useState",
+          "setTheme",
+          "setItem",
+          "round",
+          "onSearch",
+          "onOverwrite",
+          "onToggleAutoFix",
+          "onToggleAutoVerify",
+          "onSelect",
+          "alert",
+          "onSubmit",
+          "setOpen",
+          "setName",
+          "setValue",
+          "toLowerCase",
+          "includes",
+          "String",
+          "push",
+          "find",
+          "onSelectKey",
+          "overallStatus",
+          "min",
+          "max",
+          "toDisplayValue",
+          "onSave",
+          "fromDisplayValue",
+          "setTranslating",
+          "onTranslateKey",
+          "statusLabel",
+          "setBusyLocale",
+          "onTranslateOne",
+          "setVerifyingLocale"
+        ],
+        "renders": [
+          "button",
+          "svg",
+          "path",
+          "circle",
+          "span",
+          "div",
+          "h1",
+          "strong",
+          "input",
+          "label",
+          "ThemeToggle",
+          "textarea",
+          "AddKeyForm",
+          "h2",
+          "option",
+          "select",
+          "Topbar",
+          "Sidebar",
+          "KeyList",
+          "Detail",
+          "CodeUsageModal",
+          "ProjectModal",
+          "SettingsModal",
+          "App"
+        ]
+      },
+      "entities": [
+        {
+          "name": "getJson",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "postJson",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "streamNdjson",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "toDisplayValue",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "fromDisplayValue",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "overallStatus",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "statusLabel",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "ThemeToggle",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "toggle",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "Topbar",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "Sidebar",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "AddKeyForm",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "submit",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "KeyList",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "Detail",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "CodeUsageModal",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "addMissing",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "ProjectModal",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "open",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "SettingsModal",
+          "type": "component",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "set",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "save",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "modelOptions",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "App",
+          "type": "component",
+          "async": false,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "3bb7c7ba-c3d0-4380-aa82-a68465fa4886",
+        "fileHash": "ddc6bcaf411080fed06d1a80e23a9496",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358353890,
+      "importedBy": [],
+      "importance": 0
+    },
+    "i18next-local-inference/i18n-dashboard.tsx": {
+      "file": "i18next-local-inference/i18n-dashboard.tsx",
+      "objective": {
+        "language": "TypeScript (TSX)",
+        "lines": 1449,
+        "jsx": false,
+        "imports": 4,
+        "exports": 1,
+        "functions": 62,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "fs, path ve os kullanarak locale dosyalarını tarayan ve yöneten modül."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "path",
+          "os",
+          "i18next-local-inference/dashboard.html"
+        ],
+        "calls": [
+          "existsSync",
+          "join",
+          "filter",
+          "readdirSync",
+          "test",
+          "isLocaleDir",
+          "shift",
+          "has",
+          "startsWith",
+          "isDirectory",
+          "statSync",
+          "push",
+          "homedir",
+          "parse",
+          "readFileSync",
+          "isArray",
+          "slice",
+          "loadRecents",
+          "writeFileSync",
+          "stringify",
+          "resolve",
+          "buildTranslatorSystem",
+          "discoverLocalesDir",
+          "rememberRecent",
+          "log",
+          "error",
+          "mkdirSync",
+          "on",
+          "some",
+          "sort",
+          "map",
+          "replace",
+          "includes",
+          "reduce",
+          "split",
+          "keys",
+          "concat",
+          "flattenKeys",
+          "walkSourceFiles",
+          "indexOf",
+          "add",
+          "from",
+          "exec",
+          "loadLocale",
+          "extractDynamicPrefixes",
+          "trim",
+          "fetch",
+          "json",
+          "every",
+          "loadStateFile"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "isLocaleDir",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "discoverLocalesDir",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "loadRecents",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "rememberRecent",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "applyProject",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "ensureStateDir",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "loadStateFile",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isIgnoredSame",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "listLocaleCodes",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "loadLocale",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "saveLocale",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "getPath",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "setPath",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "flattenKeys",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "walkSourceFiles",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "extractDynamicPrefixes",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "scanCodeUsage",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "findKeyContext",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "generateMissingKeyValue",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "wordCount",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isTranslatableSource",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isGap",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "acceptTranslatedValue",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "loadConfirmedSame",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "saveConfirmedSame",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isConfirmedSame",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "markConfirmedSame",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "loadFlaggedSuspicious",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "saveFlaggedSuspicious",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "markFlaggedSuspicious",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "unflagSuspicious",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "loadTranslationCache",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "saveTranslationCache",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "buildData",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "buildTranslatorSystem",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "buildSchema",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "translateKeyViaOllama",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "translateKey",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "judgeSameTranslation",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "sleep",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "broadcastAutoFix",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "autoFixTranslatePass",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "autoVerifyPass",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "autoFixLoop",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "handleTranslate",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "streamTranslateSection",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "send",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "handleSave",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "handleAddKey",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "handleAddMissingKey",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "handleVerifySame",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "handleConfirmSame",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "streamVerifySection",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "send",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "streamTranslateSuspicious",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "send",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "projectInfo",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "resetPassCounters",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "handleSetProject",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "handleSaveConfig",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "handleBrowse",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "handleOllamaModels",
+          "type": "function",
+          "async": true,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "ef33de59-a739-4c9d-97be-b2171d3cbc8d",
+        "fileHash": "8f964ebe75aa11c0d0ffa3b04195a0fb",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358354748,
+      "importedBy": [],
+      "importance": 0
+    },
+    "mini-meta-cli/engine.ts": {
+      "file": "mini-meta-cli/engine.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 246,
+        "jsx": false,
+        "imports": 10,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "React",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "React, ink ve çeşitli modülleri kullanan çok amaçlı orkestrasyon modülü."
+      },
+      "graph": {
+        "dependencies": [
+          "react",
+          "ink",
+          "mini-meta-cli/ollama.ts",
+          "mini-meta-cli/history.ts",
+          "mini-meta-cli/state.ts",
+          "mini-meta-cli/tools/index.ts",
+          "mini-meta-cli/parser.ts",
+          "mini-meta-cli/prompt.ts",
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/tui.tsx"
+        ],
+        "calls": [
+          "cwd",
+          "createToolRegistry",
+          "buildSystemPrompt",
+          "buildFewShotMessages",
+          "setSystemAndFewShot",
+          "rerender",
+          "createElement",
+          "render",
+          "unmount",
+          "formatTodos",
+          "clearConversation",
+          "push",
+          "updateTUI",
+          "log",
+          "chat",
+          "forApi",
+          "trim",
+          "stripToolCalls",
+          "parseToolCalls",
+          "filter",
+          "findTool",
+          "join",
+          "map",
+          "all",
+          "resolve",
+          "execute",
+          "toolResultFeedback",
+          "replace",
+          "slice",
+          "hasDoneMarker",
+          "setTimeout",
+          "unmountTUI",
+          "String",
+          "includes"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "65131306-bbf1-46af-92ce-427f4206a702",
+        "fileHash": "e99fb8fb45f7d996c63c26999eb4a2b9",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358355620,
+      "importedBy": [
+        "mini-meta-cli/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/history.ts": {
+      "file": "mini-meta-cli/history.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 56,
+        "jsx": false,
+        "imports": 1,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "mini-meta-cli/types.ts modülünü içe aktaran bir dosyadır."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/types.ts"
+        ],
+        "calls": [
+          "push",
+          "trim",
+          "slice",
+          "splice"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "f650861a-b403-478d-ad92-a2c7d3deef39",
+        "fileHash": "cc8a451f3f3bcbb090c1faed8316c9c2",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358356425,
+      "importedBy": [
+        "mini-meta-cli/engine.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/index.ts": {
+      "file": "mini-meta-cli/index.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 88,
+        "jsx": false,
+        "imports": 2,
+        "exports": 0,
+        "functions": 2,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "readline kullanarak printHelp ve ask fonksiyonlarını sunan bir CLI arayüzüdür."
+      },
+      "graph": {
+        "dependencies": [
+          "readline",
+          "mini-meta-cli/engine.ts"
+        ],
+        "calls": [
+          "split",
+          "find",
+          "startsWith",
+          "createInterface",
+          "on",
+          "log",
+          "padEnd",
+          "question",
+          "trim",
+          "ask",
+          "toLowerCase",
+          "exit",
+          "clearHistory",
+          "printHelp",
+          "process"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "printHelp",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "ask",
+          "type": "function",
+          "async": true,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "9862bd10-1360-4f3c-88c7-a163a828ef8b",
+        "fileHash": "cd2ec680d082c879ec76a38069788a26",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358357187,
+      "importedBy": [],
+      "importance": 0
+    },
+    "mini-meta-cli/ollama.ts": {
+      "file": "mini-meta-cli/ollama.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 91,
+        "jsx": false,
+        "imports": 1,
+        "exports": 1,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "mini-meta-cli/types.ts dosyasını içe aktaran bir dosyadır."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/types.ts"
+        ],
+        "calls": [
+          "replace",
+          "setTimeout",
+          "abort",
+          "fetch",
+          "stringify",
+          "clearTimeout",
+          "catch",
+          "text",
+          "json",
+          "String",
+          "includes",
+          "log",
+          "sleep",
+          "error"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "32f8839a-6fdb-4860-af6c-e96cd7000b73",
+        "fileHash": "df1f821761ed5147491636a3ec5e0476",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358357961,
+      "importedBy": [
+        "mini-meta-cli/engine.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/parser.ts": {
+      "file": "mini-meta-cli/parser.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 244,
+        "jsx": false,
+        "imports": 1,
+        "exports": 4,
+        "functions": 8,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "mini-meta-cli/types.ts içindeki verileri işleyen bir ayrıştırıcıdır."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/types.ts"
+        ],
+        "calls": [
+          "exec",
+          "trim",
+          "includes",
+          "split",
+          "replace",
+          "match",
+          "parseInt",
+          "map",
+          "filter",
+          "toLowerCase",
+          "String",
+          "some",
+          "has",
+          "matchAll",
+          "parseAttributes",
+          "normalizeToolName",
+          "parseBodyParams",
+          "toArgs",
+          "isPlaceholder",
+          "push",
+          "test"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "parseAttributes",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "parseBodyParams",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "toArgs",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isPlaceholder",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "normalizeToolName",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "parseToolCalls",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "stripToolCalls",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "hasDoneMarker",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "c6d25322-d72f-4fa4-968e-f299d9bae5b9",
+        "fileHash": "b927eafafacb2f09b9540b9488364473",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358358778,
+      "importedBy": [
+        "mini-meta-cli/engine.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/permissions.ts": {
+      "file": "mini-meta-cli/permissions.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 63,
+        "jsx": false,
+        "imports": 0,
+        "exports": 1,
+        "functions": 1,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "checkShellCommand entity'sini içeren tek fonksiyonlu bir modüldür."
+      },
+      "graph": {
+        "dependencies": [],
+        "calls": [
+          "trim",
+          "test",
+          "slice"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "checkShellCommand",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "a4b8522e-9f9d-4c51-b157-8666944ffea8",
+        "fileHash": "09af4def431456ca1480e63919a6edd0",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358359493,
+      "importedBy": [
+        "mini-meta-cli/tools/shell.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/prompt.ts": {
+      "file": "mini-meta-cli/prompt.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 108,
+        "jsx": false,
+        "imports": 3,
+        "exports": 4,
+        "functions": 5,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "mini-meta-cli/types.ts, os ve path kullanarak prompt yapılarını oluşturur."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/types.ts",
+          "os",
+          "path"
+        ],
+        "calls": [
+          "join",
+          "map",
+          "type",
+          "release",
+          "slice",
+          "toISOString",
+          "truncate",
+          "isAbsolute",
+          "resolve"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "buildSystemPrompt",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "buildFewShotMessages",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "toolResultFeedback",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "truncate",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "resolvePath",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "5d294b08-e353-4ffe-9c3d-6a2eddfdc7cd",
+        "fileHash": "4ad2cda784e44803c286b4d268bfc309",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358360328,
+      "importedBy": [
+        "mini-meta-cli/engine.ts",
+        "mini-meta-cli/tools/edit.ts",
+        "mini-meta-cli/tools/glob.ts",
+        "mini-meta-cli/tools/grep.ts",
+        "mini-meta-cli/tools/read.ts",
+        "mini-meta-cli/tools/write.ts"
+      ],
+      "importance": 6
+    },
+    "mini-meta-cli/state.ts": {
+      "file": "mini-meta-cli/state.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 52,
+        "jsx": false,
+        "imports": 1,
+        "exports": 0,
+        "functions": 1,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "mini-meta-cli/types.ts içinden normalizePath entity'sini kullanır."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/types.ts"
+        ],
+        "calls": [
+          "cwd",
+          "add",
+          "normalizePath",
+          "has",
+          "map",
+          "String",
+          "formatTodos",
+          "join",
+          "toLowerCase",
+          "replace"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "normalizePath",
+          "type": "function",
+          "async": false,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "c2c5b65e-c27c-4e7c-89f0-87790cb54c7f",
+        "fileHash": "ad5203faaa0bda47cc243134745e336a",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358361101,
+      "importedBy": [
+        "mini-meta-cli/engine.ts",
+        "mini-meta-cli/tools/edit.ts",
+        "mini-meta-cli/tools/index.ts",
+        "mini-meta-cli/tools/read.ts",
+        "mini-meta-cli/tools/todo.ts",
+        "mini-meta-cli/tools/write.ts",
+        "mini-meta-cli/tools.ts"
+      ],
+      "importance": 7
+    },
+    "mini-meta-cli/tools/edit.ts": {
+      "file": "mini-meta-cli/tools/edit.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 125,
+        "jsx": false,
+        "imports": 4,
+        "exports": 1,
+        "functions": 5,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "fs, types, state ve prompt kullanarak düzenleme aracı oluşturan modül."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/state.ts",
+          "mini-meta-cli/prompt.ts"
+        ],
+        "calls": [
+          "replaceAll",
+          "includes",
+          "normalizeQuotes",
+          "indexOf",
+          "substring",
+          "trim",
+          "replace",
+          "collapse",
+          "resolvePath",
+          "String",
+          "existsSync",
+          "wasRead",
+          "Boolean",
+          "split",
+          "readFileSync",
+          "findActualString",
+          "slice",
+          "countOccurrences",
+          "join",
+          "writeFileSync",
+          "markRead"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "normalizeQuotes",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "findActualString",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "collapse",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "countOccurrences",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "createEditTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "e98e2eef-2893-4ede-80f2-1a394fa73f5a",
+        "fileHash": "82a559c01d9363e2065f88b308092f54",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358361888,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools/glob.ts": {
+      "file": "mini-meta-cli/tools/glob.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 108,
+        "jsx": false,
+        "imports": 4,
+        "exports": 1,
+        "functions": 3,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "fs, path, types ve prompt kullanarak glob patternlerini düzenleyen araçlar."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "path",
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/prompt.ts"
+        ],
+        "calls": [
+          "String",
+          "resolvePath",
+          "globToRegExp",
+          "pop",
+          "readdirSync",
+          "has",
+          "join",
+          "isDirectory",
+          "push",
+          "isFile",
+          "replace",
+          "relative",
+          "test",
+          "statSync",
+          "sort",
+          "map",
+          "indexOf",
+          "slice",
+          "split",
+          "includes"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "createGlobTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "globToRegExp",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "escapeRegExp",
+          "type": "function",
+          "async": false,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "c5eb8bde-63f9-49ab-90bb-bdc485bc2797",
+        "fileHash": "4199543c8a5a241e5c568dfb16dae70d",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358362638,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools/grep.ts": {
+      "file": "mini-meta-cli/tools/grep.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 146,
+        "jsx": false,
+        "imports": 5,
+        "exports": 1,
+        "functions": 4,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "child_process, fs, path, types.ts ve prompt.ts kullanarak createGrepTool, shellQuote, walk"
+      },
+      "graph": {
+        "dependencies": [
+          "child_process",
+          "fs",
+          "path",
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/prompt.ts"
+        ],
+        "calls": [
+          "String",
+          "resolvePath",
+          "shellQuote",
+          "execSync",
+          "walk",
+          "readFileSync",
+          "split",
+          "test",
+          "includes",
+          "toLowerCase",
+          "push",
+          "slice",
+          "join",
+          "replace",
+          "existsSync",
+          "statSync",
+          "isFile",
+          "matchGlob",
+          "onFile",
+          "pop",
+          "readdirSync",
+          "has",
+          "isDirectory",
+          "basename",
+          "startsWith",
+          "endsWith"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "createGrepTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "shellQuote",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "walk",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "matchGlob",
+          "type": "function",
+          "async": false,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "2ef5854b-c7b7-4e7e-a875-9738f12b3068",
+        "fileHash": "9946c249dcdc062071ba4d303014df91",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358363568,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools/index.ts": {
+      "file": "mini-meta-cli/tools/index.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 38,
+        "jsx": false,
+        "imports": 10,
+        "exports": 6,
+        "functions": 2,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "createToolRegistry ve findTool aracılığıyla araçları yöneten kayıt modülü."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/state.ts",
+          "mini-meta-cli/tools/shell.ts",
+          "mini-meta-cli/tools/read.ts",
+          "mini-meta-cli/tools/write.ts",
+          "mini-meta-cli/tools/edit.ts",
+          "mini-meta-cli/tools/grep.ts",
+          "mini-meta-cli/tools/glob.ts",
+          "mini-meta-cli/tools/todo.ts",
+          "mini-meta-cli/tools/web.ts"
+        ],
+        "calls": [
+          "createShellTool",
+          "createReadTool",
+          "createWriteTool",
+          "createEditTool",
+          "createGrepTool",
+          "createGlobTool",
+          "createTodoTool",
+          "createFetchUrlTool",
+          "createNewsTool",
+          "createSearchTool",
+          "find"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "createToolRegistry",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "findTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "ae80c7b3-a564-42be-8a44-016216bad88e",
+        "fileHash": "66e8a09abfc084b330fd9f47b27be861",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358364360,
+      "importedBy": [
+        "mini-meta-cli/engine.ts",
+        "mini-meta-cli/tools.ts"
+      ],
+      "importance": 2
+    },
+    "mini-meta-cli/tools/read.ts": {
+      "file": "mini-meta-cli/tools/read.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 65,
+        "jsx": false,
+        "imports": 4,
+        "exports": 2,
+        "functions": 2,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "fs, types, state ve prompt kullanarak addLineNumbers ve createReadTool oluşturur."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/state.ts",
+          "mini-meta-cli/prompt.ts"
+        ],
+        "calls": [
+          "split",
+          "String",
+          "join",
+          "map",
+          "padStart",
+          "resolvePath",
+          "existsSync",
+          "isDirectory",
+          "statSync",
+          "readFileSync",
+          "markRead",
+          "max",
+          "Number",
+          "min",
+          "slice",
+          "addLineNumbers"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "addLineNumbers",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "createReadTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "3fa56cdd-6743-4b25-8f15-e16edbfc82f8",
+        "fileHash": "010a6f4184652200f3f514381f289898",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358365182,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools/shell.ts": {
+      "file": "mini-meta-cli/tools/shell.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 37,
+        "jsx": false,
+        "imports": 3,
+        "exports": 1,
+        "functions": 1,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "child_process ve türleri kullanarak createShellTool entity'sini oluşturur."
+      },
+      "graph": {
+        "dependencies": [
+          "child_process",
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/permissions.ts"
+        ],
+        "calls": [
+          "trim",
+          "String",
+          "checkShellCommand",
+          "log",
+          "execSync",
+          "filter",
+          "join"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "createShellTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "5b55ceb8-7d40-4bce-8026-06f9e81dbf51",
+        "fileHash": "70ca3c32036b9e119958bd98e7f17b6a",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358365912,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools/todo.ts": {
+      "file": "mini-meta-cli/tools/todo.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 42,
+        "jsx": false,
+        "imports": 2,
+        "exports": 1,
+        "functions": 1,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "mini-meta-cli/types.ts ve mini-meta-cli/state.ts kullanarak createTodoTool oluşturur."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/state.ts"
+        ],
+        "calls": [
+          "isArray",
+          "trim",
+          "String",
+          "parse",
+          "filter",
+          "setTodos",
+          "log"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "createTodoTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "e5ffb5fa-1864-4331-bad2-7a3029d1f596",
+        "fileHash": "164d7b26a0df075e949b01ae3ddd9b23",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358366803,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools/web.ts": {
+      "file": "mini-meta-cli/tools/web.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 138,
+        "jsx": false,
+        "imports": 2,
+        "exports": 3,
+        "functions": 3,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "child_process ve mini-meta-cli/types.ts kullanarak araçlar oluşturur."
+      },
+      "graph": {
+        "dependencies": [
+          "child_process",
+          "mini-meta-cli/types.ts"
+        ],
+        "calls": [
+          "String",
+          "execSync",
+          "replace",
+          "match",
+          "filter",
+          "map",
+          "trim",
+          "join",
+          "slice",
+          "split",
+          "push",
+          "encodeURIComponent"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "createFetchUrlTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "createNewsTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        },
+        {
+          "name": "createSearchTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "d2e9e7a3-3eb4-4d65-b5ba-128d526e6084",
+        "fileHash": "c7a1280785a9ba342dfcad83c0b83682",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358367593,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools/write.ts": {
+      "file": "mini-meta-cli/tools/write.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 46,
+        "jsx": false,
+        "imports": 5,
+        "exports": 1,
+        "functions": 2,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "cleanMarkdownFences ve createWriteTool içeren yazma aracı modülüdür."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "path",
+          "mini-meta-cli/types.ts",
+          "mini-meta-cli/state.ts",
+          "mini-meta-cli/prompt.ts"
+        ],
+        "calls": [
+          "trimEnd",
+          "replace",
+          "resolvePath",
+          "String",
+          "dirname",
+          "existsSync",
+          "mkdirSync",
+          "cleanMarkdownFences",
+          "writeFileSync",
+          "markRead"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "cleanMarkdownFences",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "createWriteTool",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "2d79bab9-e273-47a4-beb1-59e3de0e9e8c",
+        "fileHash": "255641045f584ca5f236852e10776719",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358368366,
+      "importedBy": [
+        "mini-meta-cli/tools/index.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/tools.ts": {
+      "file": "mini-meta-cli/tools.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 11,
+        "jsx": false,
+        "imports": 3,
+        "exports": 1,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "state, tools ve types modüllerini içeren bir yardımcı dosyadır."
+      },
+      "graph": {
+        "dependencies": [
+          "mini-meta-cli/state.ts",
+          "mini-meta-cli/tools/index.ts",
+          "mini-meta-cli/types.ts"
+        ],
+        "calls": [
+          "cwd",
+          "createToolRegistry"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "80d235c4-c292-49e2-a7f3-1fcb8fe520fd",
+        "fileHash": "7769bbc8a9ae6d0ea98e0a1800e157ca",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358369069,
+      "importedBy": [],
+      "importance": 0
+    },
+    "mini-meta-cli/tui.tsx": {
+      "file": "mini-meta-cli/tui.tsx",
+      "objective": {
+        "language": "TypeScript (TSX)",
+        "lines": 37,
+        "jsx": true,
+        "imports": 2,
+        "exports": 1,
+        "functions": 0,
+        "hooks": 0,
+        "components": 1,
+        "framework": "React",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "React ve Ink kullanarak MiniTenguOrchestrator için TUI sağlar."
+      },
+      "graph": {
+        "dependencies": [
+          "react",
+          "ink"
+        ],
+        "calls": [
+          "render"
+        ],
+        "renders": [
+          "Box",
+          "Text",
+          "MiniTenguOrchestrator"
+        ]
+      },
+      "entities": [
+        {
+          "name": "MiniTenguOrchestrator",
+          "type": "component",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "96f424ee-8193-4b58-8b30-4917ec5fb2cb",
+        "fileHash": "3c075414caab025623c658e6c0a919c3",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358369819,
+      "importedBy": [
+        "mini-meta-cli/engine.ts"
+      ],
+      "importance": 1
+    },
+    "mini-meta-cli/types.ts": {
+      "file": "mini-meta-cli/types.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 67,
+        "jsx": false,
+        "imports": 0,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "Herhangi bir entity, import veya fonksiyon içermeyen tip tanımlama dosyası."
+      },
+      "graph": {
+        "dependencies": [],
+        "calls": [],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "eaff8f29-b22b-4dfb-a6a0-3a9ec362b15a",
+        "fileHash": "8bcc26e2e5590993daf65ae9efa8ea5a",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358370598,
+      "importedBy": [
+        "mini-meta-cli/engine.ts",
+        "mini-meta-cli/history.ts",
+        "mini-meta-cli/ollama.ts",
+        "mini-meta-cli/parser.ts",
+        "mini-meta-cli/prompt.ts",
+        "mini-meta-cli/state.ts",
+        "mini-meta-cli/tools/edit.ts",
+        "mini-meta-cli/tools/glob.ts",
+        "mini-meta-cli/tools/grep.ts",
+        "mini-meta-cli/tools/index.ts",
+        "mini-meta-cli/tools/read.ts",
+        "mini-meta-cli/tools/shell.ts",
+        "mini-meta-cli/tools/todo.ts",
+        "mini-meta-cli/tools/web.ts",
+        "mini-meta-cli/tools/write.ts",
+        "mini-meta-cli/tools.ts"
+      ],
+      "importance": 16
+    },
+    "repo-intelligence-layer/analysis.tsx": {
+      "file": "repo-intelligence-layer/analysis.tsx",
+      "objective": {
+        "language": "TypeScript (TSX)",
+        "lines": 1764,
+        "jsx": false,
+        "imports": 5,
+        "exports": 0,
+        "functions": 28,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "TypeScript kullanarak dosyaları analiz eden ve state yönetimi sağlayan modül."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "path",
+          "crypto",
+          "child_process",
+          "typescript"
+        ],
+        "calls": [
+          "cwd",
+          "join",
+          "on",
+          "error",
+          "trim",
+          "toString",
+          "execSync",
+          "readdirSync",
+          "isDirectory",
+          "statSync",
+          "getCodeFiles",
+          "endsWith",
+          "push",
+          "existsSync",
+          "parse",
+          "readFileSync",
+          "writeFileSync",
+          "stringify",
+          "digest",
+          "update",
+          "createHash",
+          "send",
+          "unshift",
+          "now",
+          "slice",
+          "broadcast",
+          "replace",
+          "relative",
+          "startsWith",
+          "pop",
+          "split",
+          "test",
+          "createSourceFile",
+          "canHaveModifiers",
+          "getModifiers",
+          "some",
+          "isComponentName",
+          "isHookName",
+          "isImportDeclaration",
+          "isExportAssignment",
+          "isExportDeclaration",
+          "isNamedExports",
+          "isJsxElement",
+          "isJsxSelfClosingElement",
+          "isJsxFragment",
+          "add",
+          "getText",
+          "isFunctionDeclaration",
+          "hasExportModifier",
+          "addEntity"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "getCodeFiles",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "loadState",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "saveState",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "hashContent",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "broadcast",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "logEvent",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "relPath",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "computeRoute",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "analyzeWithAst",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isComponentName",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isHookName",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "hasExportModifier",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "isAsyncFn",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "addEntity",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "visit",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "safeAnalyzeWithAst",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "extractSidecarViaLLM",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "stripRepetitionLoop",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "generateDeepSummary",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "persistDeepSummary",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "handleExplainRequest",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "extractDependencies",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "resolveLocalImport",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "getJsonSidecars",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "rebuildKnowledgeGraph",
+          "type": "function",
+          "async": false,
+          "exported": false
+        },
+        {
+          "name": "analyzeFile",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "watchLoop",
+          "type": "function",
+          "async": true,
+          "exported": false
+        },
+        {
+          "name": "startDashboard",
+          "type": "function",
+          "async": false,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "6a6a093b-2279-4444-9685-f7f4d7df7058",
+        "fileHash": "d6ba11a8c2fc027189476314f04d47a4",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358371371,
+      "importedBy": [],
+      "importance": 0
+    },
+    "src/agents/implementation-planner.ts": {
+      "file": "src/agents/implementation-planner.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 94,
+        "jsx": false,
+        "imports": 3,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "LLM istemcisi ve AST köprüsü kullanarak uygulama planı oluşturur."
+      },
+      "graph": {
+        "dependencies": [
+          "src/llm/client.ts",
+          "src/intelligence/ast-bridge.ts",
+          "src/types/index.ts"
+        ],
+        "calls": [
+          "toISOString",
+          "slice",
+          "toString",
+          "now",
+          "map",
+          "getFileCard",
+          "stringify",
+          "chat",
+          "extractJSON"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "fb8fd7b3-3e04-43f5-a952-b370ff69ab8c",
+        "fileHash": "aa4f17e31cc3183f11ecd824df30fc66",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358372119,
+      "importedBy": [
+        "src/agents/orchestrator.ts"
+      ],
+      "importance": 1
+    },
+    "src/agents/orchestrator.ts": {
+      "file": "src/agents/orchestrator.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 100,
+        "jsx": false,
+        "imports": 8,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "LLM, AST ve bilgi deposunu kullanarak ajanları yöneten orkestrasyon modülü."
+      },
+      "graph": {
+        "dependencies": [
+          "src/llm/client.ts",
+          "src/intelligence/ast-bridge.ts",
+          "src/knowledge/store.ts",
+          "src/gates/gate-runner.ts",
+          "src/agents/product-discovery.ts",
+          "src/agents/solutions-architect.ts",
+          "src/agents/implementation-planner.ts",
+          "src/types/index.ts"
+        ],
+        "calls": [
+          "cwd",
+          "log",
+          "getRoutes",
+          "createPRD",
+          "savePRD",
+          "createADR",
+          "saveADR",
+          "createPlan",
+          "savePlan",
+          "runAllGates",
+          "forEach",
+          "slice"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "f30e40ac-94dd-4acf-a9c0-192c4936dd97",
+        "fileHash": "fd4562a435b84022e19485c161be1408",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358372961,
+      "importedBy": [
+        "src/cli.ts"
+      ],
+      "importance": 1
+    },
+    "src/agents/product-discovery.ts": {
+      "file": "src/agents/product-discovery.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 66,
+        "jsx": false,
+        "imports": 2,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "src/llm/client.ts ve src/types/index.ts dosyalarını kullanan bir modül."
+      },
+      "graph": {
+        "dependencies": [
+          "src/llm/client.ts",
+          "src/types/index.ts"
+        ],
+        "calls": [
+          "toISOString",
+          "slice",
+          "toString",
+          "now",
+          "chat",
+          "extractJSON"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "1b9be7fa-9289-4395-92c5-f1cfbf999958",
+        "fileHash": "18b5da0ad13c1b5b570746414aaf483e",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358373767,
+      "importedBy": [
+        "src/agents/orchestrator.ts"
+      ],
+      "importance": 1
+    },
+    "src/agents/solutions-architect.ts": {
+      "file": "src/agents/solutions-architect.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 84,
+        "jsx": false,
+        "imports": 3,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "client, ast-bridge ve tip tanımlamalarını kullanan mimari çözüm modülü."
+      },
+      "graph": {
+        "dependencies": [
+          "src/llm/client.ts",
+          "src/intelligence/ast-bridge.ts",
+          "src/types/index.ts"
+        ],
+        "calls": [
+          "toISOString",
+          "slice",
+          "toString",
+          "now",
+          "getImpact",
+          "push",
+          "stringify",
+          "from",
+          "chat",
+          "extractJSON"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "b4123115-f6da-4c5d-b9c0-8d85ee3a5b95",
+        "fileHash": "d234658199a53e16f27c01c2d968eb3b",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358374595,
+      "importedBy": [
+        "src/agents/orchestrator.ts"
+      ],
+      "importance": 1
+    },
+    "src/cli.ts": {
+      "file": "src/cli.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 117,
+        "jsx": false,
+        "imports": 4,
+        "exports": 0,
+        "functions": 1,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "Orkestrasyon, gate-runner, ast-bridge ve store bileşenlerini yöneten ana modül."
+      },
+      "graph": {
+        "dependencies": [
+          "src/agents/orchestrator.ts",
+          "src/gates/gate-runner.ts",
+          "src/intelligence/ast-bridge.ts",
+          "src/knowledge/store.ts"
+        ],
+        "calls": [
+          "slice",
+          "log",
+          "trim",
+          "join",
+          "error",
+          "exit",
+          "executeWorkflow",
+          "runAllGates",
+          "forEach",
+          "getTraceability",
+          "table",
+          "map",
+          "queryTool",
+          "getImpact",
+          "catch",
+          "main"
+        ],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "main",
+          "type": "function",
+          "async": true,
+          "exported": false
+        }
+      ],
+      "identity": {
+        "analysisId": "34c9ec8c-7af5-40bf-907b-6c4e89c81507",
+        "fileHash": "4115c66b56d65f8402ff3ad3262298e3",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358375492,
+      "importedBy": [],
+      "importance": 0
+    },
+    "src/examples/bad-code.ts": {
+      "file": "src/examples/bad-code.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 20,
+        "jsx": false,
+        "imports": 0,
+        "exports": 1,
+        "functions": 1,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "authenticateUser fonksiyonunu gerçekleştirmek."
+      },
+      "graph": {
+        "dependencies": [],
+        "calls": [],
+        "renders": []
+      },
+      "entities": [
+        {
+          "name": "authenticateUser",
+          "type": "function",
+          "async": false,
+          "exported": true
+        }
+      ],
+      "identity": {
+        "analysisId": "6f0a2b45-4402-44e4-b385-3d0118c5427c",
+        "fileHash": "c7d9a32851d9d834d3634eb1f45c45d3",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358376092,
+      "importedBy": [],
+      "importance": 0
+    },
+    "src/gates/gate-runner.ts": {
+      "file": "src/gates/gate-runner.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 251,
+        "jsx": false,
+        "imports": 4,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "child_process, path ve fs kullanarak dosya işlemlerini yönetir."
+      },
+      "graph": {
+        "dependencies": [
+          "child_process",
+          "path",
+          "fs",
+          "src/types/index.ts"
+        ],
+        "calls": [
+          "cwd",
+          "join",
+          "trim",
+          "execSync",
+          "now",
+          "existsSync",
+          "runCommand",
+          "map",
+          "filter",
+          "split",
+          "test",
+          "includes",
+          "push",
+          "slice",
+          "verifyTypeScript",
+          "verifyBlastRadius",
+          "verifyTheme",
+          "verifyZeroEmoji",
+          "verifyI18n",
+          "verifyCodeHealth",
+          "every",
+          "toISOString"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "4a0c5c1e-c670-4f5a-9543-2e140caa9659",
+        "fileHash": "90a71b49e8d44bb513964e021e82f0cb",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358376825,
+      "importedBy": [
+        "src/agents/orchestrator.ts",
+        "src/cli.ts"
+      ],
+      "importance": 2
+    },
+    "src/intelligence/ast-bridge.ts": {
+      "file": "src/intelligence/ast-bridge.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 154,
+        "jsx": false,
+        "imports": 4,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "fs, path ve child_process kullanarak src/types/index.ts ile çalışan modül."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "path",
+          "child_process",
+          "src/types/index.ts"
+        ],
+        "calls": [
+          "cwd",
+          "join",
+          "existsSync",
+          "hasKnowledgeGraph",
+          "readFileSync",
+          "parse",
+          "trim",
+          "execSync",
+          "toString",
+          "queryTool",
+          "filter",
+          "map",
+          "split",
+          "startsWith",
+          "includes",
+          "push",
+          "replace"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "078cfeb8-4c97-4d06-9be3-4827b53763ec",
+        "fileHash": "9a5fb73df82d5bd3f75c8e7bef989406",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358377681,
+      "importedBy": [
+        "src/agents/implementation-planner.ts",
+        "src/agents/orchestrator.ts",
+        "src/agents/solutions-architect.ts",
+        "src/cli.ts"
+      ],
+      "importance": 4
+    },
+    "src/knowledge/store.ts": {
+      "file": "src/knowledge/store.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 191,
+        "jsx": false,
+        "imports": 3,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "fs ve path kullanarak src/types/index.ts ile çalışan dosya yöneticisi."
+      },
+      "graph": {
+        "dependencies": [
+          "fs",
+          "path",
+          "src/types/index.ts"
+        ],
+        "calls": [
+          "cwd",
+          "join",
+          "initDirs",
+          "existsSync",
+          "mkdirSync",
+          "toISOString",
+          "writeFileSync",
+          "stringify",
+          "map",
+          "updateTraceability",
+          "parse",
+          "readFileSync",
+          "filter",
+          "readdirSync",
+          "endsWith",
+          "getTraceability",
+          "find",
+          "push",
+          "from"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "821ea71e-0ac1-46cd-917f-434f93e60247",
+        "fileHash": "5e15057951c3baaf2c6ddcca4d9523a0",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358378500,
+      "importedBy": [
+        "src/agents/orchestrator.ts",
+        "src/cli.ts"
+      ],
+      "importance": 2
+    },
+    "src/llm/client.ts": {
+      "file": "src/llm/client.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 136,
+        "jsx": false,
+        "imports": 0,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "Dosya içerisinde herhangi bir bileşen, hook veya entity bulunmamaktadır."
+      },
+      "graph": {
+        "dependencies": [],
+        "calls": [
+          "callOllama",
+          "callOpenAICompatible",
+          "replace",
+          "fetch",
+          "stringify",
+          "text",
+          "json",
+          "warn",
+          "match",
+          "parse",
+          "trim",
+          "indexOf",
+          "lastIndexOf",
+          "slice"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "944b9096-29b1-417c-bf78-ddcc7d7f3637",
+        "fileHash": "04dc8088883890c6a327bb3b7e62e26b",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358379226,
+      "importedBy": [
+        "src/agents/implementation-planner.ts",
+        "src/agents/orchestrator.ts",
+        "src/agents/product-discovery.ts",
+        "src/agents/solutions-architect.ts"
+      ],
+      "importance": 4
+    },
+    "src/types/index.ts": {
+      "file": "src/types/index.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 108,
+        "jsx": false,
+        "imports": 0,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "Dosya herhangi bir entity, hook veya import içermemektedir."
+      },
+      "graph": {
+        "dependencies": [],
+        "calls": [],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "d8124e51-fcbc-46e5-a4f6-536ed41c85d4",
+        "fileHash": "6086b75901fcec47f614540cd94bcaa0",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792358379931,
+      "importedBy": [
+        "src/agents/implementation-planner.ts",
+        "src/agents/orchestrator.ts",
+        "src/agents/product-discovery.ts",
+        "src/agents/solutions-architect.ts",
+        "src/gates/gate-runner.ts",
+        "src/intelligence/ast-bridge.ts",
+        "src/knowledge/store.ts"
+      ],
+      "importance": 7
+    },
+    "tools/serve-city.ts": {
+      "file": "tools/serve-city.ts",
+      "objective": {
+        "language": "TypeScript",
+        "lines": 52,
+        "jsx": false,
+        "imports": 1,
+        "exports": 0,
+        "functions": 0,
+        "hooks": 0,
+        "components": 0,
+        "framework": "TypeScript",
+        "isRoute": false,
+        "isLayout": false,
+        "isDynamic": false,
+        "route": null
+      },
+      "semantic": {
+        "purpose": "Path modülünü kullanarak servis işlemleri gerçekleştirir."
+      },
+      "graph": {
+        "dependencies": [
+          "path"
+        ],
+        "calls": [
+          "join",
+          "serve",
+          "file",
+          "log"
+        ],
+        "renders": []
+      },
+      "entities": [],
+      "identity": {
+        "analysisId": "77c7b93f-4056-40b0-b508-e0c1e5301fa4",
+        "fileHash": "ce271f16711ddf29a3024c0a4632c396",
+        "gitCommit": "unknown"
+      },
+      "analyzedAt": 1792363563893,
+      "importedBy": [],
+      "importance": 0
+    }
+  }
+}

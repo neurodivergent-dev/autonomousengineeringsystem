@@ -1,0 +1,69 @@
+{
+  "file": "mini-meta-cli/tools/index.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 38,
+    "jsx": false,
+    "imports": 10,
+    "exports": 6,
+    "functions": 2,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "createToolRegistry ve findTool aracılığıyla araçları yöneten kayıt modülü."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/types.ts",
+      "mini-meta-cli/state.ts",
+      "mini-meta-cli/tools/shell.ts",
+      "mini-meta-cli/tools/read.ts",
+      "mini-meta-cli/tools/write.ts",
+      "mini-meta-cli/tools/edit.ts",
+      "mini-meta-cli/tools/grep.ts",
+      "mini-meta-cli/tools/glob.ts",
+      "mini-meta-cli/tools/todo.ts",
+      "mini-meta-cli/tools/web.ts"
+    ],
+    "calls": [
+      "createShellTool",
+      "createReadTool",
+      "createWriteTool",
+      "createEditTool",
+      "createGrepTool",
+      "createGlobTool",
+      "createTodoTool",
+      "createFetchUrlTool",
+      "createNewsTool",
+      "createSearchTool",
+      "find"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "createToolRegistry",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "findTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "ae80c7b3-a564-42be-8a44-016216bad88e",
+    "fileHash": "66e8a09abfc084b330fd9f47b27be861",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358364360
+}

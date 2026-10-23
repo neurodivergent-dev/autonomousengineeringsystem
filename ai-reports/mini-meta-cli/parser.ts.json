@@ -1,0 +1,106 @@
+{
+  "file": "mini-meta-cli/parser.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 244,
+    "jsx": false,
+    "imports": 1,
+    "exports": 4,
+    "functions": 8,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "mini-meta-cli/types.ts içindeki verileri işleyen bir ayrıştırıcıdır."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/types.ts"
+    ],
+    "calls": [
+      "exec",
+      "trim",
+      "includes",
+      "split",
+      "replace",
+      "match",
+      "parseInt",
+      "map",
+      "filter",
+      "toLowerCase",
+      "String",
+      "some",
+      "has",
+      "matchAll",
+      "parseAttributes",
+      "normalizeToolName",
+      "parseBodyParams",
+      "toArgs",
+      "isPlaceholder",
+      "push",
+      "test"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "parseAttributes",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "parseBodyParams",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "toArgs",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isPlaceholder",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "normalizeToolName",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "parseToolCalls",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "stripToolCalls",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "hasDoneMarker",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "c6d25322-d72f-4fa4-968e-f299d9bae5b9",
+    "fileHash": "b927eafafacb2f09b9540b9488364473",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358358778
+}

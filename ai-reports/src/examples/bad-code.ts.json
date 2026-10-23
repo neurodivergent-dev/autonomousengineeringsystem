@@ -1,0 +1,40 @@
+{
+  "file": "src/examples/bad-code.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 20,
+    "jsx": false,
+    "imports": 0,
+    "exports": 1,
+    "functions": 1,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "authenticateUser fonksiyonunu gerçekleştirmek."
+  },
+  "graph": {
+    "dependencies": [],
+    "calls": [],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "authenticateUser",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "6f0a2b45-4402-44e4-b385-3d0118c5427c",
+    "fileHash": "c7d9a32851d9d834d3634eb1f45c45d3",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358376092
+}

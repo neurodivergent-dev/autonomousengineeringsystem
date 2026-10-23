@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro-PC Wireframe | Cyber-Grid</title>
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --bg-dark: #0a0a0c;
+            --glass-bg: rgba(10, 10, 15, 0.7);
+            --glass-border: rgba(0, 243, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            overflow: hidden;
+            color: var(--neon-cyan);
+        }
+
+        /* Scanline Overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.03),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.03)
+            );
+            background-size: 100% 4px, 3px 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Glassmorphic UI */
+        .ui-layer {
+            position: relative;
+            z-index: 20;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .nav-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            display: flex;
+            gap: 30px;
+            pointer-events: auto;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        .nav-item {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .nav-item:hover {
+            color: white;
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .status-panel {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 220px;
+            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            pointer-events: auto;
+        }
+
+        .status-title {
+            font-size: 0.7rem;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 5px;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .status-row {
+            font-size: 0.7rem;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .status-row span:last-child {
+            color: #fff;
+        }
+
+        .glitch-text {
+            animation: textGlitch 3s infinite;
+        }
+
+        @keyframes textGlitch {
+            0% { text-shadow: 2px 0 0 red; }
+            25% { text-shadow: -2px 0 0 blue; }
+            50% { text-shadow: 2px 0 0 green; }
+            75% { text-shadow: -2px 0 0 yellow; }
+            100% { text-shadow: 2px 0 0 red; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+        <nav class="nav-bar">
+            <div class="nav-item">System_OS_v1.0</div>
+            <div class="nav-item">Terminal</div>
+            <div class="nav-item">Network</div>
+            <div class="nav-item">Matrix_Link</div>
+        </nav>
+
+        <div class="status-panel">
+            <div class="status-title">SYSTEM_STATUS</div>
+            <div class="status-row"><span>CPU_LOAD:</span> <span>14.2%</span></div>
+            <div class="status-row"><span>MEM_USAGE:</span> <span>62.8%</span></div>
+            <div class="status-row"><span>NET_LINK:</span> <span>ACTIVE</span></div>
+            <div class="status-row"><span>CORE_TEMP:</span> <span>42°C</span></div>
+            <div class="status-row"><span>SIGNAL:</span> <span class="glitch-text">STABLE</span></div>
+        </div>
+    </div>
+
+    <!-- Load Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+    <script>
+        /**
+         * GLSL SHADERS
+         */
+        const vertexShader = `
+            varying vec2 vUv;
+            varying float vDist;
+            uniform float uTime;
+            
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+                
+                // Glitch effect logic
+                float glitch = sin(uTime * 15.0) * 0.02;
+                if (mod(sin(uTime * 10.0), 1.0) > 0.95) {
+                    pos.x += sin(uTime * 100.0) * 0.1;
+                }
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec2 vUv;
+            uniform float uTime;
+            
+            void main() {
+                // Neon cyan color
+                vec3 color = vec3(0.0, 0.95, 1.0);
+                
+                // Subtle pulse
+                float pulse = 0.9 + 0.1 * sin(uTime * 3.0);
+                
+                gl_FragColor = vec4(color * pulse, 1.0);
+            }
+        `;
+
+        /**
+         * CORE ENGINE
+         */
+        class CyberScene {
+            constructor() {
+                this.container = document.getElementById('canvas-container');
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                
+                this.init();
+                this.createWorld();
+                this.animate();
+            }
+
+            init() {
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.container.appendChild(this.renderer.domElement);
+
+                this.camera.position.z = 12;
+                this.camera.position.y = 4;
+                this.camera.lookAt(0, 0, 0);
+
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+
+            createWorld() {
+                // Materials
+                const wireMaterial = new THREE.ShaderMaterial({
+                    uniforms: {
+                        uTime: { value: 0.0 },
+                    },
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader,
+                    wireframe: true
+                });
+
+                // 1. The Grid (Cyber-Grid Effect)
+                const gridGeo = new THREE.PlaneGeometry(100, 100, 50, 50);
+                const gridMat = new THREE.MeshBasicMaterial({ 
+                    color: 0x00f3ff, 
+                    wireframe: true, 
+                    transparent: true, 
+                    opacity: 0.3 
+                });
+                const grid = new THREE.Mesh(gridGeo, gridMat);
+                grid.rotation.x = -Math.PI / 2;
+                this.scene.add(grid);
+
+                // 2. The Retro PC Model
+                const pcGroup = new THREE.Group();
+
+                // Monitor
+                const monitorGeo = new THREE.BoxGeometry(5, 3.5, 1.5);
+                const monitor = new THREE.Mesh(monitorGeo, wireMaterial);
+                monitor.position.set(0, 2, 0);
+                pcGroup.add(monitor);
+
+                // Screen Frame (Inner)
+                const screenGeo = new THREE.BoxGeometry(4.6, 3.3, 0.1);
+                const screen = new THREE.Mesh(screenGeo, wireMaterial);
+                screen.position.set(0, 2, 0.7);
+                pcGroup.add(screen);
+
+                // Keyboard
+                const kbGeo = new THREE.BoxGeometry(4, 0.2, 1.5);
+                const keyboard = new THREE.Mesh(kbGeo, wireMaterial);
+                keyboard.position.set(0, 0.5, 3);
+                pcGroup.add(keyboard);
+
+                // Tower
+                const towerGeo = new THREE.BoxGeometry(1.5, 5, 2);
+                const tower = new THREE.Mesh(towerGeo, wireMaterial);
+                tower.position.set(-4, 2.5, 1);
+                pcGroup.add(tower);
+
+                // Desk Surface
+                const deskGeo = new THREE.PlaneGeometry(12, 6);
+                const deskMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, opacity: 0.1 });
+                const desk = new THREE.Mesh(deskGeo, deskMat);
+                desk.rotation.x = -Math.PI / 2;
+                desk.position.y = 0;
+                pcGroup.add(desk);
+
+                this.scene.add(pcGroup);
+                this.pcGroup = pcGroup;
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                const time = performance.now() * 0.001;
+                
+                // Update Shader Uniforms
+                this.scene.traverse((obj) => {
+                    if (obj.material && obj.material.uniforms && obj.material.uniforms.uTime) {
+                        obj.material.uniforms.uTime.value = time;
+                    }
+                });
+
+                // Rotation Logic
+                if (this.pcGroup) {
+                    this.pcGroup.rotation.y += 0.005;
+                    // Subtle hover/float
+                    this.pcGroup.position.y = Math.sin(time) * 0.2;
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // Initialize the application
+        window.onload = () => {
+            new CyberScene();
+        };
+    </script>
+</body>
+</html>

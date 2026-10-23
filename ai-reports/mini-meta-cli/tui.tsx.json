@@ -1,0 +1,49 @@
+{
+  "file": "mini-meta-cli/tui.tsx",
+  "objective": {
+    "language": "TypeScript (TSX)",
+    "lines": 37,
+    "jsx": true,
+    "imports": 2,
+    "exports": 1,
+    "functions": 0,
+    "hooks": 0,
+    "components": 1,
+    "framework": "React",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "React ve Ink kullanarak MiniTenguOrchestrator için TUI sağlar."
+  },
+  "graph": {
+    "dependencies": [
+      "react",
+      "ink"
+    ],
+    "calls": [
+      "render"
+    ],
+    "renders": [
+      "Box",
+      "Text",
+      "MiniTenguOrchestrator"
+    ]
+  },
+  "entities": [
+    {
+      "name": "MiniTenguOrchestrator",
+      "type": "component",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "96f424ee-8193-4b58-8b30-4917ec5fb2cb",
+    "fileHash": "3c075414caab025623c658e6c0a919c3",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358369819
+}

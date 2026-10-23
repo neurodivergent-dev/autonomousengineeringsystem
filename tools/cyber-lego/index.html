@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Lego AST | 3D Syntax Brick Engineering Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Rajdhani:wght@500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080a10;
+      --bg-panel: rgba(14, 18, 28, 0.9);
+      --border-color: rgba(0, 243, 255, 0.2);
+      --neon-cyan: #00f3ff;
+      --neon-pink: #ff007f;
+      --neon-yellow: #ffd000;
+      --neon-green: #00ff88;
+      --lego-yellow: #f59e0b;
+      --lego-blue: #3b82f6;
+      --lego-green: #10b981;
+      --lego-red: #ef4444;
+      --lego-purple: #8b5cf6;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+    }
+
+    /* 3D Viewport */
+    #viewport-container {
+      flex: 1;
+      height: 100vh;
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, #111827 0%, #080a10 100%);
+    }
+
+    #webgl-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Left Drawer: Lego Syntax Tray */
+    #tray-panel {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: 330px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      z-index: 50;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      max-height: calc(100vh - 30px);
+      overflow-y: auto;
+    }
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+    }
+
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: 1px;
+      color: var(--neon-cyan);
+    }
+
+    .category-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Lego Brick Cards in Tray */
+    .brick-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brick-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+    }
+
+    .brick-card.decl::before { background: var(--lego-yellow); }
+    .brick-card.control::before { background: var(--lego-blue); }
+    .brick-card.expr::before { background: var(--lego-green); }
+    .brick-card.dom::before { background: var(--lego-purple); }
+    .brick-card.term::before { background: var(--lego-red); }
+
+    .brick-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+      border-color: var(--neon-cyan);
+    }
+
+    .brick-card.active-tool {
+      background: rgba(0, 243, 255, 0.22) !important;
+      border-color: var(--neon-cyan) !important;
+      box-shadow: 0 0 16px rgba(0, 243, 255, 0.45) !important;
+      transform: translateX(6px) !important;
+    }
+
+    .brick-card-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .brick-pill {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    /* Right Drawer: Live Compiled Code & Terminal */
+    #code-panel {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 420px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      z-index: 50;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      height: calc(100vh - 30px);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.5rem;
+    }
+
+    .code-box {
+      flex: 1;
+      background: #030509;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #38bdf8;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      user-select: text;
+    }
+
+    .console-box {
+      height: 150px;
+      background: #010204;
+      border: 1px solid rgba(0, 255, 136, 0.25);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--neon-green);
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.4;
+      user-select: text;
+    }
+
+    /* Actions Bar */
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      flex: 1;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      padding: 0.65rem 1rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .btn-run {
+      background: linear-gradient(135deg, var(--neon-green), #059669);
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    }
+
+    .btn-run:hover {
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .btn-clear {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--lego-red);
+      color: var(--lego-red);
+    }
+
+    .btn-clear:hover {
+      background: var(--lego-red);
+      color: #fff;
+    }
+
+    /* Overlay Help */
+    #hint-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(14, 18, 28, 0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 0.45rem 1.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      z-index: 40;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .hint-highlight {
+      color: var(--neon-cyan);
+      font-weight: 600;
+    }
+
+    /* Variable Inspector Badge */
+    .var-badge {
+      display: inline-block;
+      background: rgba(0, 243, 255, 0.1);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--neon-cyan);
+      margin-top: 0.25rem;
+    }
+    /* Quick Variable Buttons in Inspector */
+    .quick-var-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      color: var(--neon-cyan);
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-var-btn:hover {
+      background: rgba(0, 243, 255, 0.2);
+      border-color: var(--neon-cyan);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D WebGL Canvas -->
+  <div id="viewport-container">
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Floating Brick Inspector HUD -->
+    <div id="brick-inspector" style="display: none; position: absolute; bottom: 75px; left: 50%; transform: translateX(-50%); background: rgba(14, 20, 32, 0.95); backdrop-filter: blur(16px); border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 0.85rem 1.25rem; z-index: 60; box-shadow: 0 8px 32px rgba(0, 243, 255, 0.35); flex-direction: column; gap: 0.55rem; min-width: 440px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.4rem;">
+        <span style="font-family: 'Orbitron', sans-serif; font-size: 0.82rem; color: var(--neon-cyan); font-weight: bold;">
+          🔧 Seçili Tuğla & Değişken Düzenleyici
+        </span>
+        <span style="font-size: 0.85rem; cursor: pointer; color: var(--text-muted); padding: 0 4px;" onclick="deselectBrick()">✕</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+        <div style="display: flex; gap: 0.4rem;">
+          <input id="inspector-code-input" type="text" placeholder="Tuğla Kodu" style="flex: 1; background: #040711; border: 1px solid rgba(0, 243, 255, 0.4); color: #38bdf8; border-radius: 6px; padding: 0.4rem 0.6rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;" onkeydown="if(event.key==='Enter') saveInspectorCode()">
+          <button onclick="saveInspectorCode()" style="background: var(--neon-cyan); color: #000; font-weight: bold; border: none; border-radius: 6px; padding: 0.4rem 0.85rem; cursor: pointer; font-size: 0.8rem;">💾 Kaydet</button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-muted);">
+          <span>Değişken:</span>
+          <button type="button" onclick="quickRenameVar('skor')" class="quick-var-btn">skor</button>
+          <button type="button" onclick="quickRenameVar('can')" class="quick-var-btn">can</button>
+          <button type="button" onclick="quickRenameVar('puan')" class="quick-var-btn">puan</button>
+          <button type="button" onclick="quickRenameVar('hiz')" class="quick-var-btn">hiz</button>
+          <button type="button" onclick="quickRenameVar('sayac')" class="quick-var-btn">sayac</button>
+          <button type="button" onclick="quickRenameVar('altin')" class="quick-var-btn">altin</button>
+          <span style="margin-left: 0.4rem;">Şablon:</span>
+          <button type="button" onclick="quickSetTemplate('for (let i = 0; i < 10; i++) {')" class="quick-var-btn" style="color: #60a5fa;">for(i&lt;10)</button>
+          <button type="button" onclick="quickSetTemplate('if (skor > 50) {')" class="quick-var-btn" style="color: #60a5fa;">if(skor&gt;50)</button>
+          <button type="button" onclick="quickSetTemplate('function saldir() {\\n  let hasar = 10;')" class="quick-var-btn" style="color: #c084fc;">func saldir()</button>
+          <button type="button" onclick="quickSetTemplate('return saldir();')" class="quick-var-btn" style="color: #c084fc;">saldir()</button>
+          <button type="button" onclick="deleteSelectedBrick()" style="margin-left: auto; background: rgba(239, 68, 68, 0.25); border: 1px solid var(--lego-red); color: #ef4444; border-radius: 6px; padding: 0.2rem 0.55rem; font-size: 0.72rem; cursor: pointer;">🗑️ Sil</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Instructions Hint -->
+    <div id="hint-bar">
+      <span id="hint-status">🧱 <span class="hint-highlight">Soldan Parça Seç</span> ➔ İstediğin Yere Tıkla</span>
+      <span>🖱️ Sürükle: <span class="hint-highlight">Kamera Döndür</span></span>
+      <span>🖱️ Sağ Tık/ESC: <span class="hint-highlight">İptal</span></span>
+      <button id="delete-btn" style="display: none; background: rgba(239, 68, 68, 0.25); border: 1px solid var(--lego-red); color: #fff; border-radius: 12px; padding: 0.2rem 0.7rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; cursor: pointer;" onclick="deleteSelectedBrick()">🗑️ Seçili Tuğlayı Sil (Del)</button>
+    </div>
+  </div>
+
+  <!-- Left: Lego AST Syntax Tray -->
+  <div id="tray-panel">
+    <div class="brand-header">
+      <div style="font-size: 1.5rem;">🧱</div>
+      <div>
+        <div class="brand-title">CYBER LEGO AST</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Visual Syntax Brick Builder</div>
+      </div>
+    </div>
+
+    <!-- Pre-built Lego Sets -->
+    <div>
+      <div class="category-title">⭐ Hazır Kule Setleri</div>
+      <div style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
+        <div class="brick-card" onclick="buildPreset('counter')">
+          <span class="brick-card-title">🔄 Sayıcı Döngüsü (1➔5)</span>
+          <span class="brick-pill">LOOP</span>
+        </div>
+        <div class="brick-card" onclick="buildPreset('calc')">
+          <span class="brick-card-title">🧮 Fonksiyonlu Hesaplayıcı</span>
+          <span class="brick-pill">FUNCTION</span>
+        </div>
+        <div class="brick-card" onclick="buildPreset('array_ops')">
+          <span class="brick-card-title">📦 Siber Dizi & Push Kulesi</span>
+          <span class="brick-pill">ARRAY</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Declarations (Yellow) -->
+    <div>
+      <div class="category-title" style="color: var(--lego-yellow);">🟡 Tanımlar (Declarations)</div>
+
+      <!-- Quick Custom Variable Creator -->
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 0.6rem; margin-top: 0.4rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <div style="font-size: 0.75rem; font-weight: bold; color: var(--lego-yellow); display: flex; align-items: center; justify-content: space-between;">
+          <span>⚡ Yeni Değişken Üret</span>
+          <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: normal;">İstediğin İsmi Ver</span>
+        </div>
+        <div style="display: flex; gap: 0.3rem;">
+          <select id="new-var-kind" style="background: #0b0f19; border: 1px solid var(--border-color); color: #f59e0b; border-radius: 4px; padding: 0.2rem 0.3rem; font-family: monospace; font-size: 0.75rem;">
+            <option value="let">let</option>
+            <option value="const">const</option>
+          </select>
+          <input id="new-var-name" type="text" placeholder="İsim (örn: puan)" value="puan" style="flex: 1; background: #0b0f19; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 0.2rem 0.4rem; font-family: monospace; font-size: 0.75rem;">
+          <input id="new-var-val" type="text" placeholder="Değer" value="50" style="width: 60px; background: #0b0f19; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 0.2rem 0.4rem; font-family: monospace; font-size: 0.75rem;">
+        </div>
+        <button type="button" onclick="createCustomVariableBrick()" style="background: rgba(245, 158, 11, 0.25); border: 1px solid var(--lego-yellow); color: #f59e0b; border-radius: 4px; padding: 0.35rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+          🧱 Tuğla Üret & Masaya Koy
+        </button>
+      </div>
+
+      <div id="decl-bricks-container" style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
+        <div class="brick-card decl" onclick="selectToolBrick('let_counter', this)" ondblclick="addBrick('let_counter')">
+          <span class="brick-card-title">let sayac = 0;</span>
+          <span class="brick-pill">VAR</span>
+        </div>
+        <div class="brick-card decl" onclick="selectToolBrick('let_skor', this)" ondblclick="addBrick('let_skor')">
+          <span class="brick-card-title">let skor = 100;</span>
+          <span class="brick-pill">SKOR</span>
+        </div>
+        <div class="brick-card decl" onclick="selectToolBrick('let_can', this)" ondblclick="addBrick('let_can')">
+          <span class="brick-card-title">let can = 3;</span>
+          <span class="brick-pill">CAN</span>
+        </div>
+        <div class="brick-card decl" onclick="selectToolBrick('const_pi', this)" ondblclick="addBrick('const_pi')">
+          <span class="brick-card-title">const PI = 3.14;</span>
+          <span class="brick-pill">CONST</span>
+        </div>
+        <div class="brick-card decl" onclick="selectToolBrick('let_msg', this)" ondblclick="addBrick('let_msg')">
+          <span class="brick-card-title">let mesaj = "Sistem Aktif";</span>
+          <span class="brick-pill">STRING</span>
+        </div>
+        <div class="brick-card decl" onclick="selectToolBrick('let_array', this)" ondblclick="addBrick('let_array')">
+          <span class="brick-card-title">let liste = [10, 20, 30];</span>
+          <span class="brick-pill">ARRAY</span>
+        </div>
+        <div class="brick-card decl" onclick="selectToolBrick('function_def', this)" ondblclick="addBrick('function_def')">
+          <span class="brick-card-title">function hesapla()</span>
+          <span class="brick-pill">FUNC</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Control Flow (Blue) -->
+    <div>
+      <div class="category-title" style="color: var(--lego-blue);">🔵 Akış Kontrolü (Control Flow)</div>
+
+      <!-- Quick Control Flow Creator -->
+      <div style="background: rgba(59, 130, 246, 0.08); border: 1px dashed rgba(59, 130, 246, 0.4); border-radius: 8px; padding: 0.6rem; margin-top: 0.4rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <div style="font-size: 0.75rem; font-weight: bold; color: var(--lego-blue); display: flex; align-items: center; justify-content: space-between;">
+          <span>⚡ Yeni Akış / Döngü Üret</span>
+          <span style="font-size: 0.65rem; color: var(--text-muted);">Döngü & Koşul</span>
+        </div>
+        <div style="display: flex; gap: 0.3rem;">
+          <select id="new-ctrl-type" style="background: #0b0f19; border: 1px solid var(--border-color); color: #60a5fa; border-radius: 4px; padding: 0.2rem 0.3rem; font-family: monospace; font-size: 0.75rem;">
+            <option value="for">for (döngü)</option>
+            <option value="if">if (koşul)</option>
+            <option value="while">while (sürekli)</option>
+          </select>
+          <input id="new-ctrl-expr" type="text" placeholder="İfade (örn: skor > 50)" value="skor > 50" style="flex: 1; background: #0b0f19; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 0.2rem 0.4rem; font-family: monospace; font-size: 0.75rem;">
+        </div>
+        <button type="button" onclick="createCustomControlBrick()" style="background: rgba(59, 130, 246, 0.25); border: 1px solid var(--lego-blue); color: #60a5fa; border-radius: 4px; padding: 0.35rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+          🧱 Akış Tuğlası Üret
+        </button>
+      </div>
+
+      <div id="control-bricks-container" style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
+        <div class="brick-card control" onclick="selectToolBrick('for_loop', this)" ondblclick="addBrick('for_loop')">
+          <span class="brick-card-title">for (let i = 0; i &lt; 5; i++)</span>
+          <span class="brick-pill">FOR</span>
+        </div>
+        <div class="brick-card control" onclick="selectToolBrick('if_condition', this)" ondblclick="addBrick('if_condition')">
+          <span class="brick-card-title">if (sayac &gt; 2)</span>
+          <span class="brick-pill">IF</span>
+        </div>
+        <div class="brick-card control" onclick="selectToolBrick('end_block', this)" ondblclick="addBrick('end_block')">
+          <span class="brick-card-title">} // Blok Sonu</span>
+          <span class="brick-pill">END }</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expressions & Math (Green) -->
+    <div>
+      <div class="category-title" style="color: var(--lego-green);">🟢 İfadeler & Matematik (Expressions)</div>
+
+      <!-- Quick Expression Creator -->
+      <div style="background: rgba(16, 185, 129, 0.08); border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 0.6rem; margin-top: 0.4rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <div style="font-size: 0.75rem; font-weight: bold; color: var(--lego-green); display: flex; align-items: center; justify-content: space-between;">
+          <span>⚡ Yeni İfade / İşlem Üret</span>
+          <span style="font-size: 0.65rem; color: var(--text-muted);">Örn: skor += 50;</span>
+        </div>
+        <div style="display: flex; gap: 0.3rem;">
+          <input id="new-expr-code" type="text" placeholder="İfade (örn: skor += 50;)" value="skor += 50;" style="flex: 1; background: #0b0f19; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 0.2rem 0.4rem; font-family: monospace; font-size: 0.75rem;">
+        </div>
+        <button type="button" onclick="createCustomExpressionDirect()" style="background: rgba(16, 185, 129, 0.25); border: 1px solid var(--lego-green); color: #34d399; border-radius: 4px; padding: 0.35rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+          🧱 İşlem Tuğlası Üret
+        </button>
+      </div>
+
+      <div id="expr-bricks-container" style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
+        <div class="brick-card expr" onclick="selectToolBrick('increment', this)" ondblclick="addBrick('increment')">
+          <span class="brick-card-title">sayac += 1;</span>
+          <span class="brick-pill">+1</span>
+        </div>
+        <div class="brick-card expr" onclick="selectToolBrick('increment_skor', this)" ondblclick="addBrick('increment_skor')">
+          <span class="brick-card-title">skor += 10;</span>
+          <span class="brick-pill">+10</span>
+        </div>
+        <div class="brick-card expr" onclick="selectToolBrick('decrement_can', this)" ondblclick="addBrick('decrement_can')">
+          <span class="brick-card-title">can -= 1;</span>
+          <span class="brick-pill">-1</span>
+        </div>
+        <div class="brick-card expr" onclick="selectToolBrick('multiply', this)" ondblclick="addBrick('multiply')">
+          <span class="brick-card-title">sayac = sayac * 2;</span>
+          <span class="brick-pill">x2</span>
+        </div>
+        <div class="brick-card expr" onclick="selectToolBrick('push_array', this)" ondblclick="addBrick('push_array')">
+          <span class="brick-card-title">liste.push(sayac);</span>
+          <span class="brick-pill">PUSH</span>
+        </div>
+        <div class="brick-card expr" onclick="selectToolBrick('log', this)" ondblclick="addBrick('log')">
+          <span class="brick-card-title">console.log("Sayıcı Adımı: " + sayac);</span>
+          <span class="brick-pill">PRINT</span>
+        </div>
+        <div class="brick-card expr" onclick="selectToolBrick('log_skor', this)" ondblclick="addBrick('log_skor')">
+          <span class="brick-card-title">console.log("Skor: " + skor);</span>
+          <span class="brick-pill">PRINT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Function Calls & DOM (Purple) -->
+    <div>
+      <div class="category-title" style="color: var(--lego-purple);">🟣 Çağrılar & Fonksiyonlar (Functions)</div>
+
+      <!-- Quick Function Creator -->
+      <div style="background: rgba(139, 92, 246, 0.08); border: 1px dashed rgba(139, 92, 246, 0.4); border-radius: 8px; padding: 0.6rem; margin-top: 0.4rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <div style="font-size: 0.75rem; font-weight: bold; color: var(--lego-purple); display: flex; align-items: center; justify-content: space-between;">
+          <span>⚡ Yeni Fonksiyon / Çağrı Üret</span>
+          <span style="font-size: 0.65rem; color: var(--text-muted);">Özel Metot</span>
+        </div>
+        <div style="display: flex; gap: 0.3rem;">
+          <input id="new-func-name" type="text" placeholder="Fonksiyon Adı (örn: saldir)" value="saldir" style="flex: 1; background: #0b0f19; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 0.2rem 0.4rem; font-family: monospace; font-size: 0.75rem;">
+          <input id="new-func-param" type="text" placeholder="Parametre" value="guc" style="width: 65px; background: #0b0f19; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 0.2rem 0.4rem; font-family: monospace; font-size: 0.75rem;">
+        </div>
+        <button type="button" onclick="createCustomFunctionBrick()" style="background: rgba(139, 92, 246, 0.25); border: 1px solid var(--lego-purple); color: #c084fc; border-radius: 4px; padding: 0.35rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+          🧱 Fonksiyon & Çağrı Tuğlası Üret
+        </button>
+      </div>
+
+      <div id="dom-bricks-container" style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
+        <div class="brick-card dom" onclick="selectToolBrick('call_func', this)" ondblclick="addBrick('call_func')">
+          <span class="brick-card-title">return hesapla();</span>
+          <span class="brick-pill">CALL</span>
+        </div>
+        <div class="brick-card dom" onclick="selectToolBrick('create_button', this)" ondblclick="addBrick('create_button')">
+          <span class="brick-card-title">document.createElement("button")</span>
+          <span class="brick-pill">DOM</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Return & Termination (Red) -->
+    <div>
+      <div class="category-title" style="color: var(--lego-red);">🔴 Kapatma & Döndürme (Terminators)</div>
+
+      <!-- Quick Return Creator -->
+      <div style="background: rgba(239, 68, 68, 0.08); border: 1px dashed rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 0.6rem; margin-top: 0.4rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <div style="font-size: 0.75rem; font-weight: bold; color: var(--lego-red); display: flex; align-items: center; justify-content: space-between;">
+          <span>⚡ Yeni Return Üret</span>
+          <span style="font-size: 0.65rem; color: var(--text-muted);">Örn: return can;</span>
+        </div>
+        <div style="display: flex; gap: 0.3rem;">
+          <input id="new-return-val" type="text" placeholder="Dönen Değer (örn: can)" value="can" style="flex: 1; background: #0b0f19; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; padding: 0.2rem 0.4rem; font-family: monospace; font-size: 0.75rem;">
+        </div>
+        <button type="button" onclick="createCustomReturnDirect()" style="background: rgba(239, 68, 68, 0.25); border: 1px solid var(--lego-red); color: #f87171; border-radius: 4px; padding: 0.35rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+          🧱 Return Tuğlası Üret
+        </button>
+      </div>
+
+      <div id="term-bricks-container" style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
+        <div class="brick-card term" onclick="selectToolBrick('return', this)" ondblclick="addBrick('return')">
+          <span class="brick-card-title">return sayac;</span>
+          <span class="brick-pill">RETURN</span>
+        </div>
+        <div class="brick-card term" onclick="selectToolBrick('return_skor', this)" ondblclick="addBrick('return_skor')">
+          <span class="brick-card-title">return skor;</span>
+          <span class="brick-pill">RETURN</span>
+        </div>
+        <div class="brick-card term" onclick="selectToolBrick('return_array', this)" ondblclick="addBrick('return_array')">
+          <span class="brick-card-title">return liste;</span>
+          <span class="brick-pill">RETURN</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Live Code & Runner -->
+  <div id="code-panel">
+    <div class="code-header">
+      <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: var(--neon-cyan);">
+        ⚡ Canlı Derlenmiş Kod (AST)
+      </div>
+      <span class="brick-pill" id="brick-count-badge">0 TUĞLA</span>
+    </div>
+
+    <div class="code-box" id="compiled-code">// Masaya bir lego tuğlası ekleyin...</div>
+
+    <div class="code-header">
+      <div style="font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: var(--neon-green);">
+        📟 REPL & Çalışma Zamanı (Runtime)
+      </div>
+      <span id="exec-time-badge" style="font-size: 0.75rem; color: var(--text-muted);">0 ms</span>
+    </div>
+
+    <div class="console-box" id="runtime-console">[Sistem Hazır] Tuğlaları birleştirip "PROGRAMI ÇALIŞTIR" deyin.</div>
+
+    <div class="btn-row">
+      <button class="btn btn-run" onclick="runLegoCode()">▶ Programı Çalıştır</button>
+      <button class="btn btn-clear" onclick="clearLegoTower()">🗑️ Sıfırla</button>
+    </div>
+  </div>
+
+  <!-- Dependencies: Three.js r128 and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    /**
+     * Web Audio API Synthesizer for Mechanical Lego Snap & Execution Sounds
+     */
+    let audioCtx = null;
+    function playSnapSound(pitch = 1.0) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600 * pitch, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80 * pitch, audioCtx.currentTime + 0.04);
+
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+      } catch (e) {}
+    }
+
+    function playPulseBeep(frequency = 880) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.09);
+      } catch (e) {}
+    }
+
+    /**
+     * Comprehensive AST Lego Brick Definitions Database
+     */
+    const BRICK_DEFS = {
+      let_counter: {
+        category: 'decl',
+        label: 'let sayac = 0;',
+        color: 0xf59e0b,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'let sayac = 0;'
+      },
+      let_skor: {
+        category: 'decl',
+        label: 'let skor = 100;',
+        color: 0xf59e0b,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'let skor = 100;'
+      },
+      let_can: {
+        category: 'decl',
+        label: 'let can = 3;',
+        color: 0xf59e0b,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'let can = 3;'
+      },
+      const_pi: {
+        category: 'decl',
+        label: 'const PI = 3.14;',
+        color: 0xd97706,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'const PI = 3.14;'
+      },
+      let_msg: {
+        category: 'decl',
+        label: 'let mesaj = "Sistem Aktif";',
+        color: 0xfbbf24,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'let mesaj = "Sistem Aktif";'
+      },
+      let_array: {
+        category: 'decl',
+        label: 'let liste = [10, 20, 30];',
+        color: 0xeab308,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'let liste = [10, 20, 30];'
+      },
+      function_def: {
+        category: 'decl',
+        label: 'function hesapla()',
+        color: 0xb45309,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: 'function hesapla() {\n  let sayac = 21;'
+      },
+      for_loop: {
+        category: 'control',
+        label: 'for (let i = 0; i < 5; i++)',
+        color: 0x3b82f6,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: 'for (let i = 0; i < 5; i++) {'
+      },
+      if_condition: {
+        category: 'control',
+        label: 'if (sayac > 2)',
+        color: 0x2563eb,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'if (sayac > 2) {'
+      },
+      end_block: {
+        category: 'control',
+        label: '} // Blok Sonu',
+        color: 0x1d4ed8,
+        width: 4,
+        depth: 2,
+        height: 0.8,
+        code: '}'
+      },
+      increment: {
+        category: 'expr',
+        label: 'sayac += 1;',
+        color: 0x10b981,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'sayac += 1;'
+      },
+      increment_skor: {
+        category: 'expr',
+        label: 'skor += 10;',
+        color: 0x10b981,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'skor += 10;'
+      },
+      decrement_can: {
+        category: 'expr',
+        label: 'can -= 1;',
+        color: 0x10b981,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'can -= 1;'
+      },
+      multiply: {
+        category: 'expr',
+        label: 'sayac = sayac * 2;',
+        color: 0x059669,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'sayac = sayac * 2;'
+      },
+      push_array: {
+        category: 'expr',
+        label: 'liste.push(sayac);',
+        color: 0x047857,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'liste.push(sayac);'
+      },
+      log: {
+        category: 'expr',
+        label: 'console.log("Sayıcı Adımı: " + sayac);',
+        color: 0x0d9488,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: 'console.log("Sayıcı Adımı: " + sayac);'
+      },
+      log_skor: {
+        category: 'expr',
+        label: 'console.log("Skor: " + skor);',
+        color: 0x0d9488,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: 'console.log("Skor: " + skor);'
+      },
+      call_func: {
+        category: 'dom',
+        label: 'return hesapla();',
+        color: 0x8b5cf6,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: 'return hesapla();'
+      },
+      create_button: {
+        category: 'dom',
+        label: 'document.createElement("button")',
+        color: 0x7c3aed,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: 'console.log("[DOM] Sanal buton olusturuldu.");'
+      },
+      return: {
+        category: 'term',
+        label: 'return sayac;',
+        color: 0xef4444,
+        width: 4,
+        depth: 2,
+        height: 0.6, // Flat finishing tile
+        code: 'return sayac;'
+      },
+      return_skor: {
+        category: 'term',
+        label: 'return skor;',
+        color: 0xef4444,
+        width: 4,
+        depth: 2,
+        height: 0.6,
+        code: 'return skor;'
+      },
+      return_array: {
+        category: 'term',
+        label: 'return liste;',
+        color: 0xdc2626,
+        width: 4,
+        depth: 2,
+        height: 0.6,
+        code: 'return liste;'
+      }
+    };
+
+    /**
+     * 3D Lego Builder Scene Setup
+     */
+    let scene, camera, renderer, controls;
+    let legoTowerGroup;
+    let baseplateMesh;
+    let placedBricks = [];
+    let currentHeight = 0;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let selectedToolBrick = null;
+    let ghostMesh = null;
+    let currentGhostPos = null;
+    let selectedBrickItem = null;
+
+    function init3D() {
+      const container = document.getElementById('viewport-container');
+      const canvas = document.getElementById('webgl-canvas');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x080a10);
+      scene.fog = new THREE.Fog(0x080a10, 20, 95);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(10, 14, 20);
+
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      if (typeof THREE.OrbitControls === 'function') {
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 3.5, 0);
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+      }
+
+      // Studio Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      const mainSpot = new THREE.DirectionalLight(0x00f3ff, 1.2);
+      mainSpot.position.set(15, 30, 20);
+      mainSpot.castShadow = true;
+      mainSpot.shadow.mapSize.width = 2048;
+      mainSpot.shadow.mapSize.height = 2048;
+      scene.add(mainSpot);
+
+      const rimLight = new THREE.DirectionalLight(0xff007f, 0.8);
+      rimLight.position.set(-15, 15, -15);
+      scene.add(rimLight);
+
+      // Baseplate
+      createBaseplate();
+
+      // Lego Group
+      legoTowerGroup = new THREE.Group();
+      scene.add(legoTowerGroup);
+
+      // Window Resize
+      window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      // Pointer & Click Placement Listeners
+      const dom = renderer.domElement;
+      let downPos = { x: 0, y: 0 };
+      let isDrag = false;
+
+      dom.addEventListener('pointerdown', (e) => {
+        downPos = { x: e.clientX, y: e.clientY };
+        isDrag = false;
+      });
+
+      dom.addEventListener('pointermove', (e) => {
+        const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+        if (dist > 6) {
+          isDrag = true;
+        }
+        onPointerMove(e);
+      });
+
+      dom.addEventListener('pointerup', (e) => {
+        if (isDrag) return;
+
+        if (e.button === 2) {
+          deselectTool();
+          deselectBrick();
+          return;
+        }
+
+        if (e.button === 0) {
+          if (selectedToolBrick && currentGhostPos && ghostMesh && ghostMesh.visible) {
+            addBrickAt(selectedToolBrick, currentGhostPos.x, currentGhostPos.y, currentGhostPos.z);
+            // Immediately compute next height if user wants to stack continuously
+            const def = BRICK_DEFS[selectedToolBrick];
+            currentGhostPos.y += def.height;
+            ghostMesh.position.y = currentGhostPos.y;
+          } else if (!selectedToolBrick) {
+            selectBrickAtPointer(e);
+          }
+        }
+      });
+
+      dom.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          deselectTool();
+          deselectBrick();
+        } else if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (selectedBrickItem) {
+            deleteSelectedBrick();
+          }
+        }
+      });
+
+      animate();
+    }
+
+    /**
+     * Cyber Lego Baseplate with Studs
+     */
+    function createBaseplate() {
+      const baseGeo = new THREE.BoxGeometry(24, 0.5, 24);
+      const baseMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.35,
+        metalness: 0.15
+      });
+      const baseplate = new THREE.Mesh(baseGeo, baseMat);
+      baseplate.position.y = -0.25;
+      baseplate.receiveShadow = true;
+      scene.add(baseplate);
+      baseplateMesh = baseplate;
+
+      // Studs on the baseplate (exact 1.0 unit Lego modular grid)
+      const studRadius = 0.35;
+      const studHeight = 0.2;
+      const studGeo = new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 16);
+      const studMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25 });
+      const totalStuds = 24 * 24;
+      const instancedStuds = new THREE.InstancedMesh(studGeo, studMat, totalStuds);
+      
+      let idx = 0;
+      const dummy = new THREE.Object3D();
+      for (let x = -11.5; x <= 11.5; x += 1.0) {
+        for (let z = -11.5; z <= 11.5; z += 1.0) {
+          dummy.position.set(x, 0.1, z);
+          dummy.updateMatrix();
+          instancedStuds.setMatrixAt(idx++, dummy.matrix);
+        }
+      }
+      instancedStuds.instanceMatrix.needsUpdate = true;
+      instancedStuds.castShadow = true;
+      instancedStuds.receiveShadow = true;
+      scene.add(instancedStuds);
+
+      // Grid Lines on floor
+      const grid = new THREE.GridHelper(60, 30, 0x00f3ff, 0x1e293b);
+      grid.position.y = -0.5;
+      scene.add(grid);
+    }
+
+    /**
+     * Builds authentic 3D Lego Brick with Studs (Solid or Holographic Ghost)
+     */
+    function create3DLegoBrick(def, isGhost = false) {
+      const group = new THREE.Group();
+
+      const bodyGeo = new THREE.BoxGeometry(def.width, def.height, def.depth);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: isGhost ? 0x00f3ff : def.color,
+        roughness: isGhost ? 0.1 : 0.15,
+        metalness: isGhost ? 0.3 : 0.1,
+        transparent: isGhost,
+        opacity: isGhost ? 0.55 : 1.0,
+        emissive: isGhost ? 0x00f3ff : def.color,
+        emissiveIntensity: isGhost ? 0.6 : 0.08
+      });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      if (!isGhost) {
+        body.castShadow = true;
+        body.receiveShadow = true;
+      }
+      group.add(body);
+      group.userData.bodyMesh = body;
+
+      // Cylindrical Studs on Top
+      if (def.height >= 0.8) {
+        const studRadius = 0.35;
+        const studHeight = 0.2;
+        const studGeo = new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 16);
+        const studMat = bodyMat;
+
+        const countX = Math.round(def.width);
+        const countZ = Math.round(def.depth);
+
+        const startX = -(def.width / 2) + 0.5;
+        const startZ = -(def.depth / 2) + 0.5;
+
+        for (let ix = 0; ix < countX; ix++) {
+          for (let iz = 0; iz < countZ; iz++) {
+            const stud = new THREE.Mesh(studGeo, studMat);
+            stud.position.set(
+              startX + ix,
+              def.height / 2 + studHeight / 2,
+              startZ + iz
+            );
+            if (!isGhost) stud.castShadow = true;
+            group.add(stud);
+          }
+        }
+      }
+
+      return group;
+    }
+
+    /**
+     * Tool Selection & 3D Ghost Preview
+     */
+    function selectToolBrick(brickId, cardEl) {
+      deselectBrick();
+      if (selectedToolBrick === brickId) {
+        deselectTool();
+        return;
+      }
+
+      selectedToolBrick = brickId;
+      document.querySelectorAll('.brick-card').forEach(c => c.classList.remove('active-tool'));
+      if (cardEl) cardEl.classList.add('active-tool');
+
+      updateGhostMeshDef(brickId);
+
+      const def = BRICK_DEFS[brickId];
+      const hintEl = document.getElementById('hint-status');
+      if (hintEl) {
+        hintEl.innerHTML = `🟢 <span class="hint-highlight">Seçili: ${def.label}</span> ➔ Zeminde istediğin yere tıkla (ESC: İptal)`;
+      }
+      playSnapSound(1.2);
+    }
+
+    function deselectTool() {
+      selectedToolBrick = null;
+      document.querySelectorAll('.brick-card').forEach(c => c.classList.remove('active-tool'));
+      if (ghostMesh) {
+        scene.remove(ghostMesh);
+        ghostMesh = null;
+      }
+      currentGhostPos = null;
+      const hintEl = document.getElementById('hint-status');
+      if (hintEl) {
+        hintEl.innerHTML = `🧱 <span class="hint-highlight">Soldan Parça Seç</span> ➔ İstediğin Yere Tıkla`;
+      }
+    }
+
+    function updateGhostMeshDef(brickId) {
+      if (ghostMesh) {
+        scene.remove(ghostMesh);
+        ghostMesh = null;
+      }
+      if (!brickId) return;
+      const def = BRICK_DEFS[brickId];
+      if (!def) return;
+
+      ghostMesh = create3DLegoBrick(def, true);
+      ghostMesh.visible = false;
+      scene.add(ghostMesh);
+    }
+
+    /**
+     * Raycasting & Ghost Tracking on Mouse Move
+     */
+    function onPointerMove(e) {
+      const container = document.getElementById('viewport-container');
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      if (selectedToolBrick && ghostMesh) {
+        raycaster.setFromCamera(mouse, camera);
+
+        const targets = baseplateMesh ? [baseplateMesh] : [];
+        placedBricks.forEach(b => {
+          if (b.mesh && b.mesh.userData && b.mesh.userData.bodyMesh) {
+            targets.push(b.mesh.userData.bodyMesh);
+          }
+        });
+
+        const intersects = raycaster.intersectObjects(targets, false);
+        if (intersects.length > 0) {
+          const hit = intersects[0];
+          const def = BRICK_DEFS[selectedToolBrick];
+
+          let targetX = 0;
+          let targetZ = 0;
+          let targetY = def.height / 2;
+
+          if (hit.object === baseplateMesh) {
+            targetX = Math.round(hit.point.x);
+            targetZ = Math.round(hit.point.z);
+            targetX = Math.max(-10, Math.min(10, targetX));
+            targetZ = Math.max(-10, Math.min(10, targetZ));
+
+            const colBricks = placedBricks.filter(b =>
+              Math.abs(b.mesh.position.x - targetX) < 1.5 && Math.abs(b.mesh.position.z - targetZ) < 1.5
+            );
+            if (colBricks.length > 0) {
+              const topBrick = colBricks.reduce((h, b) => b.mesh.position.y > h.mesh.position.y ? b : h);
+              targetY = topBrick.mesh.position.y + topBrick.def.height / 2 + def.height / 2;
+            } else {
+              targetY = def.height / 2;
+            }
+          } else {
+            const hitItem = placedBricks.find(b => b.mesh.userData.bodyMesh === hit.object);
+            if (hitItem) {
+              targetX = hitItem.mesh.position.x;
+              targetZ = hitItem.mesh.position.z;
+              targetY = hitItem.mesh.position.y + hitItem.def.height / 2 + def.height / 2;
+            }
+          }
+
+          ghostMesh.position.set(targetX, targetY, targetZ);
+          ghostMesh.visible = true;
+          currentGhostPos = { x: targetX, y: targetY, z: targetZ };
+        } else {
+          ghostMesh.visible = false;
+        }
+      } else if (!selectedToolBrick) {
+        raycaster.setFromCamera(mouse, camera);
+        const brickBodies = placedBricks.map(b => b.mesh && b.mesh.userData ? b.mesh.userData.bodyMesh : null).filter(Boolean);
+        const intersects = raycaster.intersectObjects(brickBodies, false);
+        document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+      }
+    }
+
+    /**
+     * Brick Selection and Deletion
+     */
+    function selectBrickAtPointer(e) {
+      const container = document.getElementById('viewport-container');
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const targets = placedBricks.map(b => b.mesh && b.mesh.userData ? b.mesh.userData.bodyMesh : null).filter(Boolean);
+      const intersects = raycaster.intersectObjects(targets, false);
+
+      if (intersects.length > 0) {
+        const hitObj = intersects[0].object;
+        const item = placedBricks.find(b => b.mesh.userData.bodyMesh === hitObj);
+        if (item) {
+          highlightSelectedBrick(item);
+        }
+      } else {
+        deselectBrick();
+      }
+    }
+
+    function highlightSelectedBrick(item) {
+      deselectBrick();
+      selectedBrickItem = item;
+      if (item.mesh && item.mesh.userData && item.mesh.userData.bodyMesh) {
+        item.mesh.userData.bodyMesh.material.emissiveIntensity = 0.85;
+        item.mesh.userData.bodyMesh.material.emissive = new THREE.Color(0x00f3ff);
+      }
+      const delBtn = document.getElementById('delete-btn');
+      if (delBtn) delBtn.style.display = 'inline-flex';
+
+      // Open Inspector HUD
+      const inspector = document.getElementById('brick-inspector');
+      const input = document.getElementById('inspector-code-input');
+      if (inspector && input) {
+        input.value = item.def.code || item.def.label;
+        inspector.style.display = 'flex';
+        input.focus();
+        input.select();
+      }
+
+      logConsole(`[Tuğla Seçildi]: ${item.def.label} (Aşağıdaki düzenleyiciden değişkenini ve kodunu değiştirebilirsin)`);
+    }
+
+    function deselectBrick() {
+      if (selectedBrickItem && selectedBrickItem.mesh && selectedBrickItem.mesh.userData && selectedBrickItem.mesh.userData.bodyMesh) {
+        selectedBrickItem.mesh.userData.bodyMesh.material.emissiveIntensity = 0.08;
+        selectedBrickItem.mesh.userData.bodyMesh.material.emissive = new THREE.Color(selectedBrickItem.def.color);
+      }
+      selectedBrickItem = null;
+      const delBtn = document.getElementById('delete-btn');
+      if (delBtn) delBtn.style.display = 'none';
+      const inspector = document.getElementById('brick-inspector');
+      if (inspector) inspector.style.display = 'none';
+    }
+
+    function saveInspectorCode() {
+      if (!selectedBrickItem) return;
+      const input = document.getElementById('inspector-code-input');
+      if (!input || !input.value.trim()) return;
+
+      const newCode = input.value.trim();
+      selectedBrickItem.def.code = newCode;
+      selectedBrickItem.def.label = newCode;
+
+      playSnapSound(1.3);
+      logConsole(`[Tuğla Güncellendi]: ${newCode}`);
+      updateCodeAndUI();
+    }
+
+    function quickRenameVar(newName) {
+      if (!selectedBrickItem) return;
+      const input = document.getElementById('inspector-code-input');
+      const currentCode = selectedBrickItem.def.code || input.value;
+
+      // Smart replace variable names
+      const replaced = currentCode.replace(/\b(sayac|skor|can|puan|hiz|altin|x|i)\b/g, newName);
+      input.value = replaced;
+      saveInspectorCode();
+    }
+
+    function deleteSelectedBrick() {
+      if (!selectedBrickItem) return;
+      const idx = placedBricks.indexOf(selectedBrickItem);
+      if (idx !== -1) {
+        legoTowerGroup.remove(selectedBrickItem.mesh);
+        placedBricks.splice(idx, 1);
+        playSnapSound(0.7);
+        logConsole(`[Tuğla Kaldırıldı]: ${selectedBrickItem.def.label}`);
+        deselectBrick();
+        updateCodeAndUI();
+      }
+    }
+
+    /**
+     * Dynamically generates a brand new custom variable Lego brick set!
+     */
+    function createCustomVariableBrick() {
+      const kind = document.getElementById('new-var-kind').value;
+      const rawName = document.getElementById('new-var-name').value.trim();
+      const rawVal = document.getElementById('new-var-val').value.trim() || '0';
+
+      const varName = rawName.replace(/[^a-zA-Z0-9_$]/g, '');
+      if (!varName) {
+        return alert('Lütfen geçerli bir değişken ismi girin! (örn: skor, can, hiz)');
+      }
+
+      const declId = `custom_decl_${varName}`;
+      const exprId = `custom_expr_${varName}`;
+      const logId = `custom_log_${varName}`;
+      const retId = `custom_ret_${varName}`;
+
+      // 1. Register in BRICK_DEFS
+      BRICK_DEFS[declId] = {
+        category: 'decl',
+        label: `${kind} ${varName} = ${rawVal};`,
+        color: 0xf59e0b,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: `${kind} ${varName} = ${rawVal};`
+      };
+
+      BRICK_DEFS[exprId] = {
+        category: 'expr',
+        label: `${varName} += 1;`,
+        color: 0x10b981,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: `${varName} += 1;`
+      };
+
+      BRICK_DEFS[logId] = {
+        category: 'expr',
+        label: `console.log("${varName}: " + ${varName});`,
+        color: 0x0d9488,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: `console.log("${varName}: " + ${varName});`
+      };
+
+      BRICK_DEFS[retId] = {
+        category: 'term',
+        label: `return ${varName};`,
+        color: 0xef4444,
+        width: 4,
+        depth: 2,
+        height: 0.6,
+        code: `return ${varName};`
+      };
+
+      // 2. Append cards to tray panels
+      const declContainer = document.getElementById('decl-bricks-container');
+      if (declContainer) {
+        const card = document.createElement('div');
+        card.className = 'brick-card decl';
+        card.setAttribute('onclick', `selectToolBrick('${declId}', this)`);
+        card.setAttribute('ondblclick', `addBrick('${declId}')`);
+        card.innerHTML = `
+          <span class="brick-card-title">${kind} ${varName} = ${rawVal};</span>
+          <span class="brick-pill" style="color: var(--neon-cyan); border-color: var(--neon-cyan);">ÖZEL</span>
+        `;
+        declContainer.prepend(card);
+        selectToolBrick(declId, card);
+      }
+
+      const exprContainer = document.getElementById('expr-bricks-container');
+      if (exprContainer) {
+        const exprCard = document.createElement('div');
+        exprCard.className = 'brick-card expr';
+        exprCard.setAttribute('onclick', `selectToolBrick('${exprId}', this)`);
+        exprCard.setAttribute('ondblclick', `addBrick('${exprId}')`);
+        exprCard.innerHTML = `
+          <span class="brick-card-title">${varName} += 1;</span>
+          <span class="brick-pill">+1</span>
+        `;
+        exprContainer.prepend(exprCard);
+      }
+
+      const termContainer = document.getElementById('term-bricks-container');
+      if (termContainer) {
+        const retCard = document.createElement('div');
+        retCard.className = 'brick-card term';
+        retCard.setAttribute('onclick', `selectToolBrick('${retId}', this)`);
+        retCard.setAttribute('ondblclick', `addBrick('${retId}')`);
+        retCard.innerHTML = `
+          <span class="brick-card-title">return ${varName};</span>
+          <span class="brick-pill">RETURN</span>
+        `;
+        termContainer.prepend(retCard);
+      }
+
+      playSnapSound(1.4);
+      logConsole(`\x1b[33m[Yeni Değişken Tuğlası Üretildi]:\x1b[0m "${kind} ${varName} = ${rawVal};" tuğlası seçildi, masaya koyabilirsiniz!`);
+    }
+
+    /**
+     * Dynamically generates a brand new custom Control Flow (for / if / while) brick!
+     */
+    function createCustomControlBrick() {
+      const type = document.getElementById('new-ctrl-type').value;
+      const rawExpr = document.getElementById('new-ctrl-expr').value.trim();
+
+      if (!rawExpr) return alert('Lütfen bir koşul veya döngü ifadesi yazın!');
+
+      let code = '';
+      let label = '';
+      if (type === 'for') {
+        if (rawExpr.startsWith('for')) {
+          code = rawExpr.endsWith('{') ? rawExpr : rawExpr + ' {';
+          label = rawExpr.replace('{', '').trim();
+        } else if (rawExpr.includes('<') || rawExpr.includes('=')) {
+          code = `for (let i = 0; ${rawExpr}; i++) {`;
+          label = `for (let i = 0; ${rawExpr}; i++)`;
+        } else {
+          code = `for (let i = 0; i < ${rawExpr}; i++) {`;
+          label = `for (let i = 0; i < ${rawExpr}; i++)`;
+        }
+      } else if (type === 'if') {
+        const cond = rawExpr.startsWith('if') ? rawExpr : `if (${rawExpr})`;
+        code = cond.endsWith('{') ? cond : cond + ' {';
+        label = cond.replace('{', '').trim();
+      } else if (type === 'while') {
+        const cond = rawExpr.startsWith('while') ? rawExpr : `while (${rawExpr})`;
+        code = cond.endsWith('{') ? cond : cond + ' {';
+        label = cond.replace('{', '').trim();
+      }
+
+      const ctrlId = `custom_ctrl_${Date.now()}`;
+      BRICK_DEFS[ctrlId] = {
+        category: 'control',
+        label: label,
+        color: 0x3b82f6,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: code
+      };
+
+      const container = document.getElementById('control-bricks-container');
+      if (container) {
+        const card = document.createElement('div');
+        card.className = 'brick-card control';
+        card.setAttribute('onclick', `selectToolBrick('${ctrlId}', this)`);
+        card.setAttribute('ondblclick', `addBrick('${ctrlId}')`);
+        card.innerHTML = `
+          <span class="brick-card-title">${label}</span>
+          <span class="brick-pill">${type.toUpperCase()}</span>
+        `;
+        container.prepend(card);
+        selectToolBrick(ctrlId, card);
+      }
+
+      playSnapSound(1.4);
+      logConsole(`\x1b[34m[Yeni Akış Tuğlası Üretildi]:\x1b[0m "${label}" tuğlası seçildi, masaya koyabilirsiniz!`);
+    }
+
+    /**
+     * Dynamically generates custom Function Definition and Function Call brick pair!
+     */
+    function createCustomFunctionBrick() {
+      const rawName = document.getElementById('new-func-name').value.trim();
+      const rawParam = document.getElementById('new-func-param').value.trim();
+
+      const funcName = rawName.replace(/[^a-zA-Z0-9_$]/g, '');
+      if (!funcName) return alert('Lütfen geçerli bir fonksiyon adı girin! (örn: saldir, zipla)');
+
+      const funcId = `custom_fn_${funcName}`;
+      const callId = `custom_call_${funcName}`;
+
+      const paramDecl = rawParam ? rawParam : '';
+      const paramVal = rawParam ? '50' : '';
+
+      BRICK_DEFS[funcId] = {
+        category: 'decl',
+        label: `function ${funcName}(${paramDecl})`,
+        color: 0x8b5cf6,
+        width: 6,
+        depth: 2,
+        height: 1.2,
+        code: `function ${funcName}(${paramDecl}) {\n  let sonuc = ${paramVal || '42'};`
+      };
+
+      BRICK_DEFS[callId] = {
+        category: 'dom',
+        label: `return ${funcName}(${paramVal});`,
+        color: 0xa855f7,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: `return ${funcName}(${paramVal});`
+      };
+
+      const container = document.getElementById('dom-bricks-container');
+      if (container) {
+        const fnCard = document.createElement('div');
+        fnCard.className = 'brick-card dom';
+        fnCard.setAttribute('onclick', `selectToolBrick('${funcId}', this)`);
+        fnCard.setAttribute('ondblclick', `addBrick('${funcId}')`);
+        fnCard.innerHTML = `
+          <span class="brick-card-title">function ${funcName}(${paramDecl})</span>
+          <span class="brick-pill">FUNC</span>
+        `;
+        container.prepend(fnCard);
+
+        const callCard = document.createElement('div');
+        callCard.className = 'brick-card dom';
+        callCard.setAttribute('onclick', `selectToolBrick('${callId}', this)`);
+        callCard.setAttribute('ondblclick', `addBrick('${callId}')`);
+        callCard.innerHTML = `
+          <span class="brick-card-title">return ${funcName}(${paramVal});</span>
+          <span class="brick-pill">CALL</span>
+        `;
+        container.prepend(callCard);
+
+        selectToolBrick(funcId, fnCard);
+      }
+
+      playSnapSound(1.4);
+      logConsole(`\x1b[35m[Fonksiyon & Çağrı Üretildi]:\x1b[0m "function ${funcName}()" ve "${funcName}()" tuğlaları eklendi!`);
+    }
+
+    /**
+     * Dynamically generates custom Expression / Math brick
+     */
+    function createCustomExpressionDirect() {
+      const raw = document.getElementById('new-expr-code').value.trim();
+      if (!raw) return alert('Lütfen bir işlem veya ifade yazın!');
+
+      const exprCode = raw.endsWith(';') ? raw : raw + ';';
+      const exprId = `custom_math_${Date.now()}`;
+
+      BRICK_DEFS[exprId] = {
+        category: 'expr',
+        label: exprCode,
+        color: 0x10b981,
+        width: 4,
+        depth: 2,
+        height: 1.2,
+        code: exprCode
+      };
+
+      const container = document.getElementById('expr-bricks-container');
+      if (container) {
+        const card = document.createElement('div');
+        card.className = 'brick-card expr';
+        card.setAttribute('onclick', `selectToolBrick('${exprId}', this)`);
+        card.setAttribute('ondblclick', `addBrick('${exprId}')`);
+        card.innerHTML = `
+          <span class="brick-card-title">${exprCode}</span>
+          <span class="brick-pill">MATH</span>
+        `;
+        container.prepend(card);
+        selectToolBrick(exprId, card);
+      }
+
+      playSnapSound(1.4);
+      logConsole(`\x1b[32m[Yeni İşlem Tuğlası Üretildi]:\x1b[0m "${exprCode}" tuğlası masaya konulmaya hazır!`);
+    }
+
+    /**
+     * Dynamically generates custom Return brick
+     */
+    function createCustomReturnDirect() {
+      const raw = document.getElementById('new-return-val').value.trim();
+      if (!raw) return alert('Lütfen döndürülecek bir değer yazın!');
+
+      const retCode = raw.startsWith('return') ? (raw.endsWith(';') ? raw : raw + ';') : `return ${raw};`;
+      const retId = `custom_ret_${Date.now()}`;
+
+      BRICK_DEFS[retId] = {
+        category: 'term',
+        label: retCode,
+        color: 0xef4444,
+        width: 4,
+        depth: 2,
+        height: 0.6,
+        code: retCode
+      };
+
+      const container = document.getElementById('term-bricks-container');
+      if (container) {
+        const card = document.createElement('div');
+        card.className = 'brick-card term';
+        card.setAttribute('onclick', `selectToolBrick('${retId}', this)`);
+        card.setAttribute('ondblclick', `addBrick('${retId}')`);
+        card.innerHTML = `
+          <span class="brick-card-title">${retCode}</span>
+          <span class="brick-pill">RETURN</span>
+        `;
+        container.prepend(card);
+        selectToolBrick(retId, card);
+      }
+
+      playSnapSound(1.4);
+      logConsole(`\x1b[31m[Yeni Return Tuğlası Üretildi]:\x1b[0m "${retCode}" tuğlası seçildi!`);
+    }
+
+    /**
+     * Quick Template Setter for Inspector
+     */
+    function quickSetTemplate(tplCode) {
+      if (!selectedBrickItem) return;
+      const input = document.getElementById('inspector-code-input');
+      if (input) {
+        input.value = tplCode;
+        saveInspectorCode();
+      }
+    }
+
+    /**
+     * Add a Lego brick at any specified (X, Y, Z) coordinate
+     */
+    function addBrickAt(brickId, posX = 0, posY = null, posZ = 0, animateDrop = true) {
+      const def = BRICK_DEFS[brickId];
+      if (!def) return;
+
+      const mesh = create3DLegoBrick(def);
+
+      let yPos = posY;
+      if (yPos === null) {
+        const colBricks = placedBricks.filter(b =>
+          Math.abs(b.mesh.position.x - posX) < 1.5 && Math.abs(b.mesh.position.z - posZ) < 1.5
+        );
+        if (colBricks.length > 0) {
+          const topBrick = colBricks.reduce((h, b) => b.mesh.position.y > h.mesh.position.y ? b : h);
+          yPos = topBrick.mesh.position.y + topBrick.def.height / 2 + def.height / 2;
+        } else {
+          yPos = def.height / 2;
+        }
+      }
+
+      mesh.position.set(posX, animateDrop ? yPos + 4 : yPos, posZ);
+      legoTowerGroup.add(mesh);
+
+      // Clone def so individual placed brick code/label can be modified independently!
+      const clonedDef = { ...def };
+      const placedItem = { id: brickId, def: clonedDef, mesh };
+      placedBricks.push(placedItem);
+
+      playSnapSound(1.0 + (placedBricks.length * 0.04));
+
+      if (animateDrop) {
+        const startTime = performance.now();
+        const duration = 200;
+        const startY = yPos + 4;
+        function animateDropFrame() {
+          const now = performance.now();
+          const progress = Math.min((now - startTime) / duration, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          mesh.position.y = startY + (yPos - startY) * ease;
+          if (progress < 1) {
+            requestAnimationFrame(animateDropFrame);
+          } else {
+            mesh.position.y = yPos;
+          }
+        }
+        requestAnimationFrame(animateDropFrame);
+      }
+
+      updateCodeAndUI();
+      return placedItem;
+    }
+
+    function addBrick(brickId, animateDrop = true) {
+      return addBrickAt(brickId, 0, null, 0, animateDrop);
+    }
+
+    /**
+     * Clear all Lego bricks
+     */
+    function clearLegoTower() {
+      deselectTool();
+      deselectBrick();
+      if (legoTowerGroup && legoTowerGroup.children) {
+        while (legoTowerGroup.children.length > 0) {
+          legoTowerGroup.remove(legoTowerGroup.children[0]);
+        }
+        legoTowerGroup.rotation.set(0, 0, 0);
+      }
+      placedBricks = [];
+      updateCodeAndUI();
+      playSnapSound(0.7);
+      logConsole("[Lego Masası Temizlendi] Yeni tuğlalar ekleyebilirsiniz.");
+    }
+
+    /**
+     * Spatially sorts placed bricks into logical AST execution order:
+     * - Columns ordered Left-to-Right (X) and Back-to-Front (Z)
+     * - Within each column: Bottom-to-Top (Y ascending)
+     */
+    function getSortedBricks() {
+      return [...placedBricks].sort((a, b) => {
+        if (Math.abs(a.mesh.position.x - b.mesh.position.x) > 1.2) {
+          return a.mesh.position.x - b.mesh.position.x;
+        }
+        if (Math.abs(a.mesh.position.z - b.mesh.position.z) > 1.2) {
+          return a.mesh.position.z - b.mesh.position.z;
+        }
+        return a.mesh.position.y - b.mesh.position.y;
+      });
+    }
+
+    /**
+     * Compiles placed Lego bricks into executable JavaScript code
+     */
+    function updateCodeAndUI() {
+      document.getElementById('brick-count-badge').innerText = `${placedBricks.length} TUĞLA`;
+
+      if (placedBricks.length === 0) {
+        document.getElementById('compiled-code').innerText = '// Masaya bir lego tuğlası ekleyin...';
+        return;
+      }
+
+      const sorted = getSortedBricks();
+      let code = '// === CYBER LEGO AST DERLENMİŞ KOD ===\n\n';
+      let indentLevel = 0;
+
+      sorted.forEach((item) => {
+        const c = item.def.code;
+        if (c === '}') {
+          indentLevel = Math.max(0, indentLevel - 1);
+        }
+        const indent = '  '.repeat(indentLevel);
+        code += indent + c + '\n';
+
+        if (c.includes('{')) {
+          indentLevel++;
+        }
+      });
+
+      while (indentLevel > 0) {
+        indentLevel--;
+        code += '  '.repeat(indentLevel) + '}\n';
+      }
+
+      document.getElementById('compiled-code').innerText = code;
+    }
+
+    /**
+     * Advanced Smart REPL Runner:
+     * - Triggers 3D visual neon pulse along the Lego tower!
+     * - Captures console.log, return value, and all scope variables!
+     */
+    async function runLegoCode() {
+      const code = document.getElementById('compiled-code').innerText;
+      if (placedBricks.length === 0) return alert('Lütfen masaya önce birkaç lego tuğlası ekleyin!');
+
+      logConsole(`\n\x1b[35m=== PROGRAM BAŞLATILDI (${placedBricks.length} Tuğla) ===\x1b[0m`);
+      const startTime = performance.now();
+
+      // 1. Visual 3D Brick Highlighting Sequence (in execution order)
+      const sorted = getSortedBricks();
+      for (let i = 0; i < sorted.length; i++) {
+        const item = sorted[i];
+        if (item.mesh && item.mesh.userData.bodyMesh) {
+          const mat = item.mesh.userData.bodyMesh.material;
+          mat.emissiveIntensity = 0.9;
+          playPulseBeep(600 + i * 80);
+          await new Promise(r => setTimeout(r, 100));
+          mat.emissiveIntensity = 0.08;
+        }
+      }
+
+      // 2. Wrap code to capture both Return Value and All Scope Variables!
+      // Dynamically extract all declared variable names for live inspector:
+      const varMatches = [...code.matchAll(/\b(?:let|const|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g)];
+      const declaredVars = [...new Set(varMatches.map(m => m[1]))];
+      const defaultVars = ['sayac', 'skor', 'can', 'puan', 'hiz', 'altin', 'mesaj', 'liste', 'PI'];
+      const allCheckVars = [...new Set([...declaredVars, ...defaultVars])];
+      const scopeEntries = allCheckVars
+        .map(v => `${JSON.stringify(v)}: (typeof ${v} !== 'undefined' ? ${v} : undefined)`)
+        .join(',\n            ');
+
+      const wrappedCode = `
+        const __capturedLogs = [];
+        const __origLog = console.log;
+        console.log = (...args) => {
+          __capturedLogs.push(args.join(' '));
+          __origLog.apply(console, args);
+        };
+
+        let __userReturn;
+        try {
+          __userReturn = (function() {
+            ${code}
+          })();
+        } finally {
+          console.log = __origLog;
+        }
+
+        return {
+          userReturn: __userReturn,
+          logs: __capturedLogs,
+          scope: {
+            ${scopeEntries}
+          }
+        };
+      `;
+
+      try {
+        const evalFn = new Function(wrappedCode);
+        const result = evalFn();
+        const duration = (performance.now() - startTime).toFixed(1);
+        document.getElementById('exec-time-badge').innerText = `${duration} ms`;
+
+        // Output Logs
+        if (result.logs && result.logs.length > 0) {
+          result.logs.forEach(l => logConsole(`> ${l}`));
+        }
+
+        // Output Explicit Return Value
+        if (result.userReturn !== undefined) {
+          const retStr = typeof result.userReturn === 'object' ? JSON.stringify(result.userReturn) : result.userReturn;
+          logConsole(`\x1b[32m[Dönen Değer (Return)]:\x1b[0m \x1b[1m${retStr}\x1b[0m`);
+        } else {
+          // If no return statement, display final scope variables!
+          const activeVars = Object.entries(result.scope || {})
+            .filter(([_, val]) => val !== undefined)
+            .map(([k, v]) => `${k} = ${JSON.stringify(v)}`)
+            .join(', ');
+
+          if (activeVars) {
+            logConsole(`\x1b[36m[Son Değişken Durumu]:\x1b[0m { ${activeVars} }`);
+            logConsole(`(İpucu: Kırmızı "return" tuğlası eklerseniz spesifik bir değeri döndürebilirsiniz)`);
+          } else {
+            logConsole(`[Program Çalıştı] Açık bir return değeri yok.`);
+          }
+        }
+
+        logConsole(`✔ Başarıyla tamamlandı (${duration}ms)`);
+      } catch (err) {
+        logConsole(`\x1b[31m✖ Çalışma Hatası: ${err.message}\x1b[0m`);
+      }
+    }
+
+    function logConsole(msg) {
+      const box = document.getElementById('runtime-console');
+      box.innerText += '\n' + msg;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    /**
+     * Pre-built Demo Sets
+     */
+    function buildPreset(name) {
+      clearLegoTower();
+
+      if (name === 'counter') {
+        setTimeout(() => addBrick('let_counter'), 50);
+        setTimeout(() => addBrick('for_loop'), 200);
+        setTimeout(() => addBrick('increment'), 350);
+        setTimeout(() => addBrick('log'), 500);
+        setTimeout(() => addBrick('end_block'), 650);
+        setTimeout(() => addBrick('return'), 800);
+        logConsole("[Hazır Set Yüklendi] Sayıcı Döngüsü Kulesi (1'den 5'e)");
+      } else if (name === 'calc') {
+        setTimeout(() => addBrick('function_def'), 50);
+        setTimeout(() => addBrick('multiply'), 200);
+        setTimeout(() => addBrick('log'), 350);
+        setTimeout(() => addBrick('return'), 500);
+        setTimeout(() => addBrick('end_block'), 650);
+        setTimeout(() => addBrick('call_func'), 800);
+        logConsole("[Hazır Set Yüklendi] Fonksiyonlu Hesaplayıcı");
+      } else if (name === 'array_ops') {
+        setTimeout(() => addBrick('let_counter'), 50);
+        setTimeout(() => addBrick('let_array'), 200);
+        setTimeout(() => addBrick('for_loop'), 350);
+        setTimeout(() => addBrick('increment'), 500);
+        setTimeout(() => addBrick('push_array'), 650);
+        setTimeout(() => addBrick('end_block'), 800);
+        setTimeout(() => addBrick('return_array'), 950);
+        logConsole("[Hazır Set Yüklendi] Siber Dizi & Push Kulesi");
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls) controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = () => {
+      init3D();
+      buildPreset('counter');
+    };
+  </script>
+</body>
+</html>

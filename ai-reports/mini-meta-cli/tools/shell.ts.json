@@ -1,0 +1,52 @@
+{
+  "file": "mini-meta-cli/tools/shell.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 37,
+    "jsx": false,
+    "imports": 3,
+    "exports": 1,
+    "functions": 1,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "child_process ve türleri kullanarak createShellTool entity'sini oluşturur."
+  },
+  "graph": {
+    "dependencies": [
+      "child_process",
+      "mini-meta-cli/types.ts",
+      "mini-meta-cli/permissions.ts"
+    ],
+    "calls": [
+      "trim",
+      "String",
+      "checkShellCommand",
+      "log",
+      "execSync",
+      "filter",
+      "join"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "createShellTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "5b55ceb8-7d40-4bce-8026-06f9e81dbf51",
+    "fileHash": "70ca3c32036b9e119958bd98e7f17b6a",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358365912
+}

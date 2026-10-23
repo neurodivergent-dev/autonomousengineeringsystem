@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetaFrame - Autonomous Multi-Agent Spatial Workforce</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #02040a;
+      color: #00F0FF;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    /* Subtle CAD Grid overlay */
+    .cad-grid-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, transparent 40%, rgba(2, 4, 10, 0.7) 90%),
+                  linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      pointer-events: none; z-index: 5;
+    }
+
+    /* Top Command Header */
+    .topbar {
+      position: absolute; top: 16px; left: 20px; right: 20px; height: 68px;
+      background: rgba(4, 8, 18, 0.9); backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 4px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; z-index: 10;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.15);
+      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+    }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .brand-logo {
+      font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900;
+      color: #10B981; text-shadow: 0 0 14px #10B981; letter-spacing: 2px;
+      background: rgba(16, 185, 129, 0.12); padding: 4px 10px; border: 1px solid #10B981; border-radius: 3px;
+    }
+    .brand-text h1 {
+      font-family: 'Orbitron', sans-serif; font-size: 13.5px; font-weight: 800;
+      color: #00F0FF; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); letter-spacing: 1.5px;
+    }
+    .brand-text p { font-size: 9.5px; color: #94A3B8; letter-spacing: 0.5px; }
+
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .cyber-btn {
+      background: rgba(0, 240, 255, 0.08); border: 1px solid #00F0FF;
+      color: #00F0FF; padding: 7px 13px; font-family: 'Orbitron', sans-serif;
+      font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+      letter-spacing: 1px; transition: all 0.2s; border-radius: 2px;
+    }
+    .cyber-btn:hover { background: #00F0FF; color: #000; box-shadow: 0 0 20px #00F0FF; transform: translateY(-1px); }
+    .cyber-btn.active { background: #00F0FF; color: #000; box-shadow: 0 0 25px #00F0FF; }
+    .cyber-btn.emerald { border-color: #10B981; color: #10B981; background: rgba(16, 185, 129, 0.12); }
+    .cyber-btn.emerald:hover { background: #10B981; color: #000; box-shadow: 0 0 20px #10B981; }
+    .cyber-btn.amber { border-color: #F59E0B; color: #F59E0B; background: rgba(245, 158, 11, 0.12); }
+    .cyber-btn.amber:hover { background: #F59E0B; color: #000; box-shadow: 0 0 20px #F59E0B; }
+
+    /* Left Workforce Squad Panel */
+    .squad-panel {
+      position: absolute; left: 20px; top: 100px; width: 320px;
+      background: rgba(4, 8, 18, 0.92); backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px; padding: 14px;
+      z-index: 10; display: flex; flex-direction: column; gap: 10px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    }
+    .panel-title {
+      font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 800;
+      color: #94A3B8; letter-spacing: 1.5px; border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .agent-card {
+      background: rgba(10, 16, 30, 0.7); border: 1px solid rgba(0, 240, 255, 0.2);
+      padding: 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .agent-card:hover { border-color: #00F0FF; background: rgba(0, 240, 255, 0.08); transform: translateX(3px); }
+    .agent-card.active { border-color: #10B981; background: rgba(16, 185, 129, 0.15); box-shadow: 0 0 16px rgba(16, 185, 129, 0.3); }
+    .agent-header { display: flex; align-items: center; justify-content: space-between; }
+    .agent-name { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 800; color: #FFF; }
+    .agent-badge { font-size: 8px; font-weight: 800; padding: 2px 6px; border-radius: 2px; }
+    .agent-status { font-size: 9px; color: #64748B; display: flex; align-items: center; gap: 6px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #64748B; }
+    .status-dot.active { background: #10B981; box-shadow: 0 0 8px #10B981; animation: dot-blink 1s infinite alternate; }
+    @keyframes dot-blink { from { opacity: 0.4; } to { opacity: 1; } }
+
+    /* Bottom Interactive Command Bar (Prompt to 3D Execution) */
+    .command-dock {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 720px;
+      background: rgba(4, 8, 20, 0.94); backdrop-filter: blur(28px);
+      border: 1.5px solid rgba(0, 240, 255, 0.4); border-radius: 6px;
+      padding: 12px 18px; z-index: 10; display: flex; flex-direction: column; gap: 8px;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);
+    }
+    .dock-header { display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; }
+    .dock-title { font-family: 'Orbitron', sans-serif; font-weight: 800; color: #00F0FF; letter-spacing: 1px; }
+    .dock-meta { color: #10B981; font-weight: 700; }
+    .command-input-row { display: flex; align-items: center; gap: 10px; }
+    .command-input {
+      flex: 1; background: rgba(2, 4, 10, 0.85); border: 1px solid rgba(0, 240, 255, 0.3);
+      color: #FFF; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      outline: none; border-radius: 3px;
+    }
+    .command-input:focus { border-color: #00F0FF; box-shadow: 0 0 12px rgba(0, 240, 255, 0.4); }
+    .exec-btn {
+      background: linear-gradient(135deg, #059669, #10B981); border: none; color: #FFF;
+      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 10.5px;
+      padding: 9px 18px; cursor: pointer; border-radius: 3px; letter-spacing: 1px;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); transition: all 0.2s;
+    }
+    .exec-btn:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
+
+    .preset-row { display: flex; gap: 8px; align-items: center; }
+    .preset-label { font-size: 8.5px; color: #64748B; font-family: 'Orbitron', sans-serif; }
+    .preset-pill {
+      background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25);
+      color: #94A3B8; font-size: 9px; padding: 3px 8px; border-radius: 2px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-pill:hover { background: rgba(0, 240, 255, 0.2); color: #00F0FF; border-color: #00F0FF; }
+
+    /* Right Mission Live Telemetry & Artifact Inspector */
+    .telemetry-panel {
+      position: absolute; right: 20px; top: 100px; bottom: 20px; width: 360px;
+      background: rgba(4, 8, 18, 0.94); backdrop-filter: blur(28px);
+      border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px; padding: 16px;
+      z-index: 10; display: flex; flex-direction: column; gap: 12px;
+      box-shadow: -15px 0 35px rgba(0,0,0,0.8);
+    }
+    .stage-pipeline { display: flex; flex-direction: column; gap: 8px; }
+    .stage-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+      background: rgba(8, 14, 26, 0.8); border: 1px solid rgba(0, 240, 255, 0.15);
+      border-radius: 4px; font-size: 10px; transition: all 0.25s;
+    }
+    .stage-item.running {
+      border-color: #00F0FF; background: rgba(0, 240, 255, 0.15);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+    }
+    .stage-item.done {
+      border-color: #10B981; background: rgba(16, 185, 129, 0.12);
+    }
+    .stage-num {
+      width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      background: rgba(0, 240, 255, 0.15); font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 9px;
+    }
+    .stage-item.done .stage-num { background: #10B981; color: #000; }
+    .stage-name { flex: 1; font-weight: 700; color: #E2E8F0; }
+    .stage-status { font-size: 8.5px; color: #64748B; font-family: 'Orbitron', sans-serif; }
+    .stage-item.running .stage-status { color: #00F0FF; }
+    .stage-item.done .stage-status { color: #10B981; }
+
+    .artifact-log {
+      flex: 1; background: #010206; border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 4px; padding: 12px; overflow-y: auto; font-size: 10px;
+      line-height: 1.5; color: #94A3B8; font-family: 'JetBrains Mono', monospace;
+    }
+    .log-line { margin-bottom: 6px; }
+    .log-line.cyan { color: #00F0FF; }
+    .log-line.green { color: #10B981; }
+    .log-line.orange { color: #F59E0B; }
+    .log-line.pink { color: #EC4899; }
+  </style>
+</head>
+<body>
+  <div class="cad-grid-overlay"></div>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation Bar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">MF</div>
+      <div class="brand-text">
+        <h1>AUTONOMOUS ENGINEERING WORKFORCE</h1>
+        <p>PHYSICAL 3D MULTI-AGENT ARCHITECTURE & VERIFICATION RUNTIME</p>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="cyber-btn emerald" onclick="triggerPresetMission('biometric')">
+        <span>⚡</span> <span>Add Biometric Penthouse</span>
+      </button>
+      <button class="cyber-btn amber" onclick="triggerPresetMission('vector')">
+        <span>🧠</span> <span>Weld Vector AI Engine</span>
+      </button>
+      <a href="/surf" class="cyber-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #EC4899; color: #EC4899; background: rgba(236, 72, 153, 0.15);">
+        <span>🚇</span> <span>SUBWAY AST [RUN]</span>
+      </a>
+      <a href="/factory" class="cyber-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #F59E0B; color: #F59E0B; background: rgba(245, 158, 11, 0.15);">
+        <span>🏭</span> <span>CODE FACTORY</span>
+      </a>
+      <a href="/city" class="cyber-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+        <span>🌆</span> <span>Cyberpunk City</span>
+      </a>
+      <button class="cyber-btn" onclick="resetWorkforceCam()">
+        <span>🎯</span> <span>Reset View</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Left Workforce Squad Panel -->
+  <div class="squad-panel">
+    <div class="panel-title">
+      <span>// AGENT DRONE SQUADRON</span>
+      <span style="color: #10B981;">4 ONLINE</span>
+    </div>
+
+    <div class="agent-card" id="card-orion" onclick="followAgent('orion')">
+      <div class="agent-header">
+        <span class="agent-name">🛰️ ORION-01 // DISCOVERY</span>
+        <span class="agent-badge" style="background: rgba(16, 185, 129, 0.2); color: #10B981; border: 1px solid #10B981;">SCOUT</span>
+      </div>
+      <div class="agent-status">
+        <div class="status-dot active" id="dot-orion"></div>
+        <span id="stat-orion">IDLE · SCANNING SYSTEM SCOPE</span>
+      </div>
+    </div>
+
+    <div class="agent-card" id="card-daedalus" onclick="followAgent('daedalus')">
+      <div class="agent-header">
+        <span class="agent-name">🏛️ DAEDALUS-02 // ARCHITECT</span>
+        <span class="agent-badge" style="background: rgba(59, 130, 246, 0.2); color: #3B82F6; border: 1px solid #3B82F6;">CAD PROJ</span>
+      </div>
+      <div class="agent-status">
+        <div class="status-dot" id="dot-daedalus"></div>
+        <span id="stat-daedalus">READY · HOLOGRAPHIC BLUEPRINTS</span>
+      </div>
+    </div>
+
+    <div class="agent-card" id="card-vulcan" onclick="followAgent('vulcan')">
+      <div class="agent-header">
+        <span class="agent-name">⚡ VULCAN-03 // PLANNER</span>
+        <span class="agent-badge" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; border: 1px solid #F59E0B;">CONSTRUCT</span>
+      </div>
+      <div class="agent-status">
+        <div class="status-dot" id="dot-vulcan"></div>
+        <span id="stat-vulcan">READY · PLASMA PIPELINE WELDER</span>
+      </div>
+    </div>
+
+    <div class="agent-card" id="card-aegis" onclick="followAgent('aegis')">
+      <div class="agent-header">
+        <span class="agent-name">🛡️ AEGIS-04 // GATE WARDEN</span>
+        <span class="agent-badge" style="background: rgba(236, 72, 153, 0.2); color: #EC4899; border: 1px solid #EC4899;">VERIFIER</span>
+      </div>
+      <div class="agent-status">
+        <div class="status-dot" id="dot-aegis"></div>
+        <span id="stat-aegis">READY · 6-GATE LASER STAMP</span>
+      </div>
+    </div>
+
+    <!-- Mini Telemetry -->
+    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 8.5px; color: #64748B;">
+      <div>ENGINE: METAFRAME AUTONOMOUS WORKFORCE</div>
+      <div>TOKEN COST: 0 TOKENS (DETERMINISTIC SPATIAL DISPATCH)</div>
+    </div>
+  </div>
+
+  <!-- Bottom Command Dock -->
+  <div class="command-dock">
+    <div class="dock-header">
+      <span class="dock-title">⚡ METAFRAME DISPATCH CONSOLE // AUTONOMOUS WORK ORDER</span>
+      <span class="dock-meta">STATUS: READY FOR INSTRUCTION</span>
+    </div>
+    <div class="command-input-row">
+      <input type="text" id="mission-prompt" class="command-input" placeholder="metaframe plan 'Offline Biometric AES Vault Enclosure'..." value="metaframe plan 'Offline Biometric AES Vault Enclosure'">
+      <button class="exec-btn" onclick="executeCustomMission()">DISPATCH SQUADRON</button>
+    </div>
+    <div class="preset-row">
+      <span class="preset-label">QUICK MISSIONS:</span>
+      <div class="preset-pill" onclick="setMissionInput('Offline Biometric AES Vault Enclosure')">1. Biometric Vault Penthouse</div>
+      <div class="preset-pill" onclick="setMissionInput('Semantic AI Vector Search Pipeline')">2. Semantic Vector Pipeline</div>
+      <div class="preset-pill" onclick="setMissionInput('Supabase Realtime WebSocket Delta Sync')">3. Realtime Delta Sync</div>
+    </div>
+  </div>
+
+  <!-- Right Telemetry & Execution Pipeline Artifacts -->
+  <div class="telemetry-panel">
+    <div class="panel-title">
+      <span>// AUTONOMOUS MISSION PIPELINE</span>
+      <span id="mission-state-badge" style="color: #64748B;">STANDBY</span>
+    </div>
+
+    <div class="stage-pipeline">
+      <div class="stage-item" id="stage-discovery">
+        <div class="stage-num">1</div>
+        <div class="stage-name">Product Discovery</div>
+        <div class="stage-status" id="status-s1">WAITING</div>
+      </div>
+      <div class="stage-item" id="stage-architecture">
+        <div class="stage-num">2</div>
+        <div class="stage-name">Solutions Architecture</div>
+        <div class="stage-status" id="status-s2">WAITING</div>
+      </div>
+      <div class="stage-item" id="stage-planner">
+        <div class="stage-num">3</div>
+        <div class="stage-name">Implementation Planner</div>
+        <div class="stage-status" id="status-s3">WAITING</div>
+      </div>
+      <div class="stage-item" id="stage-verification">
+        <div class="stage-num">4</div>
+        <div class="stage-name">Deterministic 6-Gates</div>
+        <div class="stage-status" id="status-s4">WAITING</div>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top: 4px;">
+      <span>// REAL-TIME AGENT TELEMETRY LOG</span>
+    </div>
+    <div class="artifact-log" id="artifact-log">
+      <div class="log-line green">[SYSTEM] Autonomous Engineering Workforce online.</div>
+      <div class="log-line cyan">[ORION-01] Scouting radar initialized. Standing by.</div>
+      <div class="log-line orange">[DAEDALUS-02] Holographic CAD projector calibrated.</div>
+      <div class="log-line orange">[VULCAN-03] Plasma welding arc ready.</div>
+      <div class="log-line pink">[AEGIS-04] Verification gate laser curtains armed.</div>
+      <div class="log-line" style="color: #64748B;">Awaiting mission dispatch command...</div>
+    </div>
+  </div>
+
+  <script>
+    // --- THREE.JS SCENE SETUP ---
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x02040a, 0.008);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(28, 30, 40);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2.05;
+    controls.target.set(0, 8, 0);
+
+    // Unreal Bloom
+    let composer = null;
+    try {
+      const renderScene = new THREE.RenderPass(scene, camera);
+      const bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        1.25, 0.35, 0.25
+      );
+      composer = new THREE.EffectComposer(renderer);
+      composer.addPass(renderScene);
+      composer.addPass(bloomPass);
+    } catch(e) {
+      console.warn("Bloom setup fallback:", e);
+    }
+
+    // --- LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0x0a1224, 1.5);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0x00F0FF, 1.2);
+    keyLight.position.set(20, 40, 20);
+    scene.add(keyLight);
+
+    // --- REFLECTIVE OBSIDIAN CAD GROUND ---
+    const groundGeo = new THREE.PlaneGeometry(120, 120);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x030611,
+      roughness: 0.1,
+      metalness: 0.9
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const hexGrid = new THREE.GridHelper(120, 60, 0x00F0FF, 0x0F172A);
+    hexGrid.position.y = 0.02;
+    scene.add(hexGrid);
+
+    // --- HIGH-TECH WIREFRAME TOWERS ---
+    const TOWER_SPECS = [
+      { id: 'vault', name: 'Cipher Vault Citadel', x: -10, z: -10, color: 0xF59E0B, floors: 3, h: 4 },
+      { id: 'editor', name: 'Editor Megatower', x: -12, z: 8, color: 0x00F0FF, floors: 4, h: 4 },
+      { id: 'ai', name: 'Neural AI Spire', x: 8, z: -8, color: 0x10B981, floors: 4, h: 4 },
+      { id: 'cloud', name: 'Cloud Skyport', x: 12, z: 8, color: 0x3B82F6, floors: 3, h: 4.5 }
+    ];
+
+    const towerMeshes = [];
+    const towerGroup = new THREE.Group();
+    scene.add(towerGroup);
+
+    TOWER_SPECS.forEach(t => {
+      let currentY = 0;
+      const tGroup = new THREE.Group();
+      tGroup.userData = t;
+
+      for (let i = 0; i < t.floors; i++) {
+        const w = 7.5 - i * 0.4;
+        const d = 7.5 - i * 0.4;
+        const h = t.h;
+
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mat = new THREE.MeshStandardMaterial({
+          color: t.color,
+          roughness: 0.2,
+          metalness: 0.8,
+          transparent: true,
+          opacity: 0.85
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = currentY + h / 2;
+        tGroup.add(mesh);
+
+        // Architectural Wireframe Accent Lines
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: t.color, linewidth: 2 })
+        );
+        edges.position.copy(mesh.position);
+        tGroup.add(edges);
+
+        currentY += h + 0.2;
+      }
+
+      tGroup.position.set(t.x, 0, t.z);
+      tGroup.userData.roofY = currentY;
+      towerGroup.add(tGroup);
+      towerMeshes.push(tGroup);
+    });
+
+    // ==========================================
+    // 🤖 PHYSICAL AUTONOMOUS AGENT MODELS (3D DRONES)
+    // ==========================================
+    const agentGroup = new THREE.Group();
+    scene.add(agentGroup);
+
+    // 1. ORION-01 // PRODUCT DISCOVERY (Scouting drone with radar dome)
+    function createOrionDrone() {
+      const g = new THREE.Group();
+      // Body
+      const bodyGeo = new THREE.CylinderGeometry(0.7, 0.9, 0.4, 8);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x052e16, metalness: 0.9, roughness: 0.2 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      g.add(body);
+
+      // Rotating Radar Dome
+      const domeGeo = new THREE.SphereGeometry(0.45, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+      const domeMat = new THREE.MeshBasicMaterial({ color: 0x10B981, wireframe: true });
+      const dome = new THREE.Mesh(domeGeo, domeMat);
+      dome.position.y = 0.25;
+      g.add(dome);
+      g.userData.radarDome = dome;
+
+      // 4 Rotors
+      const rotorPositions = [[0.9, 0.9], [-0.9, 0.9], [0.9, -0.9], [-0.9, -0.9]];
+      rotorPositions.forEach(p => {
+        const armGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.6, 6);
+        const arm = new THREE.Mesh(armGeo, bodyMat);
+        arm.rotation.z = Math.PI / 2;
+        arm.position.set(p[0] * 0.5, 0, p[1] * 0.5);
+        g.add(arm);
+
+        const rRing = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.03, 6, 16), new THREE.MeshBasicMaterial({ color: 0x10B981 }));
+        rRing.rotation.x = Math.PI / 2;
+        rRing.position.set(p[0], 0.05, p[1]);
+        g.add(rRing);
+      });
+
+      // Scanner Cone (revealed when scouting)
+      const coneGeo = new THREE.CylinderGeometry(0.1, 4.5, 12, 16, 1, true);
+      const coneMat = new THREE.MeshBasicMaterial({ color: 0x10B981, transparent: true, opacity: 0.0, side: THREE.DoubleSide });
+      const cone = new THREE.Mesh(coneGeo, coneMat);
+      cone.position.y = -6;
+      g.add(cone);
+      g.userData.scanCone = cone;
+
+      // Thruster light
+      const tLight = new THREE.PointLight(0x10B981, 2.5, 8);
+      tLight.position.y = -0.3;
+      g.add(tLight);
+
+      g.position.set(-16, 16, 16);
+      g.userData.homePos = new THREE.Vector3(-16, 16, 16);
+      return g;
+    }
+
+    // 2. DAEDALUS-02 // SOLUTIONS ARCHITECT (Quantum Octahedron core with orbiting CAD rings)
+    function createDaedalusDrone() {
+      const g = new THREE.Group();
+      // Octahedral Quantum Levitation Core
+      const coreGeo = new THREE.OctahedronGeometry(0.7, 0);
+      const coreMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, emissive: 0x3B82F6, emissiveIntensity: 0.6, roughness: 0.1 });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      g.add(core);
+      g.userData.core = core;
+
+      // Orbiting CAD Rings
+      const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.03, 8, 32), new THREE.MeshBasicMaterial({ color: 0x3B82F6 }));
+      const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.03, 8, 32), new THREE.MeshBasicMaterial({ color: 0x00F0FF }));
+      ring1.rotation.x = Math.PI / 3;
+      ring2.rotation.y = Math.PI / 4;
+      g.add(ring1);
+      g.add(ring2);
+      g.userData.ring1 = ring1;
+      g.userData.ring2 = ring2;
+
+      // Holographic Projector Beam
+      const projGeo = new THREE.CylinderGeometry(0.1, 5.0, 14, 16, 1, true);
+      const projMat = new THREE.MeshBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+      const proj = new THREE.Mesh(projGeo, projMat);
+      proj.position.y = -7;
+      g.add(proj);
+      g.userData.projBeam = proj;
+
+      const pLight = new THREE.PointLight(0x3B82F6, 3.0, 10);
+      g.add(pLight);
+
+      g.position.set(-6, 20, 18);
+      g.userData.homePos = new THREE.Vector3(-6, 20, 18);
+      return g;
+    }
+
+    // 3. VULCAN-03 // IMPLEMENTATION PLANNER & CONSTRUCTOR (Heavy Industrial Plasma Welder Mech)
+    function createVulcanDrone() {
+      const g = new THREE.Group();
+
+      // Heavy Graphite Armored Hull
+      const hullGeo = new THREE.BoxGeometry(2.0, 0.8, 1.6);
+      const hullMat = new THREE.MeshStandardMaterial({
+        color: 0x1e2433,
+        metalness: 0.85,
+        roughness: 0.25
+      });
+      const hull = new THREE.Mesh(hullGeo, hullMat);
+      g.add(hull);
+
+      // Bright Hazard Orange Reinforcement Plating & Trim
+      const trimMat = new THREE.MeshStandardMaterial({
+        color: 0xF59E0B,
+        emissive: 0xF59E0B,
+        emissiveIntensity: 0.9,
+        metalness: 0.5,
+        roughness: 0.2
+      });
+      const topPlate = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 1.2), trimMat);
+      topPlate.position.y = 0.45;
+      g.add(topPlate);
+
+      // Glowing Magma Fusion Reactor Core (Center Visor/Reactor)
+      const coreGeo = new THREE.SphereGeometry(0.38, 16, 16);
+      const coreMat = new THREE.MeshStandardMaterial({
+        color: 0xFF5500,
+        emissive: 0xFF7700,
+        emissiveIntensity: 2.2,
+        roughness: 0.1
+      });
+      const reactorCore = new THREE.Mesh(coreGeo, coreMat);
+      reactorCore.position.set(0, 0, 0.6);
+      g.add(reactorCore);
+      g.userData.reactorCore = reactorCore;
+
+      // Heavy Industrial Rotary Hazard Beacon on Top
+      const beaconBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.25, 0.2, 12),
+        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 })
+      );
+      beaconBase.position.set(0, 0.6, -0.2);
+      g.add(beaconBase);
+
+      const beaconCap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.18, 0.3, 12),
+        new THREE.MeshStandardMaterial({
+          color: 0xF59E0B,
+          emissive: 0xF59E0B,
+          emissiveIntensity: 2.5,
+          transparent: true,
+          opacity: 0.95
+        })
+      );
+      beaconCap.position.set(0, 0.8, -0.2);
+      g.add(beaconCap);
+      g.userData.beaconCap = beaconCap;
+
+      // Dual High-Intensity Construction Floodlights (Pointing forward & downward)
+      const floodMat = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF,
+        emissive: 0xFFFBEB,
+        emissiveIntensity: 3.5
+      });
+      const floodL = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.3, 12), floodMat);
+      floodL.rotation.x = Math.PI / 3;
+      floodL.position.set(-0.85, 0.1, 0.7);
+      g.add(floodL);
+
+      const floodR = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.3, 12), floodMat);
+      floodR.rotation.x = Math.PI / 3;
+      floodR.position.set(0.85, 0.1, 0.7);
+      g.add(floodR);
+
+      // Real Spotlight illuminating Vulcan and casting a dramatic beam downward
+      const workSpotlight = new THREE.SpotLight(0xFDE68A, 6.0, 30, Math.PI / 4, 0.3, 1.0);
+      workSpotlight.position.set(0, -0.2, 0.8);
+      workSpotlight.target.position.set(0, -15, 6);
+      g.add(workSpotlight);
+      g.add(workSpotlight.target);
+
+      // Omnidirectional Radiant Core Light (Lights up Vulcan's own hull and surrounding space!)
+      const coreAura = new THREE.PointLight(0xF59E0B, 5.5, 18);
+      coreAura.position.set(0, 0.2, 0.8);
+      g.add(coreAura);
+
+      // Heavy Twin Hydraulic Plasma Welding Torches & Arms
+      const armMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9, roughness: 0.2 });
+      [-0.8, 0.8].forEach((xSide) => {
+        // Upper arm segment
+        const armUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.7, 8), armMat);
+        armUpper.rotation.z = xSide * 0.3;
+        armUpper.position.set(xSide, -0.3, 0.2);
+        g.add(armUpper);
+
+        // Lower plasma nozzle
+        const nozzleGeo = new THREE.CylinderGeometry(0.06, 0.14, 0.8, 12);
+        const nozzle = new THREE.Mesh(nozzleGeo, armMat);
+        nozzle.position.set(xSide * 1.05, -0.8, 0.4);
+        g.add(nozzle);
+
+        // Glowing Plasma Nozzle Ring
+        const plasmaRing = new THREE.Mesh(
+          new THREE.TorusGeometry(0.12, 0.04, 8, 16),
+          new THREE.MeshBasicMaterial({ color: 0xFF9900 })
+        );
+        plasmaRing.rotation.x = Math.PI / 2;
+        plasmaRing.position.set(xSide * 1.05, -1.15, 0.4);
+        g.add(plasmaRing);
+      });
+
+      // Twin Ion Jet Thrusters (Rear)
+      const thrusterMat = new THREE.MeshBasicMaterial({ color: 0x00F0FF });
+      [-0.6, 0.6].forEach((xSide) => {
+        const housing = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.22, 0.26, 0.4, 12),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 })
+        );
+        housing.rotation.x = Math.PI / 2;
+        housing.position.set(xSide, 0, -0.9);
+        g.add(housing);
+
+        const flame = new THREE.Mesh(
+          new THREE.ConeGeometry(0.18, 0.6, 12),
+          thrusterMat
+        );
+        flame.rotation.x = -Math.PI / 2;
+        flame.position.set(xSide, 0, -1.25);
+        g.add(flame);
+      });
+
+      // Central Welding Laser Spark Emitter (Revealed during welding)
+      const weldBeamGeo = new THREE.CylinderGeometry(0.06, 0.06, 10, 8);
+      const weldBeamMat = new THREE.MeshBasicMaterial({ color: 0xF59E0B, transparent: true, opacity: 0.0 });
+      const weldBeam = new THREE.Mesh(weldBeamGeo, weldBeamMat);
+      weldBeam.position.set(0, -5, 0.4);
+      g.add(weldBeam);
+      g.userData.weldBeam = weldBeam;
+
+      g.position.set(6, 18, 18);
+      g.userData.homePos = new THREE.Vector3(6, 18, 18);
+      return g;
+    }
+
+    // 4. AEGIS-04 // VERIFICATION GATE WARDEN (Delta-wing inspector with vertical laser curtain)
+    function createAegisDrone() {
+      const g = new THREE.Group();
+      // Sleek Delta Wing
+      const wingShape = new THREE.Shape();
+      wingShape.moveTo(0, 1.2);
+      wingShape.lineTo(1.4, -0.8);
+      wingShape.lineTo(-1.4, -0.8);
+      wingShape.closePath();
+
+      const extrudeSettings = { depth: 0.25, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.05, bevelThickness: 0.05 };
+      const wingGeo = new THREE.ExtrudeGeometry(wingShape, extrudeSettings);
+      const wingMat = new THREE.MeshStandardMaterial({ color: 0x831843, emissive: 0xEC4899, emissiveIntensity: 0.35, roughness: 0.2 });
+      const wing = new THREE.Mesh(wingGeo, wingMat);
+      wing.rotation.x = Math.PI / 2;
+      g.add(wing);
+
+      // Verification Laser Curtain Grid (sweeps downward)
+      const curtainGeo = new THREE.PlaneGeometry(8, 14);
+      const curtainMat = new THREE.MeshBasicMaterial({ color: 0x10B981, transparent: true, opacity: 0.0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+      const curtain = new THREE.Mesh(curtainGeo, curtainMat);
+      curtain.position.y = -7;
+      g.add(curtain);
+      g.userData.curtain = curtain;
+
+      const vLight = new THREE.PointLight(0xEC4899, 3.0, 10);
+      g.add(vLight);
+
+      g.position.set(16, 16, 16);
+      g.userData.homePos = new THREE.Vector3(16, 16, 16);
+      return g;
+    }
+
+    const orion = createOrionDrone();
+    const daedalus = createDaedalusDrone();
+    const vulcan = createVulcanDrone();
+    const aegis = createAegisDrone();
+
+    agentGroup.add(orion);
+    agentGroup.add(daedalus);
+    agentGroup.add(vulcan);
+    agentGroup.add(aegis);
+
+    // ==========================================
+    // ⚡ PROCEDURAL SOUND SYNTHESIZER (WEB AUDIO API)
+    // ==========================================
+    let audioCtx = null;
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      } catch(e) {}
+    }
+
+    function playThrusterSound() {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(140, audioCtx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.52);
+      } catch(e) {}
+    }
+
+    function playWeldingSound() {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.22);
+      } catch(e) {}
+    }
+
+    function playVerifyStampSound() {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+        osc.frequency.exponentialRampToValueAtTime(1046.5, audioCtx.currentTime + 0.25); // C6
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.38);
+      } catch(e) {}
+    }
+
+    // ==========================================
+    // 🚀 DYNAMIC AUTONOMOUS MISSION PIPELINE
+    // ==========================================
+    let isMissionRunning = false;
+    let activeBlueprintMesh = null;
+    let activeConstructedFloor = null;
+
+    function logArtifact(text, cls = 'cyan') {
+      const log = document.getElementById('artifact-log');
+      const line = document.createElement('div');
+      line.className = `log-line ${cls}`;
+      line.innerText = text;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function setMissionInput(title) {
+      document.getElementById('mission-prompt').value = `metaframe plan '${title}'`;
+    }
+
+    function triggerPresetMission(type) {
+      if (type === 'biometric') {
+        setMissionInput('Offline Biometric AES Vault Enclosure');
+      } else if (type === 'vector') {
+        setMissionInput('Semantic AI Vector Search Pipeline');
+      }
+      executeCustomMission();
+    }
+
+    function executeCustomMission() {
+      if (isMissionRunning) return;
+      isMissionRunning = true;
+
+      const prompt = document.getElementById('mission-prompt').value;
+      const targetTower = prompt.includes('Vault') || prompt.includes('Biometric')
+        ? towerMeshes.find(t => t.userData.id === 'vault')
+        : prompt.includes('AI') || prompt.includes('Vector')
+        ? towerMeshes.find(t => t.userData.id === 'ai')
+        : towerMeshes.find(t => t.userData.id === 'editor');
+
+      document.getElementById('mission-state-badge').innerText = 'EXECUTING';
+      document.getElementById('mission-state-badge').style.color = '#00F0FF';
+
+      logArtifact(`[COMMAND] Dispatched: ${prompt}`, 'cyan');
+      logArtifact(`[TARGET] Locked on: ${targetTower.userData.name}`, 'green');
+
+      // Reset Pipeline UI
+      ['discovery', 'architecture', 'planner', 'verification'].forEach(s => {
+        const el = document.getElementById(`stage-${s}`);
+        el.className = 'stage-item';
+      });
+      document.getElementById('status-s1').innerText = 'RUNNING';
+      document.getElementById('status-s2').innerText = 'WAITING';
+      document.getElementById('status-s3').innerText = 'WAITING';
+      document.getElementById('status-s4').innerText = 'WAITING';
+
+      // ==========================================
+      // STEP 1: ORION-01 // PRODUCT DISCOVERY
+      // ==========================================
+      const targetRoofPos = new THREE.Vector3(targetTower.position.x, targetTower.userData.roofY + 3.5, targetTower.position.z);
+      document.getElementById('stage-discovery').classList.add('running');
+      document.getElementById('dot-orion').classList.add('active');
+      document.getElementById('stat-orion').innerText = `FLYING TO ${targetTower.userData.name}`;
+      playThrusterSound();
+
+      // Fly camera closer to the scene
+      new TWEEN.Tween(controls.target).to({ x: targetTower.position.x, y: targetTower.userData.roofY, z: targetTower.position.z }, 1200).start();
+      new TWEEN.Tween(camera.position).to({ x: targetTower.position.x + 14, y: targetTower.userData.roofY + 12, z: targetTower.position.z + 18 }, 1200).start();
+
+      new TWEEN.Tween(orion.position)
+        .to({ x: targetRoofPos.x, y: targetRoofPos.y + 3, z: targetRoofPos.z }, 1400)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onComplete(() => {
+          // Orion starts emerald scanning cone
+          orion.userData.scanCone.material.opacity = 0.35;
+          document.getElementById('stat-orion').innerText = 'AST REQUIREMENT SCAN ACTIVE';
+          logArtifact(`[ORION-01] Scanning AST nodes & contracts in ${targetTower.userData.name}...`, 'green');
+
+          setTimeout(() => {
+            orion.userData.scanCone.material.opacity = 0.0;
+            document.getElementById('stage-discovery').className = 'stage-item done';
+            document.getElementById('status-s1').innerText = 'PASSED (PRD CREATED)';
+            document.getElementById('stat-orion').innerText = 'PRD GENERATED · RETURN FORMATION';
+            logArtifact(`[ORION-01] PRD validated. 0 LLM Tokens consumed. Returning.`, 'green');
+
+            // Fly Orion back
+            new TWEEN.Tween(orion.position).to(orion.userData.homePos, 1400).start();
+
+            // ==========================================
+            // STEP 2: DAEDALUS-02 // SOLUTIONS ARCHITECT
+            // ==========================================
+            step2Architecture(targetTower);
+          }, 2000);
+        })
+        .start();
+    }
+
+    function step2Architecture(targetTower) {
+      document.getElementById('stage-architecture').classList.add('running');
+      document.getElementById('status-s2').innerText = 'RUNNING';
+      document.getElementById('dot-daedalus').classList.add('active');
+      document.getElementById('stat-daedalus').innerText = `PROJECTING HOLOGRAPHIC BLUEPRINT OVER ${targetTower.userData.id}`;
+      playThrusterSound();
+
+      const roofPos = new THREE.Vector3(targetTower.position.x, targetTower.userData.roofY + 5.5, targetTower.position.z);
+
+      new TWEEN.Tween(daedalus.position)
+        .to(roofPos, 1400)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onComplete(() => {
+          daedalus.userData.projBeam.material.opacity = 0.45;
+          logArtifact(`[DAEDALUS-02] Projecting 3D CAD Blueprint (ADR-004)...`, 'cyan');
+
+          // Create 3D Holographic Wireframe Blueprint on top of roof
+          const bpGeo = new THREE.BoxGeometry(6.5, 3.8, 6.5);
+          const bpMat = new THREE.MeshBasicMaterial({ color: 0x00F0FF, wireframe: true, transparent: true, opacity: 0.85 });
+          activeBlueprintMesh = new THREE.Mesh(bpGeo, bpMat);
+          activeBlueprintMesh.position.set(targetTower.position.x, targetTower.userData.roofY + 2.0, targetTower.position.z);
+          scene.add(activeBlueprintMesh);
+
+          // Rotate blueprint slightly
+          new TWEEN.Tween(activeBlueprintMesh.rotation).to({ y: Math.PI * 2 }, 3000).start();
+
+          setTimeout(() => {
+            daedalus.userData.projBeam.material.opacity = 0.0;
+            document.getElementById('stage-architecture').className = 'stage-item done';
+            document.getElementById('status-s2').innerText = 'ADR RATIFIED';
+            document.getElementById('stat-daedalus').innerText = 'ADR SPEC COMPLETE · BLUEPRINT ANCHORED';
+            logArtifact(`[DAEDALUS-02] Architecture specification locked in .metaframe/adrs/.`, 'cyan');
+
+            new TWEEN.Tween(daedalus.position).to(daedalus.userData.homePos, 1400).start();
+
+            // ==========================================
+            // STEP 3: VULCAN-03 // IMPLEMENTATION PLANNER
+            // ==========================================
+            step3Construction(targetTower);
+          }, 2400);
+        })
+        .start();
+    }
+
+    function step3Construction(targetTower) {
+      document.getElementById('stage-planner').classList.add('running');
+      document.getElementById('status-s3').innerText = 'RUNNING';
+      document.getElementById('dot-vulcan').classList.add('active');
+      document.getElementById('stat-vulcan').innerText = `PLASMA CONSTRUCTING FLOOR...`;
+      playThrusterSound();
+
+      const constructPos = new THREE.Vector3(targetTower.position.x + 3.5, targetTower.userData.roofY + 3.5, targetTower.position.z + 3.5);
+
+      new TWEEN.Tween(vulcan.position)
+        .to(constructPos, 1400)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onComplete(() => {
+          vulcan.userData.weldBeam.material.opacity = 0.9;
+          logArtifact(`[VULCAN-03] Welding physical floor AST nodes onto skyscraper...`, 'orange');
+
+          // Audio sparks
+          const sparkInterval = setInterval(playWeldingSound, 150);
+
+          // Slide new physical floor down from sky into blueprint
+          const floorGeo = new THREE.BoxGeometry(6.5, 3.8, 6.5);
+          const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x10B981,
+            metalness: 0.85,
+            roughness: 0.15,
+            emissive: 0x10B981,
+            emissiveIntensity: 0.5
+          });
+          activeConstructedFloor = new THREE.Mesh(floorGeo, floorMat);
+          activeConstructedFloor.position.set(targetTower.position.x, targetTower.userData.roofY + 12, targetTower.position.z);
+          scene.add(activeConstructedFloor);
+
+          // Drop floor with heavy mechanical landing
+          new TWEEN.Tween(activeConstructedFloor.position)
+            .to({ y: targetTower.userData.roofY + 1.9 }, 1500)
+            .easing(TWEEN.Easing.Bounce.Out)
+            .onComplete(() => {
+              clearInterval(sparkInterval);
+              vulcan.userData.weldBeam.material.opacity = 0.0;
+              if (activeBlueprintMesh) {
+                scene.remove(activeBlueprintMesh);
+                activeBlueprintMesh = null;
+              }
+
+              document.getElementById('stage-planner').className = 'stage-item done';
+              document.getElementById('status-s3').innerText = 'FLOOR CONSTRUCTED';
+              document.getElementById('stat-vulcan').innerText = 'CODE GENERATION COMPLETE';
+              logArtifact(`[VULCAN-03] Floor physically welded! TS files compiled to disk.`, 'orange');
+
+              new TWEEN.Tween(vulcan.position).to(vulcan.userData.homePos, 1400).start();
+
+              // ==========================================
+              // STEP 4: AEGIS-04 // 6-GATE VERIFICATION
+              // ==========================================
+              step4Verification(targetTower);
+            })
+            .start();
+        })
+        .start();
+    }
+
+    function step4Verification(targetTower) {
+      document.getElementById('stage-verification').classList.add('running');
+      document.getElementById('status-s4').innerText = 'RUNNING';
+      document.getElementById('dot-aegis').classList.add('active');
+      document.getElementById('stat-aegis').innerText = `SWEEPING 6 VERIFICATION GATES...`;
+      playThrusterSound();
+
+      const verifyPos = new THREE.Vector3(targetTower.position.x, targetTower.userData.roofY + 6.0, targetTower.position.z);
+
+      new TWEEN.Tween(aegis.position)
+        .to(verifyPos, 1400)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onComplete(() => {
+          aegis.userData.curtain.material.opacity = 0.45;
+          logArtifact(`[AEGIS-04] Gate 1: TypeScript Compiler (tsc --noEmit)... PASSED`, 'green');
+          logArtifact(`[AEGIS-04] Gate 2: Blast Radius & Dependency Impact... PASSED`, 'green');
+          logArtifact(`[AEGIS-04] Gate 3: Theme Token Contract... PASSED`, 'green');
+          logArtifact(`[AEGIS-04] Gate 4: Zero-Emoji Enforcement... PASSED`, 'green');
+          logArtifact(`[AEGIS-04] Gate 5: i18n Localization Integrity... PASSED`, 'green');
+          logArtifact(`[AEGIS-04] Gate 6: Code Health Audit (Cognitive Complexity)... PASSED`, 'green');
+
+          setTimeout(() => {
+            playVerifyStampSound();
+            aegis.userData.curtain.material.opacity = 0.0;
+
+            // Flash new floor pure glowing emerald
+            if (activeConstructedFloor) {
+              activeConstructedFloor.material.emissiveIntensity = 1.0;
+              setTimeout(() => { activeConstructedFloor.material.emissiveIntensity = 0.45; }, 500);
+            }
+
+            document.getElementById('stage-verification').className = 'stage-item done';
+            document.getElementById('status-s4').innerText = 'ALL GATES PASSED (0 ERRORS)';
+            document.getElementById('stat-aegis').innerText = 'VERIFICATION CLOSED-LOOP: 100% HEALTH';
+            document.getElementById('mission-state-badge').innerText = 'MISSION COMPLETE';
+            document.getElementById('mission-state-badge').style.color = '#10B981';
+
+            logArtifact(`[SUCCESS] 6-Gate verification complete. Commit ratified.`, 'green');
+            logArtifact(`[METAFRAME] Traceability graph updated in .metaframe/traceability.json`, 'cyan');
+
+            new TWEEN.Tween(aegis.position).to(aegis.userData.homePos, 1400).start();
+            isMissionRunning = false;
+          }, 2200);
+        })
+        .start();
+    }
+
+    function followAgent(id) {
+      let target = null;
+      if (id === 'orion') target = orion;
+      else if (id === 'daedalus') target = daedalus;
+      else if (id === 'vulcan') target = vulcan;
+      else if (id === 'aegis') target = aegis;
+
+      if (!target) return;
+      new TWEEN.Tween(controls.target).to({ x: target.position.x, y: target.position.y, z: target.position.z }, 900).start();
+      new TWEEN.Tween(camera.position).to({ x: target.position.x + 8, y: target.position.y + 6, z: target.position.z + 10 }, 900).start();
+    }
+
+    function resetWorkforceCam() {
+      new TWEEN.Tween(camera.position).to({ x: 28, y: 30, z: 40 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+      new TWEEN.Tween(controls.target).to({ x: 0, y: 8, z: 0 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    }
+
+    // --- ANIMATION LOOP ---
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+      TWEEN.update();
+      controls.update();
+
+      // Spin Orion's radar dome
+      if (orion.userData.radarDome) {
+        orion.userData.radarDome.rotation.y += 0.05;
+      }
+
+      // Spin Daedalus's quantum core and orbiting CAD rings
+      if (daedalus.userData.core) {
+        daedalus.userData.core.rotation.y += 0.02;
+        daedalus.userData.core.rotation.x += 0.01;
+        daedalus.userData.ring1.rotation.z += 0.025;
+        daedalus.userData.ring2.rotation.x += 0.03;
+      }
+
+      // Spin & pulse Vulcan's heavy hazard beacon and reactor core
+      if (vulcan.userData.beaconCap) {
+        vulcan.userData.beaconCap.rotation.y += 0.07;
+      }
+      if (vulcan.userData.reactorCore) {
+        const pulse = 1.0 + Math.sin(time * 5.0) * 0.08;
+        vulcan.userData.reactorCore.scale.set(pulse, pulse, pulse);
+      }
+
+      // Gentle autonomous hover bobbing for all drones
+      orion.position.y += Math.sin(time * 2.0) * 0.005;
+      daedalus.position.y += Math.sin(time * 1.8 + 1) * 0.006;
+      vulcan.position.y += Math.sin(time * 2.2 + 2) * 0.005;
+      aegis.position.y += Math.sin(time * 1.9 + 3) * 0.005;
+
+      if (composer) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

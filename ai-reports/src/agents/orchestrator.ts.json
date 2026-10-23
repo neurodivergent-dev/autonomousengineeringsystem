@@ -1,0 +1,55 @@
+{
+  "file": "src/agents/orchestrator.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 100,
+    "jsx": false,
+    "imports": 8,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "LLM, AST ve bilgi deposunu kullanarak ajanları yöneten orkestrasyon modülü."
+  },
+  "graph": {
+    "dependencies": [
+      "src/llm/client.ts",
+      "src/intelligence/ast-bridge.ts",
+      "src/knowledge/store.ts",
+      "src/gates/gate-runner.ts",
+      "src/agents/product-discovery.ts",
+      "src/agents/solutions-architect.ts",
+      "src/agents/implementation-planner.ts",
+      "src/types/index.ts"
+    ],
+    "calls": [
+      "cwd",
+      "log",
+      "getRoutes",
+      "createPRD",
+      "savePRD",
+      "createADR",
+      "saveADR",
+      "createPlan",
+      "savePlan",
+      "runAllGates",
+      "forEach",
+      "slice"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "f30e40ac-94dd-4acf-a9c0-192c4936dd97",
+    "fileHash": "fd4562a435b84022e19485c161be1408",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358372961
+}

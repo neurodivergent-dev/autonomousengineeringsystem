@@ -1,0 +1,79 @@
+{
+  "file": "mini-meta-cli/engine.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 246,
+    "jsx": false,
+    "imports": 10,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "React",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "React, ink ve çeşitli modülleri kullanan çok amaçlı orkestrasyon modülü."
+  },
+  "graph": {
+    "dependencies": [
+      "react",
+      "ink",
+      "mini-meta-cli/ollama.ts",
+      "mini-meta-cli/history.ts",
+      "mini-meta-cli/state.ts",
+      "mini-meta-cli/tools/index.ts",
+      "mini-meta-cli/parser.ts",
+      "mini-meta-cli/prompt.ts",
+      "mini-meta-cli/types.ts",
+      "mini-meta-cli/tui.tsx"
+    ],
+    "calls": [
+      "cwd",
+      "createToolRegistry",
+      "buildSystemPrompt",
+      "buildFewShotMessages",
+      "setSystemAndFewShot",
+      "rerender",
+      "createElement",
+      "render",
+      "unmount",
+      "formatTodos",
+      "clearConversation",
+      "push",
+      "updateTUI",
+      "log",
+      "chat",
+      "forApi",
+      "trim",
+      "stripToolCalls",
+      "parseToolCalls",
+      "filter",
+      "findTool",
+      "join",
+      "map",
+      "all",
+      "resolve",
+      "execute",
+      "toolResultFeedback",
+      "replace",
+      "slice",
+      "hasDoneMarker",
+      "setTimeout",
+      "unmountTUI",
+      "String",
+      "includes"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "65131306-bbf1-46af-92ce-427f4206a702",
+    "fileHash": "e99fb8fb45f7d996c63c26999eb4a2b9",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358355620
+}

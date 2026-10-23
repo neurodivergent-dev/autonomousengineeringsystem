@@ -1,0 +1,62 @@
+{
+  "file": "src/cli.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 117,
+    "jsx": false,
+    "imports": 4,
+    "exports": 0,
+    "functions": 1,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "Orkestrasyon, gate-runner, ast-bridge ve store bileşenlerini yöneten ana modül."
+  },
+  "graph": {
+    "dependencies": [
+      "src/agents/orchestrator.ts",
+      "src/gates/gate-runner.ts",
+      "src/intelligence/ast-bridge.ts",
+      "src/knowledge/store.ts"
+    ],
+    "calls": [
+      "slice",
+      "log",
+      "trim",
+      "join",
+      "error",
+      "exit",
+      "executeWorkflow",
+      "runAllGates",
+      "forEach",
+      "getTraceability",
+      "table",
+      "map",
+      "queryTool",
+      "getImpact",
+      "catch",
+      "main"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "main",
+      "type": "function",
+      "async": true,
+      "exported": false
+    }
+  ],
+  "identity": {
+    "analysisId": "34c9ec8c-7af5-40bf-907b-6c4e89c81507",
+    "fileHash": "4115c66b56d65f8402ff3ad3262298e3",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358375492
+}

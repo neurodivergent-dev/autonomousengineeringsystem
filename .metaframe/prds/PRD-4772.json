@@ -1,0 +1,27 @@
+{
+  "id": "PRD-4772",
+  "title": "Add biometric authentication support to user sessi",
+  "version": "1.0.0",
+  "status": "APPROVED",
+  "overview": "Add biometric authentication support to user session",
+  "userStories": [
+    {
+      "persona": "Engineer/User",
+      "want": "Add biometric authentication support to user session",
+      "soThat": "the application gains requested capabilities without regressions"
+    }
+  ],
+  "functionalRequirements": [
+    "Add biometric authentication support to user session"
+  ],
+  "nonFunctionalRequirements": [
+    "Must pass 0-error TypeScript compilation and theme guidelines."
+  ],
+  "acceptanceCriteria": [
+    "Feature is implemented and verified by 6-gate safety chain."
+  ],
+  "targetDomains": [
+    "core"
+  ],
+  "createdAt": "2026-10-17T21:22:44.772Z"
+}

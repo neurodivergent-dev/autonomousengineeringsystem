@@ -1,0 +1,57 @@
+{
+  "file": "src/knowledge/store.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 191,
+    "jsx": false,
+    "imports": 3,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "fs ve path kullanarak src/types/index.ts ile çalışan dosya yöneticisi."
+  },
+  "graph": {
+    "dependencies": [
+      "fs",
+      "path",
+      "src/types/index.ts"
+    ],
+    "calls": [
+      "cwd",
+      "join",
+      "initDirs",
+      "existsSync",
+      "mkdirSync",
+      "toISOString",
+      "writeFileSync",
+      "stringify",
+      "map",
+      "updateTraceability",
+      "parse",
+      "readFileSync",
+      "filter",
+      "readdirSync",
+      "endsWith",
+      "getTraceability",
+      "find",
+      "push",
+      "from"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "821ea71e-0ac1-46cd-917f-434f93e60247",
+    "fileHash": "5e15057951c3baaf2c6ddcca4d9523a0",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358378500
+}

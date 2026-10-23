@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quantum AI Studio | Neural Synthesis & Cybernetic Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #04050a;
+      --bg-card: rgba(10, 14, 26, 0.75);
+      --bg-card-hover: rgba(16, 22, 42, 0.9);
+      --neon-cyan: #00f3ff;
+      --neon-pink: #ff007f;
+      --neon-purple: #9d4edd;
+      --neon-green: #00ff88;
+      --neon-yellow: #f59e0b;
+      --text-main: #f0f4ff;
+      --text-muted: #8a99b5;
+      --glass-border: rgba(0, 243, 255, 0.2);
+      --glow-cyan: 0 0 25px rgba(0, 243, 255, 0.45);
+      --glow-pink: 0 0 25px rgba(255, 0, 127, 0.45);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      line-height: 1.6;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(0, 243, 255, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(255, 0, 127, 0.08) 0%, transparent 45%);
+    }
+
+    h1, h2, h3, .brand {
+      font-family: 'Orbitron', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Fixed Background Particle Canvas */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Top Navigation */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 100;
+      background: rgba(4, 5, 10, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 1rem 0;
+    }
+
+    .nav-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      font-size: 1.4rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #fff;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 900;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.8rem;
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .btn-nav {
+      background: rgba(0, 243, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 0.5rem 1.2rem;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .btn-nav:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: var(--glow-cyan);
+      transform: translateY(-1px);
+    }
+
+    /* Content Layout */
+    .main-wrap {
+      position: relative;
+      z-index: 10;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 100px 2rem 60px;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 80px 0 60px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 243, 255, 0.08);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      padding: 0.35rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--neon-cyan);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-green);
+      box-shadow: 0 0 8px var(--neon-green);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-size: 4rem;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #ffffff 20%, var(--neon-cyan) 60%, var(--neon-pink) 95%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px rgba(0, 243, 255, 0.2);
+    }
+
+    .hero p {
+      font-size: 1.3rem;
+      max-width: 780px;
+      margin: 0 auto 2.5rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .hero-btns {
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero {
+      padding: 0.9rem 2.2rem;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--neon-cyan), #00a8ff);
+      color: #000;
+      border: none;
+      box-shadow: var(--glow-cyan);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 35px rgba(0, 243, 255, 0.8);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--neon-pink);
+      color: var(--neon-pink);
+      box-shadow: var(--glow-pink);
+      transform: translateY(-2px);
+    }
+
+    /* Telemetry Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin: 50px 0 80px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 8px 30px rgba(0, 243, 255, 0.15);
+    }
+
+    .stat-card:hover::before {
+      opacity: 1;
+    }
+
+    .stat-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--neon-cyan);
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-lbl {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    /* Core Interactive Feature: Quantum Neural Lattice Playground */
+    .studio-grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1.2fr;
+      gap: 1.8rem;
+      margin-bottom: 80px;
+    }
+
+    @media (max-width: 960px) {
+      .studio-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.8rem;
+    }
+
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* Interactive Neural Canvas Container */
+    #neural-canvas-container {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      background: #020308;
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    #neural-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-overlay-hint {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--neon-cyan);
+      background: rgba(4, 8, 18, 0.8);
+      backdrop-filter: blur(8px);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      pointer-events: none;
+    }
+
+    /* Right Controls & Terminal */
+    .ctrl-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .ctrl-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .ctrl-slider {
+      width: 100%;
+      accent-color: var(--neon-cyan);
+      cursor: pointer;
+    }
+
+    .preset-btns {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.6rem;
+      margin-top: 0.4rem;
+    }
+
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover, .preset-btn.active {
+      background: rgba(0, 243, 255, 0.15);
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    }
+
+    /* Cyber Live Terminal */
+    .terminal-box {
+      background: #020409;
+      border: 1px solid rgba(0, 255, 136, 0.25);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--neon-green);
+      height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    /* Feature Grid Section */
+    .features-section {
+      margin-bottom: 80px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .section-header h2 {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.8rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 2.2rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--neon-pink);
+      box-shadow: 0 10px 40px rgba(255, 0, 127, 0.15);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1.2rem;
+      display: inline-block;
+    }
+
+    .feature-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      margin-bottom: 0.8rem;
+      color: #fff;
+    }
+
+    .feature-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 2.5rem 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    footer a {
+      color: var(--neon-cyan);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Canvas -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Navigation Bar -->
+  <header>
+    <div class="nav-container">
+      <div class="brand">
+        <span>⚡ NEXUS STUDIO</span>
+        <span class="brand-badge">QUANTUM v3.8</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#lab">Nöral Laboratuvar</a></li>
+        <li><a href="#features">Kabiliyetler</a></li>
+        <li><a href="http://localhost:5960/lego">Lego Studio</a></li>
+        <li><a href="http://localhost:5960/portfolio">Portfolyo</a></li>
+        <li><button class="btn-nav" onclick="triggerQuantumSync()">Senkronize Et</button></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="main-wrap">
+    
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span>QUANTUM CORE OPERATIONAL</span> • <span>LATENCY: 0.38ms</span>
+      </div>
+      <h1>QUANTUM AI STUDIO</h1>
+      <p>
+        Otonom nöral sentezleme, hiper-boyutlu kuantum tensörleri ve kendi kendini iyileştiren Aegis-6 kapıları ile donatılmış yeni nesil sibernetik geliştirme laboratuvarı.
+      </p>
+      <div class="hero-btns">
+        <button class="btn-hero btn-primary" onclick="spawnBurst()">
+          <span>🔮 Nöral Patlama Ateşle</span>
+        </button>
+        <button class="btn-hero btn-secondary" onclick="generateNeuralReport()">
+          <span>📊 Kuantum Telemetri</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Real-time Stats Grid -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-val" id="stat-fidelity">99.98%</div>
+        <div class="stat-lbl">Sinaptik Doğruluk (Fidelity)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-compute">18.4 TF</div>
+        <div class="stat-lbl">Tensör Hesaplama Gücü</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-neurons">248,190</div>
+        <div class="stat-lbl">Aktif Nöral Düğümler</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-latency">&lt; 0.4 ms</div>
+        <div class="stat-lbl">Kuantum Rezonans Gecikmesi</div>
+      </div>
+    </div>
+
+    <!-- Core Feature: Interactive Studio Grid -->
+    <section id="lab" class="studio-grid">
+      
+      <!-- Interactive Neural Canvas -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>🧬 Canlı Nöral Ağ Simülatörü</span>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--neon-green);" id="node-count-badge">38 NÖRON AKTİF</span>
+        </div>
+
+        <div id="neural-canvas-container">
+          <canvas id="neural-canvas"></canvas>
+          <div class="canvas-overlay-hint">
+            🖱️ Tıkla: Nöron Ekle | Sürükle: Ağ Bağla | Çift Tık: Frekans Patlaması
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted);">
+          <span>Frekans Modülasyonu: <b style="color: var(--neon-cyan);" id="freq-readout">432 Hz</b></span>
+          <button style="background: rgba(255, 0, 127, 0.15); border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 0.3rem 0.8rem; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-size: 0.7rem; cursor: pointer;" onclick="clearNeuralLattice()">
+            🧹 Ağı Temizle
+          </button>
+        </div>
+      </div>
+
+      <!-- Studio Control Deck & Cyber Terminal -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>🎛️ Nöral Kontrol Güvertesi</span>
+          </div>
+          <span style="color: var(--neon-cyan); font-size: 0.8rem; font-family: monospace;">AEGIS ONLINE</span>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            <span>Kuantum Dolaşıklık (Entanglement)</span>
+            <span id="slider-val-entangle">75%</span>
+          </div>
+          <input type="range" class="ctrl-slider" id="slider-entangle" min="10" max="100" value="75" oninput="updateSliders()">
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            <span>Harmonik Rezonans Hızı</span>
+            <span id="slider-val-speed">1.2x</span>
+          </div>
+          <input type="range" class="ctrl-slider" id="slider-speed" min="2" max="30" value="12" oninput="updateSliders()">
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            <span>Sinaptik Sönümleme (Decay)</span>
+            <span id="slider-val-decay">0.96</span>
+          </div>
+          <input type="range" class="ctrl-slider" id="slider-decay" min="80" max="99" value="96" oninput="updateSliders()">
+        </div>
+
+        <div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 600;">Hazır Nöral Matrisler:</div>
+          <div class="preset-btns">
+            <button class="preset-btn active" onclick="applyPreset('matrix', this)">MATRIX OVERDRIVE</button>
+            <button class="preset-btn" onclick="applyPreset('zen', this)">ZEN RESONANCE</button>
+            <button class="preset-btn" onclick="applyPreset('warp', this)">CYBER WARP</button>
+            <button class="preset-btn" onclick="applyPreset('chaos', this)">QUANTUM CHAOS</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 0.5rem;">
+          <div style="font-size: 0.8rem; color: var(--neon-green); margin-bottom: 0.35rem; font-weight: bold;">📟 Kuantum Terminal & Telemetri</div>
+          <div class="terminal-box" id="telemetry-log">> [INIT] Kuantum AI Stüdyosu başlatıldı.
+> [STATUS] Tensör çekirdekleri hazır.
+> [NEURAL] 38 sinaptik düğüm senkronize edildi.
+> [AEGIS-6] Bütünlük koruma kalkanları aktif.</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Architecture & Capability Highlights -->
+    <section id="features" class="features-section">
+      <div class="section-header">
+        <h2>SİBERNETİK MİMARİ & KABİLİYETLER</h2>
+        <p>Yüksek frekanslı otonom sistemler için tasarlanmış hiper-entegre yapay zeka omurgası</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <div class="feature-title">Nöral Sentezleme Motoru</div>
+          <div class="feature-desc">
+            Çok katmanlı tensör matrisleri ve geribildirimli dikkat mekanizmaları ile saniyeler içinde karmaşık kod bloklarını ve 3D uzamsal mimarileri sentezler.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <div class="feature-title">Aegis-6 Otonom İyileştirme</div>
+          <div class="feature-desc">
+            Sistem kodunda meydana gelen sentaks ve mantık hatalarını 6 aşamalı doğrulama kapısından geçirerek cerrahi hassasiyetle kendi kendine onarır.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Gerçek Zamanlı Web Audio AST</div>
+          <div class="feature-desc">
+            Her derleme adımını ve sinaptik sinyali harmonik ses dalgalarına dönüştürerek geliştiriciye anlık işitsel ve görsel telemetri sunar.
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🪐</div>
+          <div class="feature-title">Uzamsal 3D Lego & Şehir AST</div>
+          <div class="feature-desc">
+            Soyut sözdizim ağaçlarını (AST) doğrudan 3D Cyber Lego bloklarına ve siberpunk gökdelenlerine çevirerek somut bir keşif dünyası yaratır.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
+      <p style="margin-bottom: 0.5rem;">⚡ <b>Quantum AI Studio</b> — MetaFrame Autonomous Engineering Pipeline</p>
+      <p style="color: #64748b;">Tüm hakları saklıdır. Port 5960 üzerinde aktif çalışıyor.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    /**
+     * Web Audio API Synthesizer for Harmonic Cybernetic Tones
+     */
+    let audioCtx = null;
+    function playHarmonicTone(freq = 432, type = 'sine', duration = 0.3, vol = 0.15) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.5, audioCtx.currentTime + duration);
+
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    /**
+     * Cyber Background Canvas Animation (Subtle Warp Stars)
+     */
+    const bgCanvas = document.getElementById('bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    let stars = [];
+
+    function resizeBg() {
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+      stars = [];
+      for (let i = 0; i < 90; i++) {
+        stars.push({
+          x: Math.random() * bgCanvas.width,
+          y: Math.random() * bgCanvas.height,
+          radius: Math.random() * 1.5 + 0.5,
+          color: Math.random() > 0.5 ? '#00f3ff' : '#ff007f',
+          alpha: Math.random() * 0.6 + 0.2,
+          speed: Math.random() * 0.4 + 0.1
+        });
+      }
+    }
+    window.addEventListener('resize', resizeBg);
+    resizeBg();
+
+    function animateBg() {
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      stars.forEach(s => {
+        s.y += s.speed;
+        if (s.y > bgCanvas.height) s.y = 0;
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        bgCtx.fillStyle = s.color;
+        bgCtx.globalAlpha = s.alpha;
+        bgCtx.fill();
+      });
+      bgCtx.globalAlpha = 1.0;
+      requestAnimationFrame(animateBg);
+    }
+    animateBg();
+
+    /**
+     * Interactive Neural Lattice Simulator
+     */
+    const canvas = document.getElementById('neural-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('neural-canvas-container');
+
+    let nodes = [];
+    let mouse = { x: -1000, y: -1000, isDown: false };
+    let simSettings = {
+      entangleDist: 120,
+      speedFactor: 1.2,
+      decay: 0.96
+    };
+
+    function resizeCanvas() {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      if (nodes.length === 0) initNodes();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    class NeuralNode {
+      constructor(x, y, isStatic = false) {
+        this.x = x || Math.random() * canvas.width;
+        this.y = y || Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 1.5;
+        this.vy = (Math.random() - 0.5) * 1.5;
+        this.radius = Math.random() * 3 + 3.5;
+        this.color = Math.random() > 0.4 ? '#00f3ff' : (Math.random() > 0.5 ? '#ff007f' : '#00ff88');
+        this.pulse = Math.random() * Math.PI;
+        this.freq = [220, 277, 330, 440, 554, 660, 880][Math.floor(Math.random() * 7)];
+        this.isStatic = isStatic;
+      }
+
+      update() {
+        if (!this.isStatic) {
+          this.x += this.vx * (simSettings.speedFactor * 0.8);
+          this.y += this.vy * (simSettings.speedFactor * 0.8);
+
+          if (this.x < 10 || this.x > canvas.width - 10) this.vx *= -1;
+          if (this.y < 10 || this.y > canvas.height - 10) this.vy *= -1;
+        }
+
+        this.pulse += 0.05;
+
+        // Interaction with mouse
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 100) {
+          const force = (100 - dist) / 100;
+          this.x -= (dx / dist) * force * 3;
+          this.y -= (dy / dist) * force * 3;
+        }
+      }
+
+      draw() {
+        const glow = Math.sin(this.pulse) * 2 + this.radius;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, Math.max(1, glow), 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function initNodes() {
+      nodes = [];
+      const count = 38;
+      for (let i = 0; i < count; i++) {
+        nodes.push(new NeuralNode());
+      }
+      updateNodeBadge();
+    }
+
+    function updateNodeBadge() {
+      document.getElementById('node-count-badge').innerText = `${nodes.length} NÖRON AKTİF`;
+    }
+
+    // Canvas Events
+    container.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+
+    container.addEventListener('mouseleave', () => {
+      mouse.x = -1000;
+      mouse.y = -1000;
+    });
+
+    container.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const newNode = new NeuralNode(x, y);
+      nodes.push(newNode);
+      playHarmonicTone(newNode.freq, 'sine', 0.25, 0.2);
+      logTelemetry(`[NÖRON EKLENDİ] (${Math.round(x)}, ${Math.round(y)}) • Frekans: ${newNode.freq}Hz`);
+      updateNodeBadge();
+    });
+
+    container.addEventListener('dblclick', (e) => {
+      spawnBurst();
+    });
+
+    function spawnBurst() {
+      const rect = canvas.getBoundingClientRect();
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      for (let i = 0; i < 12; i++) {
+        const n = new NeuralNode(cx + (Math.random() - 0.5) * 60, cy + (Math.random() - 0.5) * 60);
+        n.vx = (Math.random() - 0.5) * 6;
+        n.vy = (Math.random() - 0.5) * 6;
+        nodes.push(n);
+      }
+      playHarmonicTone(660, 'sawtooth', 0.45, 0.25);
+      logTelemetry(`\x1b[35m[NÖRAL PATLAMA] 12 yeni sinaptik düğüm serbest bırakıldı!\x1b[0m`);
+      updateNodeBadge();
+    }
+
+    function clearNeuralLattice() {
+      nodes = [];
+      updateNodeBadge();
+      playHarmonicTone(180, 'triangle', 0.3, 0.15);
+      logTelemetry(`[SIFIRLANDI] Nöral ağ matrisi temizlendi.`);
+    }
+
+    // Main Render Loop for Neural Lattice
+    function animateLattice() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Connect nodes with synaptic laser filaments
+      const maxDist = simSettings.entangleDist;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < maxDist) {
+            const alpha = 1 - (dist / maxDist);
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = `rgba(0, 243, 255, ${alpha * 0.45})`;
+            ctx.lineWidth = alpha * 1.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw cursor attraction filament
+      if (mouse.x > 0 && mouse.y > 0) {
+        nodes.forEach(n => {
+          const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
+          if (dist < 130) {
+            const alpha = 1 - (dist / 130);
+            ctx.beginPath();
+            ctx.moveTo(n.x, n.y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.strokeStyle = `rgba(255, 0, 127, ${alpha * 0.6})`;
+            ctx.lineWidth = alpha * 1.8;
+            ctx.stroke();
+          }
+        });
+      }
+
+      // Update and Draw Nodes
+      nodes.forEach(n => {
+        n.update();
+        n.draw();
+      });
+
+      requestAnimationFrame(animateLattice);
+    }
+
+    // Settings Sliders
+    function updateSliders() {
+      const entangle = document.getElementById('slider-entangle').value;
+      const speed = document.getElementById('slider-speed').value;
+      const decay = document.getElementById('slider-decay').value;
+
+      simSettings.entangleDist = parseInt(entangle) * 1.6;
+      simSettings.speedFactor = parseInt(speed) / 10;
+      simSettings.decay = parseInt(decay) / 100;
+
+      document.getElementById('slider-val-entangle').innerText = `${entangle}%`;
+      document.getElementById('slider-val-speed').innerText = `${(speed / 10).toFixed(1)}x`;
+      document.getElementById('slider-val-decay').innerText = `${(decay / 100).toFixed(2)}`;
+
+      const freq = Math.round(300 + (entangle * 2.2));
+      document.getElementById('freq-readout').innerText = `${freq} Hz`;
+    }
+
+    // Presets
+    function applyPreset(preset, btn) {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      if (preset === 'matrix') {
+        document.getElementById('slider-entangle').value = 75;
+        document.getElementById('slider-speed').value = 12;
+        document.getElementById('slider-decay').value = 96;
+        playHarmonicTone(440, 'sine');
+        logTelemetry(`[PRESET] Matrix Overdrive aktif.`);
+      } else if (preset === 'zen') {
+        document.getElementById('slider-entangle').value = 40;
+        document.getElementById('slider-speed').value = 4;
+        document.getElementById('slider-decay').value = 99;
+        playHarmonicTone(330, 'sine');
+        logTelemetry(`[PRESET] Zen Resonance moduna geçildi.`);
+      } else if (preset === 'warp') {
+        document.getElementById('slider-entangle').value = 95;
+        document.getElementById('slider-speed').value = 25;
+        document.getElementById('slider-decay').value = 90;
+        playHarmonicTone(660, 'sawtooth');
+        logTelemetry(`[PRESET] Cyber Warp hiper-hıza kenetlendi.`);
+      } else if (preset === 'chaos') {
+        document.getElementById('slider-entangle').value = 100;
+        document.getElementById('slider-speed').value = 28;
+        document.getElementById('slider-decay').value = 82;
+        playHarmonicTone(880, 'square');
+        logTelemetry(`[PRESET] Quantum Chaos tetiklendi!`);
+      }
+      updateSliders();
+    }
+
+    // Telemetry Terminal Logger
+    function logTelemetry(msg) {
+      const box = document.getElementById('telemetry-log');
+      const time = new Date().toLocaleTimeString();
+      box.innerText += `\n[${time}] ${msg}`;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function triggerQuantumSync() {
+      playHarmonicTone(528, 'sine', 0.5, 0.3);
+      logTelemetry(`\x1b[36m[QUANTUM SYNC] Tüm tensör çekirdekleri kuantum omurgasına kilitlendi.\x1b[0m`);
+      const fidEl = document.getElementById('stat-fidelity');
+      fidEl.innerText = "99.99%";
+      setTimeout(() => fidEl.innerText = "99.98%", 2000);
+    }
+
+    function generateNeuralReport() {
+      playHarmonicTone(440, 'triangle');
+      logTelemetry(`=== SİBERNETİK TELEMETRİ RAPORU ===`);
+      logTelemetry(`• Düğüm Sayısı: ${nodes.length}`);
+      logTelemetry(`• Dolaşıklık Yarıçapı: ${simSettings.entangleDist.toFixed(1)}px`);
+      logTelemetry(`• Tensör Frekansı: ${document.getElementById('freq-readout').innerText}`);
+      logTelemetry(`• Aegis Sağlık Skoru: 100/100 (Nominal)`);
+    }
+
+    // Startup
+    window.onload = () => {
+      resizeCanvas();
+      animateLattice();
+      logTelemetry(`> Sistem başarıyla yüklendi. Nöral Laboratuvar çevrimiçi.`);
+    };
+  </script>
+</body>
+</html>

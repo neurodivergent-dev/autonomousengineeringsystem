@@ -1,0 +1,442 @@
+{
+  "totalFiles": 35,
+  "cycles": 2584,
+  "lastScanAt": 1792371441320,
+  "queue": [],
+  "current": null,
+  "completed": [
+    {
+      "file": "tools/serve-city.ts",
+      "reportPath": "ai-reports/tools/serve-city.ts.md",
+      "finishedAt": 1792363563893,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "tools/serve-city.ts",
+      "reportPath": "ai-reports/tools/serve-city.ts.md",
+      "finishedAt": 1792363016315,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "tools/serve-city.ts",
+      "reportPath": "ai-reports/tools/serve-city.ts.md",
+      "finishedAt": 1792362429157,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "tools/serve-city.ts",
+      "reportPath": "ai-reports/tools/serve-city.ts.md",
+      "finishedAt": 1792361374647,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "tools/serve-city.ts",
+      "reportPath": "ai-reports/tools/serve-city.ts.md",
+      "finishedAt": 1792359919909,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/types/index.ts",
+      "reportPath": "ai-reports/src/types/index.ts.md",
+      "finishedAt": 1792358379932,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/llm/client.ts",
+      "reportPath": "ai-reports/src/llm/client.ts.md",
+      "finishedAt": 1792358379227,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/knowledge/store.ts",
+      "reportPath": "ai-reports/src/knowledge/store.ts.md",
+      "finishedAt": 1792358378501,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/intelligence/ast-bridge.ts",
+      "reportPath": "ai-reports/src/intelligence/ast-bridge.ts.md",
+      "finishedAt": 1792358377682,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/gates/gate-runner.ts",
+      "reportPath": "ai-reports/src/gates/gate-runner.ts.md",
+      "finishedAt": 1792358376826,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/examples/bad-code.ts",
+      "reportPath": "ai-reports/src/examples/bad-code.ts.md",
+      "finishedAt": 1792358376093,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/cli.ts",
+      "reportPath": "ai-reports/src/cli.ts.md",
+      "finishedAt": 1792358375492,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/agents/solutions-architect.ts",
+      "reportPath": "ai-reports/src/agents/solutions-architect.ts.md",
+      "finishedAt": 1792358374596,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/agents/product-discovery.ts",
+      "reportPath": "ai-reports/src/agents/product-discovery.ts.md",
+      "finishedAt": 1792358373768,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/agents/orchestrator.ts",
+      "reportPath": "ai-reports/src/agents/orchestrator.ts.md",
+      "finishedAt": 1792358372962,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "src/agents/implementation-planner.ts",
+      "reportPath": "ai-reports/src/agents/implementation-planner.ts.md",
+      "finishedAt": 1792358372120,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "repo-intelligence-layer/analysis.tsx",
+      "reportPath": "ai-reports/repo-intelligence-layer/analysis.tsx.md",
+      "finishedAt": 1792358371372,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/types.ts",
+      "reportPath": "ai-reports/mini-meta-cli/types.ts.md",
+      "finishedAt": 1792358370599,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tui.tsx",
+      "reportPath": "ai-reports/mini-meta-cli/tui.tsx.md",
+      "finishedAt": 1792358369819,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools.ts.md",
+      "finishedAt": 1792358369070,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/write.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/write.ts.md",
+      "finishedAt": 1792358368367,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/web.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/web.ts.md",
+      "finishedAt": 1792358367594,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/todo.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/todo.ts.md",
+      "finishedAt": 1792358366804,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/shell.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/shell.ts.md",
+      "finishedAt": 1792358365913,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/read.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/read.ts.md",
+      "finishedAt": 1792358365183,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/index.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/index.ts.md",
+      "finishedAt": 1792358364361,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/grep.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/grep.ts.md",
+      "finishedAt": 1792358363569,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/glob.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/glob.ts.md",
+      "finishedAt": 1792358362639,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/tools/edit.ts",
+      "reportPath": "ai-reports/mini-meta-cli/tools/edit.ts.md",
+      "finishedAt": 1792358361889,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    },
+    {
+      "file": "mini-meta-cli/state.ts",
+      "reportPath": "ai-reports/mini-meta-cli/state.ts.md",
+      "finishedAt": 1792358361102,
+      "preview": "> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.\n\nSadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor..."
+    }
+  ],
+  "events": [
+    {
+      "time": 1792363563905,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792363563893,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792363563892,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792363543337,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: tools/serve-city.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792363543335,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: tools/serve-city.ts"
+    },
+    {
+      "time": 1792363543334,
+      "icon": "✏️",
+      "message": "Değişiklik tespit edildi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792363016326,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792363016315,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792363016314,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792362996149,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: tools/serve-city.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792362996147,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: tools/serve-city.ts"
+    },
+    {
+      "time": 1792362996146,
+      "icon": "✏️",
+      "message": "Değişiklik tespit edildi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792362429169,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792362429157,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792362429156,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792362408275,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: tools/serve-city.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792362408273,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: tools/serve-city.ts"
+    },
+    {
+      "time": 1792362408272,
+      "icon": "✏️",
+      "message": "Değişiklik tespit edildi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792361374658,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792361374647,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792361374646,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792361354825,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: tools/serve-city.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792361354823,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: tools/serve-city.ts"
+    },
+    {
+      "time": 1792361354822,
+      "icon": "✏️",
+      "message": "Değişiklik tespit edildi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792359919964,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792359919909,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792359919908,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: tools/serve-city.ts"
+    },
+    {
+      "time": 1792359900050,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: tools/serve-city.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792359900048,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: tools/serve-city.ts"
+    },
+    {
+      "time": 1792359900046,
+      "icon": "📄",
+      "message": "Yeni dosya tespit edildi: tools/serve-city.ts"
+    },
+    {
+      "time": 1792358379939,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: src/types/index.ts"
+    },
+    {
+      "time": 1792358379932,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: src/types/index.ts"
+    },
+    {
+      "time": 1792358379930,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: src/types/index.ts"
+    },
+    {
+      "time": 1792358379238,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: src/types/index.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792358379236,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: src/types/index.ts"
+    },
+    {
+      "time": 1792358379235,
+      "icon": "📄",
+      "message": "Yeni dosya tespit edildi: src/types/index.ts"
+    },
+    {
+      "time": 1792358379234,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: src/llm/client.ts"
+    },
+    {
+      "time": 1792358379227,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: src/llm/client.ts"
+    },
+    {
+      "time": 1792358379225,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: src/llm/client.ts"
+    },
+    {
+      "time": 1792358378511,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: src/llm/client.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792358378509,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: src/llm/client.ts"
+    },
+    {
+      "time": 1792358378507,
+      "icon": "📄",
+      "message": "Yeni dosya tespit edildi: src/llm/client.ts"
+    },
+    {
+      "time": 1792358378507,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: src/knowledge/store.ts"
+    },
+    {
+      "time": 1792358378501,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: src/knowledge/store.ts"
+    },
+    {
+      "time": 1792358378499,
+      "icon": "[SEMANTİK]",
+      "message": "Semantic bilgi çıkarıldı: src/knowledge/store.ts"
+    },
+    {
+      "time": 1792358377694,
+      "icon": "[AST]",
+      "message": "AST oluşturuldu: src/knowledge/store.ts (0 fonksiyon, 0 entity)"
+    },
+    {
+      "time": 1792358377690,
+      "icon": "[RAPOR]",
+      "message": "Rapor oluşturuldu: src/knowledge/store.ts"
+    },
+    {
+      "time": 1792358377688,
+      "icon": "📄",
+      "message": "Yeni dosya tespit edildi: src/knowledge/store.ts"
+    },
+    {
+      "time": 1792358377688,
+      "icon": "[GRAFİK]",
+      "message": "Bilgi grafiği güncellendi: src/intelligence/ast-bridge.ts"
+    },
+    {
+      "time": 1792358377682,
+      "icon": "[TAMAM]",
+      "message": "Analiz tamamlandı: src/intelligence/ast-bridge.ts"
+    }
+  ],
+  "idle": true
+}

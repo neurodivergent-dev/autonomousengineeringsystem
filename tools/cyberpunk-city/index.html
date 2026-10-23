@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mindbook Pro - Cyberpunk AST Spatial Code City</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #020205;
+      color: #00F0FF;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    .scanlines {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%; pointer-events: none; z-index: 5; opacity: 0.85;
+    }
+    .vignette {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.85); pointer-events: none; z-index: 5;
+    }
+
+    /* Top Navigation */
+    .topbar {
+      position: absolute; top: 16px; left: 20px; right: 20px; height: 68px;
+      background: rgba(5, 7, 15, 0.88); backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; z-index: 10;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+    }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .brand-logo { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; color: #FF0055; text-shadow: 0 0 14px #FF0055; letter-spacing: 2px; }
+    .brand-text h1 { font-family: 'Orbitron', sans-serif; font-size: 14.5px; font-weight: 800; color: #00F0FF; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); letter-spacing: 1.5px; }
+    .brand-text p { font-size: 10px; color: #FF0055; letter-spacing: 0.5px; }
+
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .cyber-btn {
+      background: rgba(0, 240, 255, 0.08); border: 1px solid #00F0FF;
+      color: #00F0FF; padding: 8px 14px; font-family: 'Orbitron', sans-serif;
+      font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+      letter-spacing: 1px; transition: all 0.2s;
+    }
+    .cyber-btn:hover { background: #00F0FF; color: #000; box-shadow: 0 0 20px #00F0FF; transform: translateY(-1px); }
+    .cyber-btn.active { background: #00F0FF; color: #000; box-shadow: 0 0 25px #00F0FF; }
+    .cyber-btn.danger { border-color: #FF0055; color: #FF0055; background: rgba(255, 0, 85, 0.08); }
+    .cyber-btn.danger:hover { background: #FF0055; color: #FFF; box-shadow: 0 0 25px #FF0055; }
+    .cyber-btn.pulse { border-color: #10B981; color: #10B981; background: rgba(16, 185, 129, 0.1); }
+    .cyber-btn.pulse:hover { background: #10B981; color: #000; box-shadow: 0 0 20px #10B981; }
+
+    /* Left District Nav */
+    .district-nav {
+      position: absolute; left: 20px; top: 100px; display: flex; flex-direction: column;
+      gap: 7px; z-index: 10; background: rgba(5, 7, 15, 0.85); backdrop-filter: blur(20px);
+      padding: 14px; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 4px;
+    }
+    .district-title { font-size: 9.5px; font-family: 'Orbitron', sans-serif; color: #94A3B8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
+    .district-pill {
+      display: flex; align-items: center; gap: 10px; padding: 7px 12px;
+      font-size: 11px; cursor: pointer; border: 1px solid transparent; color: #64748B; transition: all 0.2s;
+    }
+    .district-pill:hover { color: #00F0FF; border-color: rgba(0, 240, 255, 0.4); background: rgba(0, 240, 255, 0.06); }
+    .district-pill.active { color: #00F0FF; border-color: #00F0FF; background: rgba(0, 240, 255, 0.15); box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
+
+    /* Right Dual Inspector & Real Code Viewer */
+    .inspector {
+      position: absolute; right: 20px; top: 100px; bottom: 24px; width: 440px;
+      background: rgba(5, 7, 15, 0.94); backdrop-filter: blur(28px);
+      border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px; padding: 20px;
+      z-index: 10; display: flex; flex-direction: column; transform: translateX(480px);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -15px 0 40px rgba(0,0,0,0.8), 0 0 30px rgba(0, 240, 255, 0.1);
+    }
+    .inspector.open { transform: translateX(0); }
+    .inspector-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid rgba(0, 240, 255, 0.2); padding-bottom: 12px; margin-bottom: 12px; }
+    .neon-badge { display: inline-block; padding: 3px 8px; border-radius: 2px; font-size: 9.5px; font-weight: 800; font-family: 'Orbitron', sans-serif; }
+    .insp-name { font-size: 16px; font-family: 'Orbitron', sans-serif; font-weight: 900; color: #FFF; text-shadow: 0 0 10px rgba(255,255,255,0.6); }
+    .close-btn { background: transparent; border: 1px solid #FF0055; color: #FF0055; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .close-btn:hover { background: #FF0055; color: #FFF; box-shadow: 0 0 15px #FF0055; }
+    
+    .inspector-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .insp-box { background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(0, 240, 255, 0.15); padding: 12px; border-radius: 4px; }
+    .insp-box label { display: block; font-size: 9.5px; font-family: 'Orbitron', sans-serif; color: #64748B; margin-bottom: 5px; letter-spacing: 1px; }
+    .insp-box .val { font-size: 12px; line-height: 1.5; color: #E2E8F0; }
+
+    /* Interactive Functions Grid Inside Room */
+    .fn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .fn-pill {
+      background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25);
+      padding: 8px; border-radius: 4px; font-size: 11px; color: #00F0FF; cursor: pointer;
+      display: flex; flex-direction: column; gap: 4px; transition: all 0.2s;
+    }
+    .fn-pill:hover { background: rgba(0, 240, 255, 0.25); border-color: #00F0FF; box-shadow: 0 0 12px rgba(0, 240, 255, 0.4); transform: translateY(-1px); }
+    .fn-pill.active { background: #00F0FF; color: #000; font-weight: 700; box-shadow: 0 0 15px #00F0FF; }
+    .fn-type { font-size: 9px; opacity: 0.7; font-family: 'Orbitron', sans-serif; text-transform: uppercase; }
+
+    /* Code Snippet Box */
+    .code-preview {
+      background: #000000; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 4px;
+      padding: 12px; font-size: 11px; line-height: 1.6; color: #A5B4FC; max-height: 180px;
+      overflow-y: auto; font-family: 'JetBrains Mono', monospace; user-select: text;
+    }
+    .code-line-highlight { background: rgba(255, 0, 85, 0.25); color: #FF0055; border-left: 2px solid #FF0055; padding-left: 4px; }
+
+    /* Big Action Buttons */
+    .enter-room-btn {
+      background: linear-gradient(135deg, #FF0055, #8B5CF6); border: none;
+      color: #FFF; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 11px;
+      padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; letter-spacing: 1px;
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); transition: all 0.2s;
+    }
+    .enter-room-btn:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(255, 0, 85, 0.8); }
+
+    .trace-btn {
+      background: linear-gradient(135deg, #059669, #10B981); border: none;
+      color: #FFF; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 11px;
+      padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; letter-spacing: 1px;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); transition: all 0.2s; margin-top: 6px;
+    }
+    .trace-btn:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
+
+    /* Inside Room Overlay */
+    .room-overlay {
+      position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
+      background: rgba(5, 7, 15, 0.9); backdrop-filter: blur(20px);
+      border: 1px solid #00F0FF; padding: 10px 24px; border-radius: 4px;
+      display: none; align-items: center; gap: 16px; z-index: 10;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.3); font-family: 'Orbitron', sans-serif; font-size: 11px;
+    }
+    .room-overlay.active { display: flex; }
+
+    /* Bottom Cyber HUD */
+    .cyber-hud-bottom {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(5, 7, 15, 0.88); backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px;
+      padding: 10px 24px; display: flex; align-items: center; gap: 24px; z-index: 10; font-size: 11px;
+    }
+    .hud-stat { display: flex; align-items: center; gap: 8px; }
+    .siren-dot { width: 10px; height: 10px; border-radius: 50%; background: #00F0FF; box-shadow: 0 0 14px #00F0FF; }
+    .siren-dot.alert { background: #FF0055; box-shadow: 0 0 20px #FF0055; animation: siren-pulse 0.4s infinite alternate; }
+    @keyframes siren-pulse { 0% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.3); } }
+
+    /* --- FULLSCREEN FPS DRONE PILOT HUD --- */
+    .drone-hud {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 20; display: none; flex-direction: column;
+      justify-content: space-between; padding: 24px; box-sizing: border-box;
+      font-family: 'Orbitron', monospace;
+    }
+    .drone-hud.active { display: flex; }
+    
+    .hud-bracket-top-left { position: absolute; top: 24px; left: 24px; width: 60px; height: 60px; border-top: 2px solid #00F0FF; border-left: 2px solid #00F0FF; opacity: 0.8; }
+    .hud-bracket-top-right { position: absolute; top: 24px; right: 24px; width: 60px; height: 60px; border-top: 2px solid #00F0FF; border-right: 2px solid #00F0FF; opacity: 0.8; }
+    .hud-bracket-bottom-left { position: absolute; bottom: 24px; left: 24px; width: 60px; height: 60px; border-bottom: 2px solid #00F0FF; border-left: 2px solid #00F0FF; opacity: 0.8; }
+    .hud-bracket-bottom-right { position: absolute; bottom: 24px; right: 24px; width: 60px; height: 60px; border-bottom: 2px solid #00F0FF; border-right: 2px solid #00F0FF; opacity: 0.8; }
+
+    /* Crosshair & Target Reticle */
+    .drone-crosshair-wrap {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 140px; height: 140px; display: flex; align-items: center; justify-content: center;
+    }
+    .crosshair-center {
+      width: 8px; height: 8px; border-radius: 50%; background: #00F0FF;
+      box-shadow: 0 0 12px #00F0FF;
+    }
+    .crosshair-ring {
+      position: absolute; width: 80px; height: 80px; border: 1px dashed rgba(0, 240, 255, 0.4);
+      border-radius: 50%; animation: ring-rotate 12s linear infinite;
+    }
+    .crosshair-brackets {
+      position: absolute; width: 110px; height: 110px;
+      border: 1px solid transparent; border-top-color: #00F0FF; border-bottom-color: #00F0FF;
+      transition: all 0.2s;
+    }
+    .crosshair-brackets.locked {
+      border-color: #FF0055; width: 90px; height: 90px;
+      box-shadow: 0 0 25px rgba(255, 0, 85, 0.6); animation: lock-pulse 0.4s infinite alternate;
+    }
+    @keyframes ring-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes lock-pulse { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
+
+    /* Top Compass Tape */
+    .drone-compass {
+      align-self: center; margin-top: 10px; background: rgba(5, 7, 15, 0.7);
+      border: 1px solid rgba(0, 240, 255, 0.3); padding: 6px 20px; border-radius: 4px;
+      color: #00F0FF; font-size: 13px; letter-spacing: 3px; text-shadow: 0 0 10px #00F0FF;
+    }
+
+    /* Left Altitude & Right Speed Tapes */
+    .drone-telemetry-left {
+      position: absolute; left: 40px; top: 50%; transform: translateY(-50%);
+      background: rgba(5, 7, 15, 0.8); border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 12px 16px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .drone-telemetry-right {
+      position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+      background: rgba(5, 7, 15, 0.8); border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 12px 16px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .tel-label { font-size: 9px; color: #64748B; letter-spacing: 1px; }
+    .tel-val { font-size: 18px; font-weight: 800; color: #FFF; text-shadow: 0 0 12px rgba(255,255,255,0.7); }
+    .tel-turbo { color: #FF0055; font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+
+    /* Target Scanner Hologram Box */
+    .drone-target-card {
+      align-self: center; margin-bottom: 75px; background: rgba(5, 7, 15, 0.92);
+      border: 1px solid #00F0FF; padding: 12px 24px; border-radius: 4px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.3); opacity: 0; transition: opacity 0.25s;
+    }
+    .drone-target-card.visible { opacity: 1; }
+    .target-title { font-size: 10px; color: #00F0FF; letter-spacing: 2px; }
+    .target-name { font-size: 14px; font-weight: 800; color: #FFF; text-shadow: 0 0 10px #00F0FF; }
+    .target-action { font-size: 10px; color: #10B981; font-weight: 700; letter-spacing: 1px; }
+
+    /* Drone Controls Footer Banner */
+    .drone-controls-pill {
+      align-self: center; background: rgba(5, 7, 15, 0.9);
+      border: 1px solid rgba(0, 240, 255, 0.4); padding: 8px 24px; border-radius: 4px;
+      display: flex; align-items: center; gap: 18px; font-size: 10px; color: #94A3B8;
+      pointer-events: auto;
+    }
+    .key-badge {
+      background: rgba(0, 240, 255, 0.15); border: 1px solid #00F0FF; color: #00F0FF;
+      padding: 2px 6px; border-radius: 3px; font-weight: 700;
+    }
+    .exit-drone-btn {
+      background: #FF0055; border: none; color: #FFF; font-family: 'Orbitron', sans-serif;
+      font-weight: 800; font-size: 10px; padding: 5px 12px; cursor: pointer; border-radius: 3px;
+      box-shadow: 0 0 15px #FF0055; letter-spacing: 1px;
+    }
+    .exit-drone-btn:hover { background: #FF3366; }
+
+    /* Radar Minimap HUD */
+    .radar-container {
+      position: absolute; bottom: 20px; right: 20px; width: 165px; height: 165px;
+      background: rgba(4, 6, 14, 0.9); border: 1.5px solid rgba(0, 240, 255, 0.45);
+      border-radius: 50%; box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), inset 0 0 25px rgba(0, 240, 255, 0.12);
+      z-index: 12; overflow: hidden; backdrop-filter: blur(16px); display: flex; align-items: center; justify-content: center;
+    }
+    .radar-canvas { width: 100%; height: 100%; }
+    .radar-header {
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+      font-size: 8px; font-family: 'Orbitron', sans-serif; color: #00F0FF;
+      letter-spacing: 1.5px; text-shadow: 0 0 6px #00F0FF; pointer-events: none; font-weight: 800;
+    }
+
+    /* Zero-Token AST Telemetry Card (Direct Answer to Critic Comments) */
+    .zero-token-hud {
+      position: absolute; left: 20px; bottom: 20px; width: 310px;
+      background: rgba(5, 7, 15, 0.92); backdrop-filter: blur(20px);
+      border: 1px solid rgba(16, 185, 129, 0.45); border-radius: 4px;
+      padding: 12px 14px; z-index: 10; font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.18);
+    }
+    .zth-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: 'Orbitron', sans-serif; font-size: 10.5px; font-weight: 800;
+      color: #10B981; margin-bottom: 8px; border-bottom: 1px solid rgba(16, 185, 129, 0.25);
+      padding-bottom: 6px;
+    }
+    .zth-pulse {
+      width: 8px; height: 8px; border-radius: 50%; background: #10B981;
+      box-shadow: 0 0 12px #10B981; animation: zth-blink 1.2s infinite; display: inline-block; margin-right: 6px;
+    }
+    @keyframes zth-blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.75); } }
+    .zth-badge { font-size: 8px; background: rgba(16, 185, 129, 0.2); color: #10B981; padding: 2px 6px; border-radius: 2px; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .zth-grid { display: flex; flex-direction: column; gap: 4px; }
+    .zth-item { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
+    .zth-lbl { color: #64748B; font-size: 9px; font-family: 'Orbitron', sans-serif; }
+    .zth-val { color: #FFF; font-weight: 700; }
+    .zth-val.highlight { color: #00F0FF; text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
+    .zth-val.success { color: #10B981; text-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+    .zth-footer {
+      margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      font-size: 9px; color: #94A3B8; font-style: italic; line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation Bar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">MB</div>
+      <div class="brand-text">
+        <h1>MINDBOOK CYBERPUNK AST CODE CITY</h1>
+        <p>HYPER-GRANULAR FUNCTION & CALL GRAPH SPATIAL TOPOLOGY</p>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="cyber-btn pulse" id="btn-drone" onclick="toggleDroneMode()" style="background: rgba(255, 0, 85, 0.18); border-color: #FF0055; color: #FF0055; box-shadow: 0 0 15px rgba(255,0,85,0.4);">
+        <span>🕹️</span> <span id="drone-btn-text">PILOT DRONE [V]</span>
+      </button>
+      <button class="cyber-btn" id="btn-tour" onclick="toggleCinematicTour()">
+        <span>🎬</span> <span id="tour-btn-text">CINEMATIC TOUR</span>
+      </button>
+      <button class="cyber-btn pulse" onclick="triggerInteractiveCallTrace()">
+        <span>⚡</span> <span>Trace Call Graph</span>
+      </button>
+      <button class="cyber-btn" id="btn-rain" onclick="toggleCyberRain()">
+        <span>🌧️</span> <span id="rain-text">Rain: OFF</span>
+      </button>
+      <button class="cyber-btn" id="btn-audio" onclick="toggleAudio()">
+        <span>🔊</span> <span id="audio-text">Audio: OFF</span>
+      </button>
+      <button class="cyber-btn" id="btn-xray" onclick="toggleXRay()">
+        <span>🔬</span> <span id="xray-text">X-Ray: OFF</span>
+      </button>
+      <button class="cyber-btn pulse" id="btn-ankara" onclick="toggleAnkaraMode()" style="background: linear-gradient(135deg, rgba(255, 0, 85, 0.4), rgba(245, 158, 11, 0.3)); border-color: #FF0055; color: #FFF; font-weight: 900; box-shadow: 0 0 20px #FF0055;">
+        <span>💃</span> <span id="ankara-btn-text">ANKARA MODU [06]</span>
+      </button>
+      <a href="/workforce" class="cyber-btn emerald" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #10B981; color: #10B981; background: rgba(16, 185, 129, 0.15);">
+        <span>🤖</span> <span>WORKFORCE AJANLAR [3D]</span>
+      </a>
+      <a href="/surf" class="cyber-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #EC4899; color: #EC4899; background: rgba(236, 72, 153, 0.15);">
+        <span>🚇</span> <span>SUBWAY AST [RUN]</span>
+      </a>
+      <a href="/factory" class="cyber-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #F59E0B; color: #F59E0B; background: rgba(245, 158, 11, 0.15);">
+        <span>🏭</span> <span>CODE FACTORY</span>
+      </a>
+      <button class="cyber-btn danger" id="btn-bug" onclick="simulateBugIncident()">
+        <span>🚨</span> <span>Bug Siren</span>
+      </button>
+      <button class="cyber-btn" onclick="resetView()">
+        <span>🎯</span> <span>Reset Cam</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Left District Navigation -->
+  <div class="district-nav">
+    <div class="district-title">// MEGAPOLIS DISTRICTS</div>
+    <div class="district-pill active" onclick="focusDistrict('all')">
+      <span>🌐</span> <span>Metropolis Skyline</span>
+    </div>
+    <div class="district-pill" onclick="focusDistrict('editor')">
+      <span>📝</span> <span>Editor Megatower</span>
+    </div>
+    <div class="district-pill" onclick="focusDistrict('vault')">
+      <span>🛡️</span> <span>Cipher Vault Citadel</span>
+    </div>
+    <div class="district-pill" onclick="focusDistrict('ai')">
+      <span>🧠</span> <span>Neural AI Spire</span>
+    </div>
+    <div class="district-pill" onclick="focusDistrict('cloud')">
+      <span>☁️</span> <span>Supabase Skyport</span>
+    </div>
+    <div class="district-pill" onclick="focusDistrict('settings')">
+      <span>⚙️</span> <span>System Gateway</span>
+    </div>
+  </div>
+
+  <!-- Inside Room Active Banner -->
+  <div class="room-overlay" id="room-overlay">
+    <span style="color: #00F0FF;">● ROOM VIEW:</span>
+    <span id="current-room-name" style="color: #FFF; font-weight: 900;">useNoteSearch Engine Core</span>
+    <button class="cyber-btn" style="padding: 4px 10px; font-size: 10px;" onclick="exitInteriorRoom()">EXIT TO SKYLINE</button>
+  </div>
+
+  <!-- Right Inspector & Real Code Viewer -->
+  <div class="inspector" id="inspector">
+    <div class="inspector-header">
+      <div>
+        <span class="neon-badge" id="insp-badge" style="background: rgba(0,240,255,0.2); color: #00F0FF; border: 1px solid #00F0FF;">HOOK // LEVEL 2</span>
+        <h2 class="insp-name" id="insp-name">useNoteSearch</h2>
+      </div>
+      <button class="close-btn" onclick="closeInspector()">✕</button>
+    </div>
+    <div class="inspector-body">
+      <div class="insp-box">
+        <label>// COMPONENT & ROLE</label>
+        <div class="val" id="insp-desc">Not içi arama algoritması; büyük/küçük harf duyarsız eşleşmeler ve dairesel atlama.</div>
+      </div>
+
+      <!-- Real Functions & State Nodes inside this component -->
+      <div class="insp-box">
+        <label>// REAL FUNCTIONS & STATE OBJECTS (CLICK TO FLY)</label>
+        <div class="fn-grid" id="fn-grid-container">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Real TypeScript Code Snippet Viewer -->
+      <div class="insp-box">
+        <label>// REAL TYPESCRIPT CODE (<span id="insp-code-path">hooks/notes/useNoteSearch.ts</span>)</label>
+        <pre class="code-preview" id="code-snippet-box">
+// Code snippet appears here
+        </pre>
+      </div>
+
+      <button class="enter-room-btn" onclick="enterSelectedRoom()">
+        🚪 ODAYA GİR & 3D FONKSİYONLARI GEZ
+      </button>
+
+      <button class="trace-btn" onclick="triggerInteractiveCallTrace()">
+        ⚡ CALL GRAPH VERİ YOLUNU ATEŞLE
+      </button>
+    </div>
+  </div>
+
+  <!-- Fullscreen FPS Drone Pilot Cockpit HUD -->
+  <div class="drone-hud" id="drone-hud">
+    <div class="hud-bracket-top-left"></div>
+    <div class="hud-bracket-top-right"></div>
+    <div class="hud-bracket-bottom-left"></div>
+    <div class="hud-bracket-bottom-right"></div>
+
+    <!-- Compass -->
+    <div class="drone-compass" id="drone-compass">HDG 042° // NE</div>
+
+    <!-- Telemetry Panels -->
+    <div class="drone-telemetry-left">
+      <div class="tel-label">ALTITUDE</div>
+      <div class="tel-val" id="tel-alt">18.4 <span style="font-size: 11px; color:#64748B;">M</span></div>
+      <div class="tel-label" style="margin-top: 4px;">VERTICAL SPD</div>
+      <div class="tel-val" id="tel-vspd" style="font-size: 13px; color:#00F0FF;">0.0 <span style="font-size: 9px;">M/S</span></div>
+    </div>
+
+    <div class="drone-telemetry-right">
+      <div class="tel-label">FLIGHT SPEED</div>
+      <div class="tel-val" id="tel-spd">0 <span style="font-size: 11px; color:#64748B;">KM/H</span></div>
+      <div class="tel-turbo" id="tel-turbo" style="display: none;">⚡ TURBO THRUST ACTIVE</div>
+    </div>
+
+    <!-- Center Reticle & Target Lock -->
+    <div class="drone-crosshair-wrap">
+      <div class="crosshair-center"></div>
+      <div class="crosshair-ring"></div>
+      <div class="crosshair-brackets" id="crosshair-brackets"></div>
+    </div>
+
+    <!-- Holographic Target Scanner Card -->
+    <div class="drone-target-card" id="drone-target-card">
+      <div class="target-title">⚡ AST SENSOR // TARGET IN SIGHT</div>
+      <div class="target-name" id="target-name">EditorBody.tsx · countVisualLines()</div>
+      <div class="target-action" id="target-action">PRESS [E] OR CLICK TO SCAN CODE & AST</div>
+    </div>
+
+    <!-- Footer Controls Legend -->
+    <div class="drone-controls-pill">
+      <div><span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span> FLY</div>
+      <div><span class="key-badge">SPACE</span> ASCEND</div>
+      <div><span class="key-badge">C</span> DESCEND</div>
+      <div><span class="key-badge">SHIFT</span> BOOST</div>
+      <div><span class="key-badge">F</span> / CLICK PLASMA BLASTER</div>
+      <div><span class="key-badge">E</span> SCAN AST</div>
+      <div><span class="key-badge">ESC</span> / <span class="key-badge">V</span> EXIT</div>
+      <button class="exit-drone-btn" onclick="exitDroneMode()">EXIT DRONE</button>
+    </div>
+  </div>
+
+  <!-- Holographic Radar Minimap HUD -->
+  <div class="radar-container" id="radar-container">
+    <div class="radar-header">AST RADAR</div>
+    <canvas id="radar-canvas" width="165" height="165" class="radar-canvas"></canvas>
+  </div>
+
+  <!-- Zero-Token AST Telemetry Card (Direct Proof of No Token Waste) -->
+  <div class="zero-token-hud" id="zero-token-hud">
+    <div class="zth-header">
+      <div style="display:flex; align-items:center;">
+        <span class="zth-pulse"></span>
+        <span id="zth-header-title">ZERO-TOKEN AST RUNTIME</span>
+      </div>
+      <span class="zth-badge" id="zth-badge">100% LOCAL</span>
+    </div>
+    <div class="zth-grid">
+      <div class="zth-item">
+        <span class="zth-lbl" id="zth-lbl-tokens">LLM INFERENCE TOKENS:</span>
+        <span class="zth-val highlight" id="zth-val-tokens">0 TOKENS (ZERO-WASTE)</span>
+      </div>
+      <div class="zth-item">
+        <span class="zth-lbl" id="zth-lbl-bill">MONTHLY API BILL:</span>
+        <span class="zth-val success" id="zth-val-bill">$0.00 / UNLIMITED LOCAL</span>
+      </div>
+      <div class="zth-item">
+        <span class="zth-lbl" id="zth-lbl-lat">AST COMPILE LATENCY:</span>
+        <span class="zth-val" id="zth-val-lat">0.6 ms (TS-COMPILER VISITOR)</span>
+      </div>
+      <div class="zth-item">
+        <span class="zth-lbl" id="zth-lbl-graph">SPATIAL CODE GRAPH:</span>
+        <span class="zth-val highlight" id="zth-val-graph">84 NODES · 142 CALL EDGES</span>
+      </div>
+      <div class="zth-item">
+        <span class="zth-lbl" id="zth-lbl-critic">CRITIC FILTER:</span>
+        <span class="zth-val" id="zth-val-critic" style="color: #FF0055; font-size: 8.5px;">"Token israfı" Nullified</span>
+      </div>
+    </div>
+    <div class="zth-footer" id="zth-footer">
+      "Her kod taramasında 50k token yakmak yerine saf deterministik TypeScript AST uzay haritası."
+    </div>
+  </div>
+
+  <!-- Bottom Cyber HUD -->
+  <div class="cyber-hud-bottom" id="cyber-hud-bottom">
+    <div class="hud-stat">
+      <div class="siren-dot" id="siren-indicator"></div>
+      <span id="drone-status-text" style="color: #00F0FF; font-weight: 700; letter-spacing: 1px;">READY · AST OBJECT CALL GRAPH LINKED</span>
+    </div>
+    <div class="hud-stat" style="color: #64748B;">|</div>
+    <div class="hud-stat">
+      <span style="color: #94A3B8;">PARSER:</span>
+      <span style="color: #10B981; font-weight: 700;">TS-AST COMPILED (0 TOKENS)</span>
+    </div>
+    <div class="hud-stat" style="color: #64748B;">|</div>
+    <div class="hud-stat">
+      <span style="color: #94A3B8;">FPS:</span>
+      <span id="live-fps" style="color: #FFF; font-weight: 700;">60</span>
+    </div>
+  </div>
+
+  <script>
+    // --- TOWERS WITH REAL GRANULAR FUNCTIONS & AST DATA ---
+    const TOWERS = [
+      {
+        id: 'editor',
+        name: 'EDITOR MEGATOWER',
+        x: -14, z: 0, width: 9, depth: 9,
+        neonColor: 0x00F0FF,
+        sign: 'NOTE EDITOR // MAAKUN SEARCH',
+        floors: [
+          {
+            name: 'AsyncStorage Bunker', level: 0, height: 3.2, path: '@react-native-async-storage',
+            desc: 'Cihaz içi offline notların yerel SQLite/AsyncStorage deposu.', color: 0x0A2540,
+            functions: [
+              { name: 'getItem()', type: 'Async Read', line: 12, code: 'await AsyncStorage.getItem("@mindbook_notes");' },
+              { name: 'setItem()', type: 'Async Write', line: 24, code: 'await AsyncStorage.setItem("@mindbook_notes", json);' }
+            ]
+          },
+          {
+            name: 'EditorContext Pillar', level: 1, height: 3.5, path: 'context/EditorContext.tsx',
+            desc: 'Editörün state omurgası. Arama durumları, imleç seçimi ve senkronizasyon.', color: 0x1E1B4B,
+            functions: [
+              { name: 'openSearch()', type: 'Context Action', line: 139, code: 'openSearch: search.openSearch,' },
+              { name: 'closeSearch()', type: 'Context Action', line: 140, code: 'closeSearch: search.closeSearch,' },
+              { name: 'activeSearchSelection', type: 'Memo State', line: 141, code: 'activeSearchSelection: search.activeSelection,' }
+            ]
+          },
+          {
+            name: 'useNoteSearch Engine', level: 2, height: 3.8, path: 'hooks/notes/useNoteSearch.ts',
+            desc: 'Büyük/küçük harf duyarsız arama algoritması, döngüsel sonraki/önceki eşleşme yöneticisi.', color: 0x064E3B,
+            functions: [
+              { name: 'searchQuery', type: 'State', line: 11, code: 'const [searchQuery, setSearchQuery] = useState("");' },
+              { name: 'matches', type: 'useMemo', line: 15, code: 'const matches = useMemo(() => {\n  const q = searchQuery.trim().toLowerCase();\n  // Substring index scan\n});' },
+              { name: 'goToNextMatch()', type: 'useCallback', line: 46, code: 'const goToNextMatch = useCallback(() => {\n  setCurrentMatchIndex(prev => prev + 1 >= total ? 0 : prev + 1);\n});' },
+              { name: 'goToPrevMatch()', type: 'useCallback', line: 51, code: 'const goToPrevMatch = useCallback(() => {\n  setCurrentMatchIndex(prev => prev - 1 < 0 ? total - 1 : prev - 1);\n});' },
+              { name: 'activeSelection', type: 'useMemo Selector', line: 56, code: 'const activeSelection = useMemo(() => ({\n  start: current.start, end: current.end\n}));' }
+            ]
+          },
+          {
+            name: 'InNoteSearchBar', level: 3, height: 3.8, path: 'components/editor/InNoteSearchBar.tsx',
+            desc: 'Yüzen arama konsolu; 1/5 canlı sayaç, yukarı/aşağı atlama ve temizleme butonları.', color: 0x78350F,
+            functions: [
+              { name: 'onSearchChange', type: 'Input Handler', line: 69, code: 'onChangeText={onSearchChange}\nonSubmitEditing={onNext}' },
+              { name: 'onNext() Chevron', type: 'Button Click', line: 118, code: '<TouchableOpacity onPress={onNext} disabled={!hasMatches}>' },
+              { name: 'onPrev() Chevron', type: 'Button Click', line: 105, code: '<TouchableOpacity onPress={onPrev} disabled={!hasMatches}>' },
+              { name: 'matchBadge', type: 'UI Counter', line: 91, code: 'const matchText = `${matchIndex + 1}/${totalMatches}`;' }
+            ]
+          },
+          {
+            name: 'EditorBody Visualizer', level: 4, height: 4.2, path: 'components/editor/EditorBody.tsx',
+            desc: 'Görsel sarı/turuncu rozetlerle metin vurgulayan ve otomatik satıra kaydıran (scrollTo) ana gövde.', color: 0x831843,
+            functions: [
+              { name: 'countVisualLines()', type: 'Math Engine', line: 10, code: 'const countVisualLines = (text) => {\n  // Screen width based soft wrap line count\n};' },
+              { name: 'contentLayout', type: 'onLayout Hook', line: 39, code: 'setContentLayout({ y: layout.y, height: layout.height });' },
+              { name: 'AutoScrollEffect', type: 'useEffect Loop', line: 49, code: 'React.useEffect(() => {\n  const targetY = contentLayout.y + progress * contentLayout.height - 100;\n  scrollViewRef.current?.scrollTo({ y: targetY, animated: true });\n}, [activeSearchSelection]);' },
+              { name: 'highlightedContent', type: 'useMemo Spans', line: 74, code: 'const highlightedContent = useMemo(() => {\n  // Generates amber/yellow nested <Text> badges\n});' }
+            ]
+          },
+          {
+            name: 'edit-note.tsx Penthouse', level: 5, height: 4.8, path: 'app/(modal)/edit-note.tsx',
+            desc: 'Aurora efektiyle parlayan ana kullanıcı düzenleme vitrini modalı.', color: 0x991B1B,
+            functions: [
+              { name: 'EditorProvider', level: 1, type: 'Context Provider', line: 50, code: '<EditorProvider>\n  <EditorLayout />\n</EditorProvider>' },
+              { name: 'AuroraEffect', level: 2, type: 'Graphics Canvas', line: 34, code: '<AuroraEffect activeColor={themeColors[accentColor]} />' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'vault',
+        name: 'CIPHER VAULT CITADEL',
+        x: -5, z: -13, width: 8, depth: 8,
+        neonColor: 0x8B5CF6,
+        sign: 'AES-256 VAULT // E2E SHIELD',
+        floors: [
+          {
+            name: 'Android Keystore Bunker', level: 0, height: 3.5, path: 'expo-secure-store',
+            desc: 'Bunker: Donanım destekli şifreleme anahtarı saklama sığınağı.', color: 0x1E1B4B,
+            functions: [
+              { name: 'getItemAsync()', type: 'Hardware Keystore', line: 15, code: 'await SecureStore.getItemAsync("ENCRYPTION_KEY");' }
+            ]
+          },
+          {
+            name: 'AES-256 Crypto Core', level: 1, height: 4, path: 'utils/backup.tsx',
+            desc: '64 karakterlik anahtar ile uçtan uca şifreleme ve 88 miras bulut yedeğini onarma motoru.', color: 0x311042,
+            functions: [
+              { name: 'decryptNotes()', type: 'AES Decipher', line: 42, code: 'export function decryptNotes(encryptedData, key) {\n  return CryptoJS.AES.decrypt(encryptedData, key).toString(CryptoJS.enc.Utf8);\n}' },
+              { name: 'encryptNotes()', type: 'AES Cipher', line: 20, code: 'export function encryptNotes(notes, key) {\n  return CryptoJS.AES.encrypt(JSON.stringify(notes), key).toString();\n}' }
+            ]
+          },
+          {
+            name: 'AppLockService & Cooldown', level: 2, height: 3.8, path: 'services/appLock/AppLockService.ts',
+            desc: 'Kat 2: PIN, desen kilidi, soğuma süresi ve biyometrik kapı bekçisi.', color: 0x4A044E,
+            functions: [
+              { name: 'verifyUnlock()', type: 'Security Gate', line: 65, code: 'if (checkCooldown()) throw new Error("Locked out");\nreturn hash === storedHash;' }
+            ]
+          },
+          {
+            name: 'SecuritySettings Penthouse', level: 3, height: 4.5, path: 'components/settings/SecuritySettings.tsx',
+            desc: 'Çatı Katı: Biyometrik kimlik doğrulama ve desen kilit arayüzü.', color: 0x831843,
+            functions: [
+              { name: 'PatternCanvas', type: 'Gestures', line: 110, code: '<PatternCanvas onPatternComplete={handleUnlock} />' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ai',
+        name: 'NEURAL AI SPIRE',
+        x: 6, z: -10, width: 7.5, depth: 7.5,
+        neonColor: 0x10B981,
+        sign: 'GEMINI AI // NEURAL CORE',
+        floors: [
+          {
+            name: 'NetInfo Uplink Sub-station', level: 0, height: 3.2, path: '@react-native-community/netinfo',
+            desc: 'Bunker: Ağ bağlantısı ve soket dinleme trafosu.', color: 0x064E3B,
+            functions: [{ name: 'addEventListener()', type: 'Network Listener', line: 10, code: 'NetInfo.addEventListener(state => isConnected = state.isConnected);' }]
+          },
+          {
+            name: 'Gemini AI Client Room', level: 1, height: 4, path: 'hooks/useGeminiAI.ts',
+            desc: 'Kat 1: Google Gemini API köprüsü ve prompt tamamlama ünitesi.', color: 0x065F46,
+            functions: [
+              { name: 'correctSpelling()', type: 'AI Prompt Wrapper', line: 85, code: 'return await callGeminiAPI(`Fix spelling in: ${content}`);' },
+              { name: 'improveWriting()', type: 'AI Tone Enhancer', line: 102, code: 'return await callGeminiAPI(`Improve flow & clarity: ${content}`);' }
+            ]
+          },
+          {
+            name: 'ChatContext Streamer', level: 2, height: 3.8, path: 'context/ChatContext.tsx',
+            desc: 'Kat 2: Reaktif sohbet geçmişi ve oturum belleği.', color: 0x047857,
+            functions: [{ name: 'saveChatHistory()', type: 'Async Storage', line: 60, code: 'await saveChatHistory(activeSessionId, messages);' }]
+          },
+          {
+            name: 'ai-analyzer.tsx Hologram Spire', level: 3, height: 5, path: 'app/(modal)/ai-analyzer.tsx',
+            desc: 'Çatı Katı: Not yazım denetimi, anlatım iyileştirme ve özetleme laboratuvarı.', color: 0x059669,
+            functions: [{ name: 'handleOpenAIAnalyzer()', type: 'Screen Router', line: 46, code: 'router.push({ pathname: "/(modal)/ai-analyzer", params: { noteId } });' }]
+          }
+        ]
+      },
+      {
+        id: 'cloud',
+        name: 'SUPABASE CLOUD SKYPORT',
+        x: 15, z: 2, width: 8.5, depth: 8.5,
+        neonColor: 0x3B82F6,
+        sign: 'SUPABASE SKYPORT // OTA UPDATES',
+        floors: [
+          {
+            name: 'PostgreSQL Realtime Sub-Bunker', level: 0, height: 3.5, path: 'utils/supabase.ts',
+            desc: 'Bunker: Bulut veritabanı, notlar ve profiller tabloları.', color: 0x0C4A6E,
+            functions: [{ name: 'supabase.from("notes")', type: 'SQL Client', line: 25, code: 'supabase.from("notes").select("*").eq("user_id", user.id);' }]
+          },
+          {
+            name: 'OTA Updates Service Engine', level: 1, height: 3.8, path: 'expo-updates',
+            desc: 'Kat 1: Google Play beklemeden uzaktan kablosuz JS kod güncelleme motoru.', color: 0x0369A1,
+            functions: [{ name: 'Updates.checkForUpdateAsync()', type: 'OTA Engine', line: 18, code: 'const update = await Updates.checkForUpdateAsync();\nif (update.isAvailable) await Updates.fetchUpdateAsync();' }]
+          },
+          {
+            name: 'Sentry Telemetry Hub', level: 2, height: 3.8, path: '@sentry/react-native',
+            desc: 'Kat 2: Canlı çökme raporları, sourcemap izleme ve hata telemetrisi.', color: 0x0284C7,
+            functions: [{ name: 'Sentry.captureException()', type: 'Telemetry', line: 35, code: 'Sentry.captureException(error);' }]
+          },
+          {
+            name: 'Backup & Cloud Sync Tower', level: 3, height: 4.8, path: 'components/settings/BackupSettings.tsx',
+            desc: 'Çatı Katı: Otomatik bulut yedekleme ve dışa aktarım kontrol kulesi.', color: 0x1D4ED8,
+            functions: [{ name: 'syncCloudBackup()', type: 'E2E Sync', line: 78, code: 'const encrypted = encryptNotes(notes, key);\nawait supabase.from("backups").insert({ payload: encrypted });' }]
+          }
+        ]
+      },
+      {
+        id: 'settings',
+        name: 'METROPOLIS GATEWAY',
+        x: -2, z: 12, width: 9.5, depth: 8,
+        neonColor: 0xFF0055,
+        sign: 'SETTINGS // AURORA THEMES',
+        floors: [
+          {
+            name: 'ThemeContext & Aurora Core', level: 0, height: 3.2, path: 'context/ThemeContext.tsx',
+            desc: 'Bunker: Aurora ışık dalgaları, dinamik renk temaları ve yazı tipi ölçekleyici.', color: 0x4C0519,
+            functions: [{ name: 'changeAccentColor()', type: 'Theme Mutator', line: 55, code: 'setAccentColor(newColor);\nawait AsyncStorage.setItem("accentColor", newColor);' }]
+          },
+          {
+            name: 'FlashList v2 Notes Engine', level: 1, height: 3.8, path: 'components/notes/NotesList.tsx',
+            desc: 'Kat 1: Sanallaştırılmış yüksek hızlı not akış listesi motoru.', color: 0x881337,
+            functions: [{ name: 'FlashList<Note>', type: 'Virtualized List', line: 42, code: '<FlashList ref={flashListRef} data={notes} renderItem={renderNoteItem} />' }]
+          },
+          {
+            name: 'AISubscriptionPricing Floor', level: 2, height: 3.8, path: 'components/AISubscriptionPricing.tsx',
+            desc: 'Kat 2: Aylık, yıllık ve ömür boyu kurucu (founder) abonelik planları.', color: 0x9F1239,
+            functions: [{ name: 'PricingTierCard', type: 'Billing Card', line: 30, code: '<PricingTierCard title="Founder Lifetime" price="$49.99" popular={true} />' }]
+          },
+          {
+            name: 'settings.tsx Grand Observatory', level: 3, height: 4.8, path: 'app/(tabs)/settings.tsx',
+            desc: 'Çatı Katı: Uygulama ayarları, dil seçimi ve tema yönetimi gözlemevi.', color: 0xBE123C,
+            functions: [{ name: 'logout()', type: 'Auth Purge', line: 120, code: 'await logout();\nrouter.replace("/(auth)/login");' }]
+          }
+        ]
+      }
+    ];
+
+    // --- THREE.JS SCENE SETUP ---
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x04030c, 0.007); // Crystal-clear long-distance visibility
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(24, 32, 42);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2.05;
+    controls.target.set(0, 8, 0);
+
+    // --- UNREAL BLOOM POSTPROCESSING (NEON RADIANCE) ---
+    let composer = null;
+    try {
+      const renderScene = new THREE.RenderPass(scene, camera);
+      const bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        1.25, // strength (rich vivid bloom)
+        0.35, // radius
+        0.24  // threshold (vibrant neon glow)
+      );
+      composer = new THREE.EffectComposer(renderer);
+      composer.addPass(renderScene);
+      composer.addPass(bloomPass);
+    } catch (e) {
+      console.warn("Bloom setup fallback:", e);
+    }
+
+    // --- CYBER LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0x0a1020, 1.2);
+    scene.add(ambientLight);
+
+    const cyanSpot = new THREE.PointLight(0x00F0FF, 3.5, 60);
+    cyanSpot.position.set(-15, 20, 5);
+    scene.add(cyanSpot);
+
+    const pinkSpot = new THREE.PointLight(0xFF0055, 3.5, 60);
+    pinkSpot.position.set(10, 22, -10);
+    scene.add(pinkSpot);
+
+    // --- GROUND & GRID ---
+    const groundGeo = new THREE.PlaneGeometry(120, 120);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x05070D, roughness: 0.15, metalness: 0.8 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const grid = new THREE.GridHelper(120, 60, 0x00F0FF, 0x1E293B);
+    grid.position.y = 0.02;
+    scene.add(grid);
+
+    // --- CYBER EMBER DUST PARTICLES ---
+    const emberCount = 900;
+    const emberGeo = new THREE.BufferGeometry();
+    const emberPositions = new Float32Array(emberCount * 3);
+    const emberColors = new Float32Array(emberCount * 3);
+
+    for (let i = 0; i < emberCount; i++) {
+      emberPositions[i * 3] = (Math.random() - 0.5) * 110;
+      emberPositions[i * 3 + 1] = Math.random() * 45;
+      emberPositions[i * 3 + 2] = (Math.random() - 0.5) * 110;
+
+      const isCyan = Math.random() > 0.45;
+      emberColors[i * 3] = isCyan ? 0.0 : 1.0;
+      emberColors[i * 3 + 1] = isCyan ? 0.94 : 0.0;
+      emberColors[i * 3 + 2] = isCyan ? 1.0 : 0.33;
+    }
+    emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPositions, 3));
+    emberGeo.setAttribute('color', new THREE.BufferAttribute(emberColors, 3));
+
+    const emberMat = new THREE.PointsMaterial({
+      size: 0.32,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending
+    });
+    const emberParticles = new THREE.Points(emberGeo, emberMat);
+    scene.add(emberParticles);
+
+    // --- PROCEDURAL CYBERPUNK SKYSCRAPER WINDOW TEXTURE GENERATOR ---
+    function createProceduralCyberTexture(neonHex, baseColorHex) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      // Dark metallic facade background
+      ctx.fillStyle = '#050711';
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Panel seams
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let y = 0; y <= 512; y += 32) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+      }
+
+      // Windows grid
+      const cols = 16, rows = 16;
+      const cw = 512 / cols, ch = 512 / rows;
+      const neonStr = '#' + neonHex.toString(16).padStart(6, '0');
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const rand = Math.random();
+          if (rand > 0.28) {
+            if (rand > 0.82) {
+              ctx.fillStyle = neonStr;
+            } else if (rand > 0.6) {
+              ctx.fillStyle = '#00F0FF';
+            } else if (rand > 0.42) {
+              ctx.fillStyle = '#FFD700';
+            } else {
+              ctx.fillStyle = '#FF0055';
+            }
+            ctx.fillRect(c * cw + 4, r * ch + 4, cw - 8, ch - 8);
+          }
+        }
+      }
+
+      // Vertical neon data busline
+      ctx.fillStyle = neonStr;
+      ctx.shadowColor = neonStr;
+      ctx.shadowBlur = 14;
+      ctx.fillRect(246, 0, 10, 512);
+      ctx.shadowBlur = 0;
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    // --- BUILD SKYSCRAPERS & FUNCTION CONSOLES ---
+    const floorMeshes = [];
+    const functionConsoleMeshes = [];
+    const outerWallMaterials = [];
+    const towerGroup = new THREE.Group();
+    scene.add(towerGroup);
+    const originalSignGroup = new THREE.Group();
+    scene.add(originalSignGroup);
+
+    let isXRay = false;
+    let selectedFloor = null;
+    let selectedFunctionObj = null;
+    let isInsideRoom = false;
+
+    TOWERS.forEach(t => {
+      let currentY = 0;
+
+      // Shaft
+      const totalTowerH = t.floors.reduce((acc, f) => acc + f.height + 0.15, 0);
+      const shaftGeo = new THREE.BoxGeometry(2, totalTowerH, 2);
+      const shaftMat = new THREE.MeshBasicMaterial({ color: t.neonColor, wireframe: true, transparent: true, opacity: 0.15 });
+      const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
+      shaftMesh.position.set(t.x, totalTowerH / 2, t.z);
+      towerGroup.add(shaftMesh);
+
+      t.floors.forEach((fl, idx) => {
+        const floorGroup = new THREE.Group();
+        floorGroup.userData = { ...fl, towerName: t.name, towerId: t.id };
+
+        const w = t.width - idx * 0.3;
+        const d = t.depth - idx * 0.3;
+        const h = fl.height;
+
+        // Outer Facade with Procedural Cyberpunk Skyscraper Window Texture
+        const facadeTex = createProceduralCyberTexture(t.neonColor, fl.color);
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mat = new THREE.MeshStandardMaterial({
+          color: fl.color,
+          roughness: 0.18,
+          metalness: 0.85,
+          map: facadeTex,
+          emissive: fl.color,
+          emissiveMap: facadeTex,
+          emissiveIntensity: 0.65, // Vivid vibrant glow from far away
+          transparent: true,
+          opacity: 0.95
+        });
+        outerWallMaterials.push(mat);
+
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        floorGroup.add(mesh);
+
+        // Neon Edges
+        const edgeGeo = new THREE.EdgesGeometry(geo);
+        const edgeMat = new THREE.LineBasicMaterial({ color: t.neonColor, linewidth: 2, transparent: true, opacity: 0.8 });
+        const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+        floorGroup.add(edges);
+
+        // ==========================================
+        // 3D FUNCTION CONSOLES (OBJECTS INSIDE THE ROOM)
+        // ==========================================
+        const fns = fl.functions || [];
+        const fnCount = fns.length;
+        const fnRadius = Math.min(w, d) * 0.32;
+
+        fns.forEach((fn, fIdx) => {
+          const fnConsoleGroup = new THREE.Group();
+          fnConsoleGroup.userData = { ...fn, floorName: fl.name, floorPath: fl.path, towerId: t.id };
+
+          const angle = (fIdx / Math.max(1, fnCount)) * Math.PI * 2;
+          const fnX = Math.cos(angle) * fnRadius;
+          const fnZ = Math.sin(angle) * fnRadius;
+          const fnY = -h / 2 + 0.45;
+
+          // Pedestal Base
+          const pedGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.7, 16);
+          const pedMat = new THREE.MeshStandardMaterial({ color: 0x05070D, metalness: 0.9, roughness: 0.2 });
+          const ped = new THREE.Mesh(pedGeo, pedMat);
+          fnConsoleGroup.add(ped);
+
+          // Glowing Floating Quantum Crystal for the Function
+          const crystalGeo = new THREE.OctahedronGeometry(0.32, 0);
+          const crystalColor = fn.type.includes('State') ? 0x00F0FF : fn.type.includes('Button') ? 0xF59E0B : fn.type.includes('Action') || fn.type.includes('useCallback') ? 0x10B981 : 0xFF0055;
+          const crystalMat = new THREE.MeshBasicMaterial({ color: crystalColor, wireframe: true });
+          const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+          crystal.position.y = 0.7;
+          fnConsoleGroup.add(crystal);
+
+          // Hologram Ring around function crystal
+          const ringGeo = new THREE.TorusGeometry(0.5, 0.02, 8, 24);
+          const ringMat = new THREE.MeshBasicMaterial({ color: crystalColor, transparent: true, opacity: 0.6 });
+          const ring = new THREE.Mesh(ringGeo, ringMat);
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = 0.7;
+          fnConsoleGroup.add(ring);
+
+          fnConsoleGroup.position.set(fnX, fnY, fnZ);
+          floorGroup.add(fnConsoleGroup);
+
+          functionConsoleMeshes.push({ group: fnConsoleGroup, crystal: crystal, ring: ring });
+        });
+
+        const posY = currentY + h / 2;
+        floorGroup.position.set(t.x, posY, t.z);
+        currentY += h + 0.15;
+
+        floorMeshes.push(floorGroup);
+        towerGroup.add(floorGroup);
+      });
+
+      // Rooftop Sign
+      const signGeo = new THREE.PlaneGeometry(t.width, 1.8);
+      const signMat = new THREE.MeshBasicMaterial({ color: t.neonColor, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+      const signMesh = new THREE.Mesh(signGeo, signMat);
+      signMesh.position.set(t.x, currentY + 0.9, t.z);
+      originalSignGroup.add(signMesh);
+    });
+
+    // ==========================================
+    // 💃 06 ANKARA / ÇANKIRI CADDESİ PAVYON MODU SYSTEM
+    // ==========================================
+    let isAnkaraMode = false;
+    const ankaraBillboardGroup = new THREE.Group();
+    ankaraBillboardGroup.visible = false;
+    scene.add(ankaraBillboardGroup);
+
+    function createAnkaraBillboard(title, subtitle, w, h, neonColorHex = '#FF0055', txtColorHex = '#FFFFFF') {
+      const c = document.createElement('canvas');
+      c.width = 1024;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+
+      // Nightclub deep dark magenta/purple background
+      ctx.fillStyle = '#08010d';
+      ctx.fillRect(0, 0, 1024, 512);
+
+      // Subtle horizontal scanline matrix
+      ctx.fillStyle = 'rgba(255, 0, 85, 0.04)';
+      for (let y = 0; y < 512; y += 8) {
+        ctx.fillRect(0, y, 1024, 4);
+      }
+
+      // Outer Thick Glowing Neon Frame (18px)
+      ctx.strokeStyle = neonColorHex;
+      ctx.lineWidth = 18;
+      ctx.shadowColor = neonColorHex;
+      ctx.shadowBlur = 32;
+      ctx.strokeRect(20, 20, 984, 472);
+
+      // Inner White Hot-Wire Tube (5px)
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 5;
+      ctx.shadowColor = neonColorHex;
+      ctx.shadowBlur = 16;
+      ctx.strokeRect(38, 38, 948, 436);
+
+      // Dark contrast backing box behind text for 100% legibility
+      ctx.fillStyle = 'rgba(4, 1, 7, 0.82)';
+      ctx.shadowBlur = 0;
+      ctx.fillRect(50, 50, 924, 412);
+
+      // Corner accent brackets
+      ctx.fillStyle = neonColorHex;
+      [56, 960].forEach(x => {
+        [56, 448].forEach(y => {
+          ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
+        });
+      });
+
+      // Typography
+      if (!subtitle) {
+        // Single Line: Huge Bold Impact
+        ctx.font = '900 82px "Orbitron", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Outer neon aura
+        ctx.strokeStyle = neonColorHex;
+        ctx.lineWidth = 12;
+        ctx.shadowColor = neonColorHex;
+        ctx.shadowBlur = 28;
+        ctx.strokeText(title, 512, 256);
+
+        // Solid inner white/cyan core
+        ctx.fillStyle = txtColorHex;
+        ctx.shadowBlur = 10;
+        ctx.fillText(title, 512, 256);
+      } else {
+        // Double Line: Main Title + Subtitle
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Top line
+        ctx.font = '900 68px "Orbitron", sans-serif';
+        ctx.strokeStyle = neonColorHex;
+        ctx.lineWidth = 10;
+        ctx.shadowColor = neonColorHex;
+        ctx.shadowBlur = 24;
+        ctx.strokeText(title, 512, 195);
+
+        ctx.fillStyle = txtColorHex;
+        ctx.shadowBlur = 10;
+        ctx.fillText(title, 512, 195);
+
+        // Subtitle
+        ctx.font = '800 42px "Orbitron", sans-serif';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 6;
+        ctx.shadowBlur = 0;
+        ctx.strokeText(subtitle, 512, 335);
+
+        ctx.fillStyle = neonColorHex;
+        ctx.shadowColor = neonColorHex;
+        ctx.shadowBlur = 18;
+        ctx.fillText(subtitle, 512, 335);
+      }
+
+      const tex = new THREE.CanvasTexture(c);
+      const geo = new THREE.PlaneGeometry(w, h);
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex,
+        side: THREE.DoubleSide
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+
+      // Backing metal box
+      const backGeo = new THREE.BoxGeometry(w + 0.25, h + 0.25, 0.15);
+      const backMat = new THREE.MeshStandardMaterial({ color: 0x05050b, metalness: 0.9, roughness: 0.3 });
+      const backMesh = new THREE.Mesh(backGeo, backMat);
+      backMesh.position.z = -0.1;
+      mesh.add(backMesh);
+
+      // 3D Physical Glowing Neon Frame Wire around billboard edges
+      const edgeGeo = new THREE.EdgesGeometry(geo);
+      const edgeMat = new THREE.LineBasicMaterial({
+        color: parseInt(neonColorHex.replace('#', '0x')),
+        linewidth: 4
+      });
+      const neonWire = new THREE.LineSegments(edgeGeo, edgeMat);
+      neonWire.position.z = 0.05;
+      mesh.add(neonWire);
+
+      // Subtle atmospheric glow light on surrounding walls
+      const glow = new THREE.PointLight(parseInt(neonColorHex.replace('#', '0x')), 1.2, 14);
+      glow.position.set(0, 0, 1.0);
+      mesh.add(glow);
+
+      return mesh;
+    }
+
+    // 1. RENGÂRENK PAVYON (Top Left - Sitting on roof ledge above Beyoğlu)
+    const b1 = createAnkaraBillboard('RENGÂRENK', 'PAVYON', 12, 5.2, '#FF0055', '#FFFFFF');
+    b1.position.set(-14, 22.8, 4.6);
+    ankaraBillboardGroup.add(b1);
+
+    // 2. BEYOĞLU (Front Left Megatower Facade)
+    const b2 = createAnkaraBillboard('BEYOĞLU', '', 14, 5.8, '#FF0055', '#FFFFFF');
+    b2.position.set(-14, 11, 5.2);
+    ankaraBillboardGroup.add(b2);
+
+    // 3. DOSTLAR 06 // AST SENSÖR (Center Tower Roof Edge)
+    const b3 = createAnkaraBillboard('DOSTLAR 06', 'AST SENSÖR', 10.5, 4.8, '#FF0055', '#00F0FF');
+    b3.position.set(-2, 19.8, 16.2);
+    ankaraBillboardGroup.add(b3);
+
+    // 4. ANKARA GECELERİ (Far Right Skyport Rooftop)
+    const b4 = createAnkaraBillboard('ANKARA', 'GECELERİ', 11, 5.2, '#FF0055', '#FFFFFF');
+    b4.position.set(15, 22.0, 6.4);
+    b4.rotation.y = -Math.PI / 10;
+    ankaraBillboardGroup.add(b4);
+
+    // 5. ÇANKIRI CADDESİ (Front Right Avenue Corner)
+    const b5 = createAnkaraBillboard('ÇANKIRI', 'CADDESİ', 13, 5.6, '#FF0055', '#FFFFFF');
+    b5.position.set(11, 5.5, 13.5);
+    b5.rotation.y = -Math.PI / 8;
+    ankaraBillboardGroup.add(b5);
+
+    // 6. AKMAN (Neural Spire Rooftop)
+    const b6 = createAnkaraBillboard('AKMAN', '', 7.5, 3.2, '#00F0FF', '#FFFFFF');
+    b6.position.set(6, 19.8, -5.8);
+    ankaraBillboardGroup.add(b6);
+
+    // 7. YILDIZLAR GAZİNOSU
+    const b7 = createAnkaraBillboard('YILDIZLAR', 'GAZİNOSU', 8, 3.5, '#F59E0B', '#FFFFFF');
+    b7.position.set(11, 16.5, -4.0);
+    b7.rotation.y = -Math.PI / 6;
+    ankaraBillboardGroup.add(b7);
+
+    // --- ANKARA ELEKTRO BAĞLAMA SYNTHESIZER ---
+    let ankaraAudioInterval = null;
+    let ankaraStep = 0;
+    const ankaraMelody = [
+      659.25, 739.99, 783.99, 739.99, 659.25, 587.33, 659.25, 659.25,
+      587.33, 523.25, 493.88, 523.25, 587.33, 523.25, 493.88, 440.00,
+      440.00, 493.88, 523.25, 587.33, 659.25, 587.33, 659.25, 659.25,
+      783.99, 739.99, 659.25, 587.33, 523.25, 493.88, 440.00, 440.00
+    ];
+
+    function playAnkaraNote(freq) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(freq * 2.2, audioCtx.currentTime);
+        filter.Q.setValueAtTime(3.5, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.16);
+
+        if (ankaraStep % 4 === 0) {
+          const kickOsc = audioCtx.createOscillator();
+          const kickGain = audioCtx.createGain();
+          kickOsc.type = 'sine';
+          kickOsc.frequency.setValueAtTime(130, audioCtx.currentTime);
+          kickOsc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.12);
+          kickGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+          kickGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.14);
+          kickOsc.connect(kickGain);
+          kickGain.connect(audioCtx.destination);
+          kickOsc.start();
+          kickOsc.stop(audioCtx.currentTime + 0.15);
+        }
+      } catch (e) {}
+    }
+
+    function toggleAnkaraMode() {
+      initAudio();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+      isAnkaraMode = !isAnkaraMode;
+      const btn = document.getElementById('btn-ankara');
+      if (btn) btn.classList.toggle('active', isAnkaraMode);
+
+      ankaraBillboardGroup.visible = isAnkaraMode;
+      if (typeof originalSignGroup !== 'undefined') {
+        originalSignGroup.visible = !isAnkaraMode;
+      }
+
+      const titleH1 = document.querySelector('.brand-text h1');
+      const titleP = document.querySelector('.brand-text p');
+
+      if (isAnkaraMode) {
+        document.getElementById('ankara-btn-text').innerText = 'ANKARA: AÇIK [06]';
+        if (titleH1) titleH1.innerText = 'ÇANKIRI STREET EXTRAVAGANZA V5.0';
+        if (titleP) titleP.innerText = '06 ANKARA RUNTIME // DETERMINISTIC GAZİNO CALL GRAPH';
+
+        document.getElementById('zth-header-title').innerText = '06 ANKARA PAVYON RUNTIME';
+        document.getElementById('zth-badge').innerText = '06 PLAKA';
+        document.getElementById('zth-badge').style.borderColor = '#FF0055';
+        document.getElementById('zth-badge').style.color = '#FF0055';
+        document.getElementById('zth-lbl-tokens').innerText = 'Token İsrafı:';
+        document.getElementById('zth-val-tokens').innerText = 'Nullified (0 TOKENS)';
+        document.getElementById('zth-lbl-bill').innerText = 'Hesap / Masa Bedeli:';
+        document.getElementById('zth-val-bill').innerText = 'Müesseseden (FREE)';
+        document.getElementById('zth-lbl-lat').innerText = 'Ankara Havası Algoritması:';
+        document.getElementById('zth-val-lat').innerText = 'DEVREDE (130 BPM)';
+        document.getElementById('zth-val-lat').style.color = '#FF0055';
+        document.getElementById('zth-lbl-critic').innerText = 'Saz / Ritim Kalitesi:';
+        document.getElementById('zth-val-critic').innerText = '100% Elektro Saz';
+        document.getElementById('zth-footer').innerText = '"Yolun sonu Çankırı Caddesi. Sıfır token, saf deterministik oyun havası."';
+
+        document.getElementById('drone-status-text').innerText = '💃 06 ANKARA MODU DEVREDE // ÇANKIRI CADDESİ PAVYON AST AKTİF!';
+        document.getElementById('drone-status-text').style.color = '#FF0055';
+
+        if (ankaraAudioInterval) clearInterval(ankaraAudioInterval);
+        ankaraStep = 0;
+        ankaraAudioInterval = setInterval(() => {
+          if (!isAnkaraMode) { clearInterval(ankaraAudioInterval); return; }
+          playAnkaraNote(ankaraMelody[ankaraStep % ankaraMelody.length]);
+          ankaraStep++;
+        }, 115);
+
+      } else {
+        document.getElementById('ankara-btn-text').innerText = 'ANKARA MODU [06]';
+        if (titleH1) titleH1.innerText = 'MINDBOOK CYBERPUNK AST CODE CITY';
+        if (titleP) titleP.innerText = 'HYPER-GRANULAR FUNCTION & CALL GRAPH SPATIAL TOPOLOGY';
+
+        document.getElementById('zth-header-title').innerText = 'ZERO-TOKEN AST RUNTIME';
+        document.getElementById('zth-badge').innerText = '100% LOCAL';
+        document.getElementById('zth-badge').style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        document.getElementById('zth-badge').style.color = '#10B981';
+        document.getElementById('zth-lbl-tokens').innerText = 'LLM INFERENCE TOKENS:';
+        document.getElementById('zth-val-tokens').innerText = '0 TOKENS (ZERO-WASTE)';
+        document.getElementById('zth-lbl-bill').innerText = 'MONTHLY API BILL:';
+        document.getElementById('zth-val-bill').innerText = '$0.00 / UNLIMITED LOCAL';
+        document.getElementById('zth-lbl-lat').innerText = 'AST COMPILE LATENCY:';
+        document.getElementById('zth-val-lat').innerText = '0.6 ms (TS-COMPILER VISITOR)';
+        document.getElementById('zth-val-lat').style.color = '#FFF';
+        document.getElementById('zth-lbl-critic').innerText = 'CRITIC FILTER:';
+        document.getElementById('zth-val-critic').innerText = '"Token israfı" Nullified';
+        document.getElementById('zth-footer').innerText = '"Her kod taramasında 50k token yakmak yerine saf deterministik TypeScript AST uzay haritası."';
+
+        document.getElementById('drone-status-text').innerText = 'READY · AST OBJECT CALL GRAPH LINKED';
+        document.getElementById('drone-status-text').style.color = '#00F0FF';
+
+        if (ankaraAudioInterval) {
+          clearInterval(ankaraAudioInterval);
+          ankaraAudioInterval = null;
+        }
+      }
+    }
+
+    // --- CALL GRAPH LASER BEAMS & PARTICLES ---
+    const laserCallGroup = new THREE.Group();
+    scene.add(laserCallGroup);
+
+    const callPulseLight = new THREE.PointLight(0x00F0FF, 0, 15);
+    scene.add(callPulseLight);
+
+    function triggerInteractiveCallTrace() {
+      // Trace: InNoteSearchBar.onNext -> useNoteSearch.goToNextMatch -> EditorBody.AutoScrollEffect!
+      const sbFloor = floorMeshes.find(f => f.userData.name.includes('InNoteSearchBar'));
+      const searchFloor = floorMeshes.find(f => f.userData.name.includes('useNoteSearch'));
+      const bodyFloor = floorMeshes.find(f => f.userData.name.includes('EditorBody'));
+
+      if (!sbFloor || !searchFloor || !bodyFloor) return;
+
+      document.getElementById('drone-status-text').innerText = 'TRACE INITIATED: InNoteSearchBar.onNext() -> goToNextMatch() -> AutoScrollEffect!';
+      document.getElementById('drone-status-text').style.color = '#10B981';
+
+      while(laserCallGroup.children.length > 0){ laserCallGroup.remove(laserCallGroup.children[0]); }
+
+      // 1. Draw glowing laser beam between floors
+      const p1 = new THREE.Vector3().copy(sbFloor.position);
+      const p2 = new THREE.Vector3().copy(searchFloor.position);
+      const p3 = new THREE.Vector3().copy(bodyFloor.position);
+
+      const curve1 = new THREE.QuadraticBezierCurve3(p1, new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5).add(new THREE.Vector3(2, 1, 2)), p2);
+      const curve2 = new THREE.QuadraticBezierCurve3(p2, new THREE.Vector3().addVectors(p2, p3).multiplyScalar(0.5).add(new THREE.Vector3(-2, 1, 2)), p3);
+
+      const pts = [...curve1.getPoints(20), ...curve2.getPoints(20)];
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x00F0FF, linewidth: 3, transparent: true, opacity: 0.9 });
+      const line = new THREE.Line(lineGeo, lineMat);
+      laserCallGroup.add(line);
+
+      // Camera swoops to follow the pulse!
+      new TWEEN.Tween(camera.position)
+        .to({ x: sbFloor.position.x + 8, y: sbFloor.position.y + 4, z: sbFloor.position.z + 12 }, 800)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .chain(
+          new TWEEN.Tween(camera.position)
+            .to({ x: searchFloor.position.x + 8, y: searchFloor.position.y + 4, z: searchFloor.position.z + 12 }, 1000)
+            .easing(TWEEN.Easing.Cubic.InOut)
+            .chain(
+              new TWEEN.Tween(camera.position)
+                .to({ x: bodyFloor.position.x + 8, y: bodyFloor.position.y + 4, z: bodyFloor.position.z + 12 }, 1000)
+                .easing(TWEEN.Easing.Cubic.InOut)
+            )
+        )
+        .start();
+
+      new TWEEN.Tween(controls.target)
+        .to(searchFloor.position, 1500)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
+
+      // Show in Inspector
+      selectFloor(searchFloor);
+      const targetFn = searchFloor.userData.functions.find(fn => fn.name.includes('goToNextMatch'));
+      if (targetFn) {
+        highlightFunctionInInspector(targetFn);
+      }
+    }
+
+    // --- INTERIOR ROOM CAMERA ENTER / EXIT ---
+    function enterSelectedRoom() {
+      if (!selectedFloor) return;
+      isInsideRoom = true;
+
+      const bodyMesh = selectedFloor.children[0];
+      bodyMesh.material.opacity = 0.2;
+
+      document.getElementById('current-room-name').innerText = selectedFloor.userData.name;
+      document.getElementById('room-overlay').classList.add('active');
+      closeInspector();
+
+      const targetPos = new THREE.Vector3(selectedFloor.position.x + 0.1, selectedFloor.position.y + 0.4, selectedFloor.position.z + 1.2);
+      const lookAtPos = new THREE.Vector3(selectedFloor.position.x, selectedFloor.position.y + 0.2, selectedFloor.position.z);
+
+      new TWEEN.Tween(camera.position).to(targetPos, 1100).easing(TWEEN.Easing.Cubic.InOut).start();
+      new TWEEN.Tween(controls.target).to(lookAtPos, 1100).easing(TWEEN.Easing.Cubic.InOut).start();
+    }
+
+    function exitInteriorRoom() {
+      isInsideRoom = false;
+      document.getElementById('room-overlay').classList.remove('active');
+      if (selectedFloor) {
+        const bodyMesh = selectedFloor.children[0];
+        bodyMesh.material.opacity = isXRay ? 0.22 : 0.95;
+      }
+      resetView();
+    }
+
+    // --- FUNCTION CLICK & CODE VIEWER ---
+    function flyToFunction(fnName) {
+      if (!selectedFloor) return;
+      const fnData = selectedFloor.userData.functions.find(f => f.name === fnName);
+      if (!fnData) return;
+
+      highlightFunctionInInspector(fnData);
+
+      // Find the 3D console inside this floor
+      const targetMeshObj = functionConsoleMeshes.find(m => m.group.userData.name === fnName);
+      if (targetMeshObj) {
+        const worldPos = new THREE.Vector3();
+        targetMeshObj.group.getWorldPosition(worldPos);
+
+        new TWEEN.Tween(camera.position)
+          .to({ x: worldPos.x + 1.5, y: worldPos.y + 1.2, z: worldPos.z + 2.5 }, 900)
+          .easing(TWEEN.Easing.Cubic.Out)
+          .start();
+
+        new TWEEN.Tween(controls.target)
+          .to(worldPos, 900)
+          .easing(TWEEN.Easing.Cubic.Out)
+          .start();
+
+        // Flash crystal
+        targetMeshObj.crystal.material.color.setHex(0xFFFFFF);
+        setTimeout(() => {
+          targetMeshObj.crystal.material.color.setHex(0x00F0FF);
+        }, 600);
+      }
+    }
+
+    function highlightFunctionInInspector(fn) {
+      document.querySelectorAll('.fn-pill').forEach(p => p.classList.remove('active'));
+      const activePill = document.querySelector(`[data-fn="${fn.name}"]`);
+      if (activePill) activePill.classList.add('active');
+
+      document.getElementById('insp-code-path').innerText = `${selectedFloor.userData.path}#L${fn.line}`;
+      const codeBox = document.getElementById('code-snippet-box');
+      codeBox.innerHTML = `// Line ${fn.line} · Type: ${fn.type}\n<span class="code-line-highlight">${fn.code}</span>`;
+    }
+
+    // --- SELECT FLOOR & POPULATE FUNCTIONS ---
+    function selectFloor(floor) {
+      selectedFloor = floor;
+      const data = floor.userData;
+
+      // Only tween camera in skyline orbit mode, NEVER hijack player camera in drone flight!
+      if (!isInsideRoom && !isDroneMode) {
+        const targetPos = new THREE.Vector3(floor.position.x + 6, floor.position.y + 4, floor.position.z + 10);
+        new TWEEN.Tween(camera.position).to(targetPos, 800).easing(TWEEN.Easing.Cubic.Out).start();
+        new TWEEN.Tween(controls.target).to(floor.position, 800).easing(TWEEN.Easing.Cubic.Out).start();
+      }
+
+      document.getElementById('insp-name').innerText = data.name;
+      document.getElementById('insp-badge').innerText = `${data.towerName} // LEVEL ${data.level}`;
+      document.getElementById('insp-desc').innerText = data.desc;
+
+      // Populate Functions Grid
+      const fnContainer = document.getElementById('fn-grid-container');
+      fnContainer.innerHTML = '';
+      const fns = data.functions || [];
+
+      if (fns.length > 0) {
+        fns.forEach(fn => {
+          const pill = document.createElement('div');
+          pill.className = 'fn-pill';
+          pill.setAttribute('data-fn', fn.name);
+          pill.onclick = () => flyToFunction(fn.name);
+          pill.innerHTML = `<span>⚡ ${fn.name}</span><span class="fn-type">Line ${fn.line} · ${fn.type}</span>`;
+          fnContainer.appendChild(pill);
+        });
+        highlightFunctionInInspector(fns[0]);
+      } else {
+        fnContainer.innerHTML = '<span style="font-size: 11px; color: #64748B;">Alt fonksiyon yok</span>';
+        document.getElementById('code-snippet-box').innerText = `// File: ${data.path}\n// Module initialized`;
+      }
+
+      document.getElementById('inspector').classList.add('open');
+    }
+
+    function closeInspector() {
+      document.getElementById('inspector').classList.remove('open');
+    }
+
+    function resetView() {
+      new TWEEN.Tween(camera.position).to({ x: 24, y: 32, z: 42 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+      new TWEEN.Tween(controls.target).to({ x: 0, y: 8, z: 0 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+      closeInspector();
+    }
+
+    function focusDistrict(id) {
+      document.querySelectorAll('.district-pill').forEach(p => p.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      if (id === 'all') { resetView(); return; }
+      const tower = TOWERS.find(t => t.id === id);
+      if (!tower) return;
+
+      const targetPos = new THREE.Vector3(tower.x + 12, 14, tower.z + 16);
+      new TWEEN.Tween(camera.position).to(targetPos, 900).easing(TWEEN.Easing.Cubic.Out).start();
+      new TWEEN.Tween(controls.target).to({ x: tower.x, y: 10, z: tower.z }, 900).easing(TWEEN.Easing.Cubic.Out).start();
+    }
+
+    function toggleXRay() {
+      isXRay = !isXRay;
+      document.getElementById('xray-text').innerText = isXRay ? 'X-Ray Glass: ON' : 'X-Ray Glass: OFF';
+      document.getElementById('btn-xray').classList.toggle('active', isXRay);
+      outerWallMaterials.forEach(m => { m.opacity = isXRay ? 0.22 : 0.95; });
+    }
+
+    function simulateBugIncident() {
+      const targetFloor = floorMeshes.find(f => f.userData.name.includes('InNoteSearchBar'));
+      if (!targetFloor) return;
+
+      playSirenSound();
+      document.getElementById('siren-indicator').classList.add('alert');
+      document.getElementById('drone-status-text').innerText = 'CRITICAL CODE RED // BUG DETECTED IN INNOTESEARCHBAR!';
+      document.getElementById('drone-status-text').style.color = '#FF0055';
+
+      const bodyMesh = targetFloor.children[0];
+      bodyMesh.material.color.setHex(0xFF0055);
+      bodyMesh.material.emissive.setHex(0xFF0055);
+      bodyMesh.material.emissiveIntensity = 0.9;
+
+      selectFloor(targetFloor);
+
+      setTimeout(() => {
+        document.getElementById('drone-status-text').innerText = 'AGENT INTERVENTION // REPAIRING AST... TSC 0 ERRORS RESTORED!';
+        document.getElementById('drone-status-text').style.color = '#10B981';
+
+        bodyMesh.material.color.setHex(0x10B981);
+        bodyMesh.material.emissive.setHex(0x10B981);
+        bodyMesh.material.emissiveIntensity = 0.8;
+
+        setTimeout(() => {
+          bodyMesh.material.color.setHex(targetFloor.userData.color);
+          bodyMesh.material.emissive.setHex(targetFloor.userData.color);
+          bodyMesh.material.emissiveIntensity = 0.15;
+          document.getElementById('siren-indicator').classList.remove('alert');
+          document.getElementById('drone-status-text').innerText = 'READY · AST OBJECT CALL GRAPH LINKED';
+          document.getElementById('drone-status-text').style.color = '#00F0FF';
+        }, 3000);
+      }, 4000);
+    }
+
+    // --- GROUND TRAFFIC (CYBER DATA PACKETS) ---
+    const trafficPackets = [];
+    const trafficGeo = new THREE.BoxGeometry(0.7, 0.2, 0.35);
+    for (let i = 0; i < 24; i++) {
+      const color = i % 3 === 0 ? 0x00F0FF : (i % 3 === 1 ? 0xFF0055 : 0x10B981);
+      const mat = new THREE.MeshBasicMaterial({ color: color });
+      const mesh = new THREE.Mesh(trafficGeo, mat);
+      const isX = i % 2 === 0;
+      const lane = ((i % 8) * 9) - 36;
+      mesh.position.set(isX ? (Math.random() * 80 - 40) : lane, 0.12, isX ? lane : (Math.random() * 80 - 40));
+      mesh.userData = { isX, lane, speed: 0.25 + Math.random() * 0.35, dir: Math.random() > 0.5 ? 1 : -1 };
+      if (!isX) mesh.rotation.y = Math.PI / 2;
+      scene.add(mesh);
+      trafficPackets.push(mesh);
+    }
+
+    // --- SKYWAY LASER PIPELINES & FLYING CYBER SHUTTLES ---
+    const skywayGroup = new THREE.Group();
+    scene.add(skywayGroup);
+
+    const skyBridges = [
+      { from: new THREE.Vector3(-14, 15, 0), to: new THREE.Vector3(15, 14, 2), color: 0x00F0FF },
+      { from: new THREE.Vector3(-14, 11, 0), to: new THREE.Vector3(-10, 11, -12), color: 0xF59E0B },
+      { from: new THREE.Vector3(6, 13, -10), to: new THREE.Vector3(15, 13, 2), color: 0x10B981 }
+    ];
+
+    skyBridges.forEach(b => {
+      const curve = new THREE.LineCurve3(b.from, b.to);
+      const tubeGeo = new THREE.TubeGeometry(curve, 24, 0.2, 8, false);
+      const tubeMat = new THREE.MeshBasicMaterial({ color: b.color, wireframe: true, transparent: true, opacity: 0.45 });
+      skywayGroup.add(new THREE.Mesh(tubeGeo, tubeMat));
+    });
+
+    const flyingShuttles = [];
+    const shuttleGeo = new THREE.ConeGeometry(0.35, 1.3, 5);
+    shuttleGeo.rotateX(Math.PI / 2);
+
+    for (let i = 0; i < 6; i++) {
+      const color = i % 2 === 0 ? 0x00F0FF : 0xFF0055;
+      const mat = new THREE.MeshBasicMaterial({ color: color });
+      const mesh = new THREE.Mesh(shuttleGeo, mat);
+      const pLight = new THREE.PointLight(color, 2.0, 7);
+      mesh.add(pLight);
+      scene.add(mesh);
+
+      flyingShuttles.push({
+        mesh,
+        bridge: skyBridges[i % skyBridges.length],
+        progress: (i * 0.33) % 1.0,
+        speed: 0.14 + (i * 0.04),
+        dir: i % 2 === 0 ? 1 : -1
+      });
+    }
+
+    // --- ATMOSPHERIC ROOFTOP SEARCHLIGHTS ---
+    const searchlights = [];
+    TOWERS.forEach((t, i) => {
+      const totalH = t.floors.reduce((acc, f) => acc + f.height + 0.15, 0);
+      const spot = new THREE.SpotLight(t.neonColor, 2.2, 90, Math.PI / 10, 0.5, 1.2);
+      spot.position.set(t.x, totalH + 0.5, t.z);
+
+      const target = new THREE.Object3D();
+      target.position.set(t.x + 12, totalH + 38, t.z + 8);
+      scene.add(target);
+      spot.target = target;
+      scene.add(spot);
+
+      const coneGeo = new THREE.CylinderGeometry(0.08, 4.2, 40, 16, 1, true);
+      const coneMat = new THREE.MeshBasicMaterial({
+        color: t.neonColor,
+        transparent: true,
+        opacity: 0.05,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+      });
+      const coneMesh = new THREE.Mesh(coneGeo, coneMat);
+      coneMesh.position.set(t.x, totalH + 20, t.z);
+      scene.add(coneMesh);
+
+      searchlights.push({ spot, target, cone: coneMesh, base: new THREE.Vector3(t.x, totalH, t.z), speed: 0.45 + i * 0.15, offset: i * 1.5 });
+    });
+
+    // --- CYBER RAIN PARTICLE SYSTEM ---
+    let isRainActive = false;
+    const rainCount = 1200;
+    const rainGeo = new THREE.BufferGeometry();
+    const rainPos = new Float32Array(rainCount * 3);
+
+    for (let i = 0; i < rainCount; i++) {
+      rainPos[i * 3] = (Math.random() - 0.5) * 110;
+      rainPos[i * 3 + 1] = Math.random() * 50;
+      rainPos[i * 3 + 2] = (Math.random() - 0.5) * 110;
+    }
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+    const rainMat = new THREE.PointsMaterial({
+      color: 0x00F0FF,
+      size: 0.28,
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.AdditiveBlending
+    });
+    const rainParticles = new THREE.Points(rainGeo, rainMat);
+    scene.add(rainParticles);
+
+    function toggleCyberRain() {
+      isRainActive = !isRainActive;
+      document.getElementById('rain-text').innerText = isRainActive ? 'Rain: ON' : 'Rain: OFF';
+      document.getElementById('btn-rain').classList.toggle('active', isRainActive);
+      rainMat.opacity = isRainActive ? 0.85 : 0.0;
+    }
+
+    // --- CINEMATIC TOUR SYSTEM ---
+    let isCinematicTour = false;
+    let tourAngle = 0;
+
+    function toggleCinematicTour() {
+      isCinematicTour = !isCinematicTour;
+      const btn = document.getElementById('btn-tour');
+      if (btn) btn.classList.toggle('active', isCinematicTour);
+      if (isCinematicTour) {
+        if (isDroneMode) exitDroneMode();
+        document.getElementById('tour-btn-text').innerText = 'EXIT TOUR';
+        document.getElementById('drone-status-text').innerText = 'CINEMATIC DRONE TOUR // 4K SPATIAL FLYTHROUGH ACTIVE';
+        document.getElementById('drone-status-text').style.color = '#F59E0B';
+      } else {
+        document.getElementById('tour-btn-text').innerText = 'CINEMATIC TOUR';
+        document.getElementById('drone-status-text').innerText = 'READY · AST OBJECT CALL GRAPH LINKED';
+        document.getElementById('drone-status-text').style.color = '#00F0FF';
+        resetView();
+      }
+    }
+
+    // --- DRONE PLASMA CANNON SYSTEM ---
+    const plasmaBolts = [];
+    const boltGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.2, 6);
+    boltGeo.rotateX(Math.PI / 2);
+    const boltMat = new THREE.MeshBasicMaterial({ color: 0x00F0FF, blending: THREE.AdditiveBlending });
+
+    function fireDronePlasma() {
+      if (!isDroneMode) return;
+      playBlasterSound();
+
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      [-0.45, 0.45].forEach(off => {
+        const bolt = new THREE.Mesh(boltGeo, boltMat);
+        bolt.position.copy(camera.position).addScaledVector(right, off).addScaledVector(camDir, 0.8);
+        bolt.quaternion.copy(camera.quaternion);
+        scene.add(bolt);
+        plasmaBolts.push({ mesh: bolt, dir: camDir.clone(), life: 1.2 });
+      });
+
+      if (lockedTargetObj && lockedTargetObj.floor) {
+        const bodyMesh = lockedTargetObj.floor.children[0];
+        if (bodyMesh && bodyMesh.material) {
+          bodyMesh.material.emissiveIntensity = 1.0;
+          setTimeout(() => { bodyMesh.material.emissiveIntensity = 0.35; }, 250);
+        }
+      }
+    }
+
+    // --- PROCEDURAL AUDIO SYNTHESIZER (WEB AUDIO API) ---
+    let audioCtx = null;
+    let engineOsc = null;
+    let engineGain = null;
+    let isAudioActive = false;
+    let ambientOsc = null;
+    let ambientGain = null;
+
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+
+        // Continuous Drone Thruster Hum
+        engineOsc = audioCtx.createOscillator();
+        engineGain = audioCtx.createGain();
+        engineOsc.type = 'triangle';
+        engineOsc.frequency.setValueAtTime(65, audioCtx.currentTime);
+        engineGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(320, audioCtx.currentTime);
+
+        engineOsc.connect(filter);
+        filter.connect(engineGain);
+        engineGain.connect(audioCtx.destination);
+        engineOsc.start();
+      } catch (e) {
+        console.warn('Web Audio not supported or blocked:', e);
+      }
+    }
+
+    function toggleAudio() {
+      initAudio();
+      isAudioActive = !isAudioActive;
+      const btn = document.getElementById('btn-audio');
+      if (btn) btn.classList.toggle('active', isAudioActive);
+      document.getElementById('audio-text').innerText = isAudioActive ? 'Audio: ON' : 'Audio: OFF';
+
+      if (isAudioActive && audioCtx) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (!ambientOsc) {
+          ambientOsc = audioCtx.createOscillator();
+          ambientGain = audioCtx.createGain();
+          ambientOsc.type = 'sawtooth';
+          ambientOsc.frequency.setValueAtTime(55, audioCtx.currentTime);
+
+          const aFilter = audioCtx.createBiquadFilter();
+          aFilter.type = 'lowpass';
+          aFilter.frequency.setValueAtTime(160, audioCtx.currentTime);
+
+          ambientOsc.connect(aFilter);
+          aFilter.connect(ambientGain);
+          ambientGain.connect(audioCtx.destination);
+          ambientGain.gain.setValueAtTime(0.035, audioCtx.currentTime);
+          ambientOsc.start();
+        } else {
+          ambientGain.gain.setTargetAtTime(0.035, audioCtx.currentTime, 0.1);
+        }
+      } else if (ambientGain && audioCtx) {
+        ambientGain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.1);
+      }
+    }
+
+    function playBlasterSound() {
+      if (!audioCtx || !isAudioActive) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(950, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.14);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.14);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    function playScanChirp() {
+      if (!audioCtx || !isAudioActive) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      } catch (e) {}
+    }
+
+    function playLockSound() {
+      if (!audioCtx || !isAudioActive) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {}
+    }
+
+    function playSirenSound() {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        for (let i = 0; i < 6; i++) {
+          const t = audioCtx.currentTime + i * 0.5;
+          osc.frequency.setValueAtTime(440, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.25);
+          osc.frequency.exponentialRampToValueAtTime(440, t + 0.5);
+        }
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.0);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 3.1);
+      } catch (e) {}
+    }
+
+    // --- HOLOGRAPHIC RADAR MINIMAP RENDERER ---
+    let radarSweep = 0;
+    function updateRadar() {
+      const cvs = document.getElementById('radar-canvas');
+      if (!cvs) return;
+      const ctx = cvs.getContext('2d');
+      ctx.clearRect(0, 0, 165, 165);
+
+      const cx = 82.5, cy = 82.5, radius = 70;
+      radarSweep += 0.04;
+
+      // Concentric range rings
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, cy, radius * 0.33, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, radius * 0.66, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
+
+      // Crosshairs
+      ctx.beginPath(); ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy); ctx.stroke();
+
+      // Rotating radar beam wedge
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(radarSweep);
+      const grad = ctx.createLinearGradient(0, 0, radius, 0);
+      grad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+      grad.addColorStop(1, 'rgba(0, 240, 255, 0.45)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, -0.35, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Draw Towers
+      const scale = radius / 36;
+      TOWERS.forEach(t => {
+        const rx = cx + t.x * scale;
+        const ry = cy + t.z * scale;
+        ctx.fillStyle = '#' + t.neonColor.toString(16).padStart(6, '0');
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 8;
+        ctx.fillRect(rx - 3.5, ry - 3.5, 7, 7);
+      });
+      ctx.shadowBlur = 0;
+
+      // Draw Drone / Player Blip
+      const px = cx + camera.position.x * scale;
+      const py = cy + camera.position.z * scale;
+
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      const heading = Math.atan2(camDir.x, camDir.z);
+
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(-heading + Math.PI);
+
+      // Vision cone
+      ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, 18, -Math.PI / 4, Math.PI / 4);
+      ctx.closePath();
+      ctx.fill();
+
+      // Blip
+      ctx.fillStyle = '#FF0055';
+      ctx.shadowColor = '#FF0055';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(0, -5);
+      ctx.lineTo(4, 5);
+      ctx.lineTo(-4, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // --- FPS DRONE PILOT FLIGHT SYSTEM ---
+    let isDroneMode = false;
+    let isPointerLocked = false;
+    const droneVelocity = new THREE.Vector3();
+    const droneEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+    const keysPressed = {};
+    let lockedTargetObj = null;
+    let lastLockedName = '';
+
+    function toggleDroneMode() {
+      if (isDroneMode) {
+        exitDroneMode();
+      } else {
+        enterDroneMode();
+      }
+    }
+
+    function enterDroneMode() {
+      initAudio();
+      isDroneMode = true;
+      controls.enabled = false;
+      closeInspector();
+
+      document.getElementById('drone-hud').classList.add('active');
+      const btn = document.getElementById('btn-drone');
+      btn.classList.add('active');
+      document.getElementById('drone-btn-text').innerText = 'EXIT DRONE [V]';
+
+      // Always spawn at a stable central avenue viewpoint facing the skyline if far away
+      if (camera.position.length() > 32 || camera.position.y > 18 || camera.position.y < 2) {
+        camera.position.set(0, 8.5, 20);
+        droneEuler.set(0, 0, 0, 'YXZ');
+      } else {
+        droneEuler.setFromQuaternion(camera.quaternion, 'YXZ');
+      }
+      camera.quaternion.setFromEuler(droneEuler);
+      droneVelocity.set(0, 0, 0);
+
+      // Request Pointer Lock on canvas
+      renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock;
+      if (renderer.domElement.requestPointerLock) {
+        renderer.domElement.requestPointerLock();
+      }
+    }
+
+    function exitDroneMode() {
+      isDroneMode = false;
+      controls.enabled = true;
+      document.getElementById('drone-hud').classList.remove('active');
+      const btn = document.getElementById('btn-drone');
+      btn.classList.remove('active');
+      document.getElementById('drone-btn-text').innerText = 'PILOT DRONE [V]';
+
+      if (engineGain && audioCtx) {
+        engineGain.gain.setTargetAtTime(0.001, audioCtx.currentTime, 0.1);
+      }
+
+      if (document.exitPointerLock) {
+        document.exitPointerLock();
+      }
+      resetView();
+    }
+
+    // Pointer Lock Change Listeners
+    document.addEventListener('pointerlockchange', () => {
+      isPointerLocked = (document.pointerLockElement === renderer.domElement);
+    });
+
+    // Mouse Movement for Drone Aim (Silky smooth sensitivity)
+    window.addEventListener('mousemove', (e) => {
+      if (!isDroneMode) return;
+      if (isPointerLocked || e.buttons === 1) {
+        droneEuler.y -= e.movementX * 0.0015;
+        droneEuler.x -= e.movementY * 0.0015;
+        droneEuler.x = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, droneEuler.x));
+        camera.quaternion.setFromEuler(droneEuler);
+      }
+    });
+
+    // Keyboard Listeners
+    window.addEventListener('keydown', (e) => {
+      keysPressed[e.code] = true;
+
+      // [V] Toggle Drone Mode
+      if (e.code === 'KeyV') {
+        toggleDroneMode();
+        return;
+      }
+
+      // [E] Scan Target in Drone Mode
+      if (isDroneMode && (e.code === 'KeyE')) {
+        scanActiveLockedTarget();
+      }
+
+      // [F] Fire Plasma Blaster
+      if (isDroneMode && (e.code === 'KeyF')) {
+        fireDronePlasma();
+      }
+
+      // [Escape] Exit
+      if (e.code === 'Escape' && isDroneMode) {
+        exitDroneMode();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      keysPressed[e.code] = false;
+    });
+
+    // Laser beam visual effect from drone to scanned building
+    function triggerDroneScanBeam(targetPos) {
+      const p1 = new THREE.Vector3().copy(camera.position).add(new THREE.Vector3(0, -0.3, 0));
+      const p2 = new THREE.Vector3().copy(targetPos);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x00F0FF, linewidth: 3, transparent: true, opacity: 1.0 });
+      const scanLine = new THREE.Line(lineGeo, lineMat);
+      scene.add(scanLine);
+      
+      let op = 1.0;
+      const fadeInterval = setInterval(() => {
+        op -= 0.18;
+        if (op <= 0) {
+          clearInterval(fadeInterval);
+          scene.remove(scanLine);
+        } else {
+          lineMat.opacity = op;
+        }
+      }, 50);
+    }
+
+    function scanActiveLockedTarget() {
+      if (!lockedTargetObj) return;
+      playScanChirp();
+
+      const fl = lockedTargetObj.floor;
+      if (fl) {
+        selectFloor(fl);
+        triggerDroneScanBeam(fl.position);
+
+        // Flash floor mesh
+        const bodyMesh = fl.children[0];
+        if (bodyMesh && bodyMesh.material) {
+          const origColor = bodyMesh.material.color.getHex();
+          bodyMesh.material.color.setHex(0x00F0FF);
+          bodyMesh.material.emissiveIntensity = 0.9;
+          setTimeout(() => {
+            bodyMesh.material.color.setHex(origColor);
+            bodyMesh.material.emissiveIntensity = 0.35;
+          }, 600);
+        }
+
+        // Release cursor so the user can immediately click function pills in the inspector!
+        if (document.exitPointerLock) {
+          document.exitPointerLock();
+        }
+      }
+    }
+
+    // --- RAYCASTING CLICK LISTENER ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('click', (e) => {
+      if (e.target.closest('.topbar') || e.target.closest('.district-nav') || e.target.closest('.inspector') || e.target.closest('.cyber-hud-bottom') || e.target.closest('.room-overlay') || e.target.closest('.exit-drone-btn') || e.target.closest('.radar-container') || e.target.closest('.zero-token-hud')) return;
+
+      if (isDroneMode) {
+        if (!isPointerLocked && renderer.domElement.requestPointerLock) {
+          renderer.domElement.requestPointerLock();
+        }
+        fireDronePlasma();
+        if (lockedTargetObj) {
+          scanActiveLockedTarget();
+        }
+        return;
+      }
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      // Check if user clicked directly on a 3D Function Console inside a room!
+      const allConsoleMeshes = functionConsoleMeshes.map(m => m.crystal);
+      const fnIntersects = raycaster.intersectObjects(allConsoleMeshes, true);
+      if (fnIntersects.length > 0) {
+        let parent = fnIntersects[0].object.parent;
+        if (parent && parent.userData && parent.userData.name) {
+          flyToFunction(parent.userData.name);
+          return;
+        }
+      }
+
+      // Check Floor Click
+      const intersects = raycaster.intersectObjects(towerGroup.children, true);
+      if (intersects.length > 0) {
+        let root = intersects[0].object;
+        while (root.parent && root.parent !== towerGroup) {
+          root = root.parent;
+        }
+        if (root.userData && root.userData.name) {
+          selectFloor(root);
+        }
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- ANIMATION LOOP ---
+    const clock = new THREE.Clock();
+    const headingDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    let frameCount = 0;
+    let lastFpsTime = performance.now();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      TWEEN.update();
+
+      // Update Live Radar Minimap
+      updateRadar();
+
+      // Update FPS counter
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFpsTime >= 1000) {
+        const fps = Math.round((frameCount * 1000) / (now - lastFpsTime));
+        const el = document.getElementById('live-fps');
+        if (el) el.innerText = fps;
+        frameCount = 0;
+        lastFpsTime = now;
+      }
+
+      // Update Rooftop Searchlights
+      searchlights.forEach(sl => {
+        const a = clock.getElapsedTime() * sl.speed + sl.offset;
+        const rad = 22;
+        sl.target.position.x = sl.base.x + Math.sin(a) * rad;
+        sl.target.position.z = sl.base.z + Math.cos(a) * rad;
+        sl.target.position.y = sl.base.y + 38 + Math.sin(a * 1.5) * 6;
+        sl.cone.lookAt(sl.target.position);
+        sl.cone.rotateX(Math.PI / 2);
+        sl.cone.position.copy(sl.base).lerp(sl.target.position, 0.5);
+
+        if (isAnkaraMode) {
+          const isStrobe = (frameCount % 24 < 12);
+          sl.spot.color.setHex(isStrobe ? 0xFF0055 : 0xF59E0B);
+          sl.cone.material.color.setHex(isStrobe ? 0xFF0055 : 0xF59E0B);
+        }
+      });
+
+      // Update Skyway Flying Shuttles
+      flyingShuttles.forEach(s => {
+        s.progress += delta * s.speed * s.dir;
+        if (s.progress > 1.0) { s.progress = 1.0; s.dir = -1; }
+        if (s.progress < 0.0) { s.progress = 0.0; s.dir = 1; }
+        const pos = new THREE.Vector3().lerpVectors(s.bridge.from, s.bridge.to, s.progress);
+        s.mesh.position.copy(pos);
+        s.mesh.lookAt(s.dir > 0 ? s.bridge.to : s.bridge.from);
+      });
+
+      // Update Cyber Rain Particles
+      if (isRainActive && rainParticles) {
+        const rPos = rainParticles.geometry.attributes.position.array;
+        for (let i = 0; i < rainCount; i++) {
+          rPos[i * 3 + 1] -= delta * 55;
+          rPos[i * 3] += delta * 4;
+          if (rPos[i * 3 + 1] < 0) {
+            rPos[i * 3 + 1] = 50;
+            rPos[i * 3] = (Math.random() - 0.5) * 110;
+          }
+        }
+        rainParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // Update Plasma Bolts
+      for (let i = plasmaBolts.length - 1; i >= 0; i--) {
+        const b = plasmaBolts[i];
+        b.life -= delta;
+        b.mesh.position.addScaledVector(b.dir, delta * 75);
+        if (b.life <= 0) {
+          scene.remove(b.mesh);
+          plasmaBolts.splice(i, 1);
+        }
+      }
+
+      // Update Cinematic Tour Camera
+      if (isCinematicTour) {
+        tourAngle += delta * 0.22;
+        const tourRadius = 32;
+        camera.position.x = Math.sin(tourAngle) * tourRadius;
+        camera.position.z = Math.cos(tourAngle) * tourRadius;
+        camera.position.y = 15 + Math.sin(tourAngle * 0.7) * 7;
+        controls.target.set(Math.sin(tourAngle * 0.4) * 4, 8, Math.cos(tourAngle * 0.4) * 4);
+        controls.update();
+      }
+
+      // Animate Ground Cyber Traffic
+      trafficPackets.forEach(p => {
+        const u = p.userData;
+        if (u.isX) {
+          p.position.x += u.speed * u.dir;
+          if (p.position.x > 50) p.position.x = -50;
+          if (p.position.x < -50) p.position.x = 50;
+        } else {
+          p.position.z += u.speed * u.dir;
+          if (p.position.z > 50) p.position.z = -50;
+          if (p.position.z < -50) p.position.z = 50;
+        }
+      });
+
+      // Spin 3D function crystals and rings
+      functionConsoleMeshes.forEach(m => {
+        m.crystal.rotation.y += 0.03;
+        m.crystal.rotation.x += 0.015;
+        m.ring.rotation.z += 0.02;
+      });
+
+      if (!isDroneMode && !isCinematicTour) {
+        controls.update();
+      } else {
+        // ==========================================
+        // 6-DOF DRONE FLIGHT SIMULATION (PRECISION DELTA-PHYSICS)
+        // ==========================================
+        const dt = Math.min(delta, 0.05);
+        const isTurbo = !!(keysPressed['ShiftLeft'] || keysPressed['ShiftRight']);
+        const cruiseSpeed = isTurbo ? 22.0 : 10.5;
+
+        // Heading & Movement Vectors
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        const up = new THREE.Vector3(0, 1, 0);
+
+        const moveInput = new THREE.Vector3();
+        if (keysPressed['KeyW']) moveInput.add(forward);
+        if (keysPressed['KeyS']) moveInput.sub(forward);
+        if (keysPressed['KeyD']) moveInput.add(right);
+        if (keysPressed['KeyA']) moveInput.sub(right);
+        if (keysPressed['Space']) moveInput.add(up);
+        if (keysPressed['KeyC']) moveInput.sub(up);
+
+        if (moveInput.lengthSq() > 0) {
+          moveInput.normalize();
+        }
+
+        // Target Velocity with Snappy Drone Air-Brakes
+        const targetVelocity = moveInput.clone().multiplyScalar(cruiseSpeed);
+        // Snappy damping: responsive when accelerating, instant halt when releasing keys
+        const responsiveness = moveInput.lengthSq() > 0 ? 6.5 : 12.0;
+        droneVelocity.lerp(targetVelocity, Math.min(dt * responsiveness, 1.0));
+
+        // Exact Delta-Scaled Position Update
+        camera.position.addScaledVector(droneVelocity, dt);
+
+        // Strict City Flight Boundaries (No drifting away into empty void!)
+        const BOUNDARY = 28.0;
+        if (camera.position.x > BOUNDARY) { camera.position.x = BOUNDARY; droneVelocity.x = 0; }
+        if (camera.position.x < -BOUNDARY) { camera.position.x = -BOUNDARY; droneVelocity.x = 0; }
+        if (camera.position.z > BOUNDARY) { camera.position.z = BOUNDARY; droneVelocity.z = 0; }
+        if (camera.position.z < -BOUNDARY) { camera.position.z = -BOUNDARY; droneVelocity.z = 0; }
+
+        // Altitude: Minimum ground clearance 1.0m, Ceiling 32m (right above penthouses)
+        if (camera.position.y < 1.0) { camera.position.y = 1.0; droneVelocity.y = 0; }
+        if (camera.position.y > 32.0) { camera.position.y = 32.0; droneVelocity.y = 0; }
+
+        // Dynamic Thruster Audio Mod
+        if (engineOsc && audioCtx && engineGain) {
+          const speedRatio = droneVelocity.length() / cruiseSpeed;
+          engineOsc.frequency.setTargetAtTime(65 + speedRatio * 140 + (isTurbo ? 50 : 0), audioCtx.currentTime, 0.05);
+          engineGain.gain.setTargetAtTime(0.02 + speedRatio * 0.07 + (isTurbo ? 0.04 : 0), audioCtx.currentTime, 0.05);
+        }
+
+        // Update Cockpit HUD Telemetry
+        const spdKm = Math.round(droneVelocity.length() * 3.6); // Real-world m/s to km/h!
+        document.getElementById('tel-spd').innerHTML = `${spdKm} <span style="font-size: 11px; color:#64748B;">KM/H</span>`;
+        document.getElementById('tel-alt').innerHTML = `${camera.position.y.toFixed(1)} <span style="font-size: 11px; color:#64748B;">M</span>`;
+        document.getElementById('tel-vspd').innerHTML = `${(droneVelocity.y).toFixed(1)} <span style="font-size: 9px;">M/S</span>`;
+        document.getElementById('tel-turbo').style.display = isTurbo ? 'block' : 'none';
+
+        // Compass Heading
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        let angle = Math.atan2(camDir.x, camDir.z) * (180 / Math.PI);
+        if (angle < 0) angle += 360;
+        const hdgIndex = Math.round(angle / 45) % 8;
+        document.getElementById('drone-compass').innerText = `HDG ${Math.round(angle).toString().padStart(3, '0')}° // ${headingDirections[hdgIndex]}`;
+
+        // ==========================================
+        // PROXIMITY SENSOR & TRUE CROSSHAIR AIM SCANNER (LONG RANGE)
+        // ==========================================
+        const aimRay = new THREE.Raycaster();
+        aimRay.setFromCamera(new THREE.Vector2(0, 0), camera);
+        aimRay.far = 120.0; // Can scan from across the entire city!
+
+        const hits = aimRay.intersectObjects(towerGroup.children, true);
+        let aimedFloor = null;
+
+        if (hits.length > 0) {
+          let root = hits[0].object;
+          while (root.parent && root.parent !== towerGroup) {
+            root = root.parent;
+          }
+          if (root.userData && root.userData.name) {
+            aimedFloor = root;
+          }
+        }
+
+        const targetCard = document.getElementById('drone-target-card');
+        const brackets = document.getElementById('crosshair-brackets');
+
+        // Reset previous floor wall opacity if target changed
+        if (window.lastAimedFloor && window.lastAimedFloor !== aimedFloor) {
+          const prevMesh = window.lastAimedFloor.children[0];
+          if (prevMesh && prevMesh.material) {
+            prevMesh.material.opacity = isXRay ? 0.22 : 0.95;
+            prevMesh.material.emissiveIntensity = 0.15;
+          }
+        }
+
+        if (aimedFloor) {
+          const dist = camera.position.distanceTo(aimedFloor.position);
+          lockedTargetObj = { type: 'floor', floor: aimedFloor, dist: dist };
+          window.lastAimedFloor = aimedFloor;
+
+          brackets.classList.add('locked');
+          targetCard.classList.add('visible');
+
+          // Make the floor walls see-through X-ray glass so you can inspect functions inside from the air!
+          const bodyMesh = aimedFloor.children[0];
+          if (bodyMesh && bodyMesh.material) {
+            bodyMesh.material.opacity = 0.35;
+            bodyMesh.material.emissiveIntensity = 0.55;
+          }
+
+          const fnCount = (aimedFloor.userData.functions || []).length;
+          document.getElementById('target-name').innerText = `🎯 ${aimedFloor.userData.name} (${dist.toFixed(1)}m)`;
+          document.getElementById('target-action').innerText = `⚡ ${fnCount} FONKSİYON MEVCUT · KODU AÇMAK İÇİN [E] TUŞUNA VEYA TIKLA!`;
+
+          if (aimedFloor !== window.lastLockedFloorObj) {
+            playLockSound();
+            window.lastLockedFloorObj = aimedFloor;
+          }
+        } else {
+          lockedTargetObj = null;
+          brackets.classList.remove('locked');
+          targetCard.classList.remove('visible');
+          window.lastLockedFloorObj = null;
+        }
+      }
+
+      // Animate floating cyber embers through the city
+      if (emberParticles) {
+        const positions = emberParticles.geometry.attributes.position.array;
+        for (let i = 0; i < emberCount; i++) {
+          positions[i * 3 + 1] -= 0.035;
+          if (positions[i * 3 + 1] < 0) {
+            positions[i * 3 + 1] = 45;
+          }
+        }
+        emberParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      if (composer) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
+    }
+    animate();
+  </script>
+</body>
+</html>

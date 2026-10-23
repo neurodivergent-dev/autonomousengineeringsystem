@@ -1,0 +1,48 @@
+{
+  "file": "src/llm/client.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 136,
+    "jsx": false,
+    "imports": 0,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "Dosya içerisinde herhangi bir bileşen, hook veya entity bulunmamaktadır."
+  },
+  "graph": {
+    "dependencies": [],
+    "calls": [
+      "callOllama",
+      "callOpenAICompatible",
+      "replace",
+      "fetch",
+      "stringify",
+      "text",
+      "json",
+      "warn",
+      "match",
+      "parse",
+      "trim",
+      "indexOf",
+      "lastIndexOf",
+      "slice"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "944b9096-29b1-417c-bf78-ddcc7d7f3637",
+    "fileHash": "04dc8088883890c6a327bb3b7e62e26b",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358379226
+}

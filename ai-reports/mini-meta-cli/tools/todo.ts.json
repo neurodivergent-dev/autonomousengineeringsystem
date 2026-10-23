@@ -1,0 +1,51 @@
+{
+  "file": "mini-meta-cli/tools/todo.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 42,
+    "jsx": false,
+    "imports": 2,
+    "exports": 1,
+    "functions": 1,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "mini-meta-cli/types.ts ve mini-meta-cli/state.ts kullanarak createTodoTool oluşturur."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/types.ts",
+      "mini-meta-cli/state.ts"
+    ],
+    "calls": [
+      "isArray",
+      "trim",
+      "String",
+      "parse",
+      "filter",
+      "setTodos",
+      "log"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "createTodoTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "e5ffb5fa-1864-4331-bad2-7a3029d1f596",
+    "fileHash": "164d7b26a0df075e949b01ae3ddd9b23",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358366803
+}

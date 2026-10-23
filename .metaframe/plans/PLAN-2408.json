@@ -1,0 +1,33 @@
+{
+  "id": "PLAN-2408",
+  "adrRef": "ADR-2104",
+  "title": "Implementation Plan for Hacker-Style Encrypted Messaging Interface",
+  "status": "APPROVED",
+  "targetFiles": [
+    "apps/hacker-chat/index.html"
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "Create the complete standalone application in a single file. This includes: 1) A Canvas-based rendering engine for the 'Matrix' background effect. 2) A CSS-driven UI layer using glassmorphism and 'Cyber-noir' styling. 3) A JavaScript state-driven animation controller to handle 'Decryption' and 'Pulse' effects independently of the UI logic.",
+      "targetFile": "apps/hacker-chat/index.html",
+      "targetSymbols": [
+        "MatrixCanvas",
+        "UIController",
+        "DecryptionManager",
+        "CyberNoirTheme"
+      ],
+      "actionType": "CREATE",
+      "testCriteria": "Verify that the Canvas background renders smoothly, CSS glassmorphism is applied to UI elements, and the 'Decryption' animation triggers correctly upon message receipt."
+    }
+  ],
+  "blastRadiusRisk": "LOW",
+  "verificationGateChecklist": [
+    "TypeScript 0 errors (tsc --noEmit)",
+    "Transitive blast radius within bounds",
+    "Theme token compliance",
+    "Zero-emoji linter clean",
+    "AST code health clean (no empty catch, no any)"
+  ],
+  "createdAt": "2026-10-19T21:18:02.408Z"
+}

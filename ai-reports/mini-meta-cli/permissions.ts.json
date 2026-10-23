@@ -1,0 +1,44 @@
+{
+  "file": "mini-meta-cli/permissions.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 63,
+    "jsx": false,
+    "imports": 0,
+    "exports": 1,
+    "functions": 1,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "checkShellCommand entity'sini içeren tek fonksiyonlu bir modüldür."
+  },
+  "graph": {
+    "dependencies": [],
+    "calls": [
+      "trim",
+      "test",
+      "slice"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "checkShellCommand",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "a4b8522e-9f9d-4c51-b157-8666944ffea8",
+    "fileHash": "09af4def431456ca1480e63919a6edd0",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358359493
+}

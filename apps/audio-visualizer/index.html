@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Audio Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #visualizer-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.8);
+            transition: opacity 0.5s ease;
+        }
+
+        .btn-start {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            color: #0ff;
+            background: transparent;
+            border: 2px solid #0ff;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .btn-start:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+        }
+
+        .title {
+            color: #0ff;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px #0ff;
+            letter-spacing: 5px;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-black">
+    <div id="visualizer-container">
+        <div id="ui-overlay">
+            <h1 class="title">CYBER_VISUALIZER</h1>
+            <button id="start-button" class="btn-start">Initialize System</button>
+        </div>
+        <canvas id="visualizer-canvas"></canvas>
+    </div>
+
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+    <script>
+        /**
+         * Cyber Audio Visualizer - Core Initialization
+         * Architecture: Decoupled Web Audio API & Three.js WebGL Rendering
+         */
+
+        const canvas = document.getElementById('visualizer-canvas');
+        let scene, camera, renderer, analyser, dataArray;
+        let audioContext, source;
+        let animationFrameId;
+        let mesh;
+
+        const uiOverlay = document.getElementById('ui-overlay');
+        const startButton = document.getElementById('start-button');
+
+        const FFT_SIZE = 512;
+
+        /**
+         * Initialize the Three.js environment
+         */
+        function initScene() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+            scene.fog = new THREE.Fog(0x050505, 10, 50);
+
+            // Camera Setup
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+            camera.position.z = 30;
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({
+                canvas: canvas,
+                antialias: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // Geometry & Material
+            // Creating a complex wireframe geometry for a "cyber" look
+            const geometry = new THREE.IcosahedronGeometry(10, 15);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00ffff,
+                wireframe: true,
+                emissive: 0x004444,
+                specular: 0x00ffff
+            });
+
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x00ffff, 2, 100);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            const blueLight = new THREE.PointLight(0x0000ff, 2, 100);
+            blueLight.position.set(-10, -10, 10);
+            scene.add(blueLight);
+
+            // Resize Handler
+            window.addEventListener('resize', () => {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            });
+        }
+
+        /**
+         * Initialize Web Audio API
+         */
+        async function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = FFT_SIZE;
+                
+                source.connect(analyser);
+                
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                return true;
+            } catch (err) {
+                console.error("Audio initialization failed:", err);
+                alert("Microphone access is required for the visualizer.");
+                return false;
+            }
+        }
+
+        /**
+         * Main Animation Loop
+         */
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+
+            if (analyser) {
+                analyser.getByteFrequencyData(dataArray);
+
+                // Calculate average frequency intensity
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                const average = sum / dataArray.length;
+
+                // Update mesh properties based on audio
+                const scale = 1 + (average / 128);
+                mesh.scale.set(scale, scale, scale);
+                
+                // Rotate based on time and audio
+                mesh.rotation.x += 0.005;
+                mesh.rotation.y += 0.01;
+                
+                // Dynamic color shift based on high frequencies
+                const highFreq = dataArray[Math.floor(dataArray.length * 0.7)];
+                mesh.material.color.setHSL(0.5 + (highFreq / 255) * 0.5, 1, 0.5);
+                
+                // Pulse effect
+                mesh.material.emissiveIntensity = average / 255;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        /**
+         * Entry Point
+         */
+        startButton.addEventListener('click', async () => {
+            initScene();
+            const success = await initAudio();
+            
+            if (success) {
+                uiOverlay.classList.add('hidden');
+                animate();
+            }
+        });
+
+        // Initial setup for scene if not using immediate audio
+        initScene();
+    </script>
+</body>
+</html>

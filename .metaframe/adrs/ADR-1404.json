@@ -1,0 +1,33 @@
+{
+  "id": "ADR-1404",
+  "prdRef": "PRD-1968",
+  "title": "Architectural approach for Interactive 3D Retro-Tech Landing Page",
+  "status": "ACCEPTED",
+  "context": "The project requires a high-performance 3D environment featuring specific retro-aesthetic effects (wireframes, neon glows, and scanlines). A robust 3D engine is necessary to handle the 3D geometry and rotation logic while maintaining a smooth frame rate for the 'Cyber-Grid' visual style.",
+  "decision": "Utilize Three.js as the primary 3D engine to render the wireframe model and handle the Y-axis rotation. Implement 'Cyber-Grid' effects (neon cyan, glowing vertices) using custom ShaderMaterials. A 2D CSS/Canvas overlay will be used for the CRT scanline effect and the glassmorphic UI components to decouple the 3D scene logic from the UI layer.",
+  "alternativesConsidered": [
+    "Raw WebGL (Rejected due to high complexity and significant development overhead for basic scene management)",
+    "Babylon.js (Rejected as Three.js provides a more extensive ecosystem for wireframe-specific shaders and neon-style post-processing)"
+  ],
+  "consequences": {
+    "positive": [
+      "High-fidelity 3D rendering with manageable complexity",
+      "Decoupled UI and 3D logic allows for easier maintenance of the glassmorphic elements",
+      "Consistent performance across modern browsers using standard WebGL"
+    ],
+    "negative": [
+      "Increased initial bundle size due to the inclusion of the Three.js library"
+    ],
+    "risks": [
+      "Potential frame-rate drops on low-end mobile devices when rendering complex shader effects",
+      "Potential issues with 'glitch' effect synchronization across different browser refresh rates"
+    ]
+  },
+  "impactedModules": [
+    "apps/retro-pc-wireframe/index.html",
+    "apps/retro-pc-wireframe/src/scene.js",
+    "apps/retro-pc-wireframe/src/styles.css"
+  ],
+  "blastRadiusRisk": "LOW",
+  "createdAt": "2026-10-19T13:30:41.404Z"
+}

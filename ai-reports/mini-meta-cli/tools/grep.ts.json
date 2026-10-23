@@ -1,0 +1,91 @@
+{
+  "file": "mini-meta-cli/tools/grep.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 146,
+    "jsx": false,
+    "imports": 5,
+    "exports": 1,
+    "functions": 4,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "child_process, fs, path, types.ts ve prompt.ts kullanarak createGrepTool, shellQuote, walk"
+  },
+  "graph": {
+    "dependencies": [
+      "child_process",
+      "fs",
+      "path",
+      "mini-meta-cli/types.ts",
+      "mini-meta-cli/prompt.ts"
+    ],
+    "calls": [
+      "String",
+      "resolvePath",
+      "shellQuote",
+      "execSync",
+      "walk",
+      "readFileSync",
+      "split",
+      "test",
+      "includes",
+      "toLowerCase",
+      "push",
+      "slice",
+      "join",
+      "replace",
+      "existsSync",
+      "statSync",
+      "isFile",
+      "matchGlob",
+      "onFile",
+      "pop",
+      "readdirSync",
+      "has",
+      "isDirectory",
+      "basename",
+      "startsWith",
+      "endsWith"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "createGrepTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "shellQuote",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "walk",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "matchGlob",
+      "type": "function",
+      "async": false,
+      "exported": false
+    }
+  ],
+  "identity": {
+    "analysisId": "2ef5854b-c7b7-4e7e-a875-9738f12b3068",
+    "fileHash": "9946c249dcdc062071ba4d303014df91",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358363568
+}

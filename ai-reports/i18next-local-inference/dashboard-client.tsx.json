@@ -1,0 +1,257 @@
+{
+  "file": "i18next-local-inference/dashboard-client.tsx",
+  "objective": {
+    "language": "TypeScript (TSX)",
+    "lines": 1129,
+    "jsx": true,
+    "imports": 2,
+    "exports": 0,
+    "functions": 14,
+    "hooks": 0,
+    "components": 10,
+    "framework": "React",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "react ve react-dom/client kullanarak çeşitli bileşenleri yöneten orkestrasyon modülü."
+  },
+  "graph": {
+    "dependencies": [
+      "react",
+      "react-dom/client"
+    ],
+    "calls": [
+      "fetch",
+      "json",
+      "stringify",
+      "getReader",
+      "read",
+      "decode",
+      "indexOf",
+      "slice",
+      "trim",
+      "onMessage",
+      "parse",
+      "isArray",
+      "join",
+      "filter",
+      "map",
+      "split",
+      "values",
+      "some",
+      "useState",
+      "setTheme",
+      "setItem",
+      "round",
+      "onSearch",
+      "onOverwrite",
+      "onToggleAutoFix",
+      "onToggleAutoVerify",
+      "onSelect",
+      "alert",
+      "onSubmit",
+      "setOpen",
+      "setName",
+      "setValue",
+      "toLowerCase",
+      "includes",
+      "String",
+      "push",
+      "find",
+      "onSelectKey",
+      "overallStatus",
+      "min",
+      "max",
+      "toDisplayValue",
+      "onSave",
+      "fromDisplayValue",
+      "setTranslating",
+      "onTranslateKey",
+      "statusLabel",
+      "setBusyLocale",
+      "onTranslateOne",
+      "setVerifyingLocale"
+    ],
+    "renders": [
+      "button",
+      "svg",
+      "path",
+      "circle",
+      "span",
+      "div",
+      "h1",
+      "strong",
+      "input",
+      "label",
+      "ThemeToggle",
+      "textarea",
+      "AddKeyForm",
+      "h2",
+      "option",
+      "select",
+      "Topbar",
+      "Sidebar",
+      "KeyList",
+      "Detail",
+      "CodeUsageModal",
+      "ProjectModal",
+      "SettingsModal",
+      "App"
+    ]
+  },
+  "entities": [
+    {
+      "name": "getJson",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "postJson",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "streamNdjson",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "toDisplayValue",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "fromDisplayValue",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "overallStatus",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "statusLabel",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "ThemeToggle",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "toggle",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "Topbar",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "Sidebar",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "AddKeyForm",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "submit",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "KeyList",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "Detail",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "CodeUsageModal",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "addMissing",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "ProjectModal",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "open",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "SettingsModal",
+      "type": "component",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "set",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "save",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "modelOptions",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "App",
+      "type": "component",
+      "async": false,
+      "exported": false
+    }
+  ],
+  "identity": {
+    "analysisId": "3bb7c7ba-c3d0-4380-aa82-a68465fa4886",
+    "fileHash": "ddc6bcaf411080fed06d1a80e23a9496",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358353890
+}

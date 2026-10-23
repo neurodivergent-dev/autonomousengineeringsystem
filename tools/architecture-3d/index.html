@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mindbook Pro - 3D Architecture Lego Engine</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: radial-gradient(circle at 50% 25%, #0d111d 0%, #06080f 70%, #020306 100%);
+      color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    /* Glass Top Bar */
+    .topbar {
+      position: absolute; top: 16px; left: 20px; right: 20px; height: 64px;
+      background: rgba(15, 20, 32, 0.78); backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; z-index: 10; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    }
+    .brand-text h1 { font-size: 15px; font-weight: 800; letter-spacing: -0.2px; }
+    .brand-text p { font-size: 11px; color: #94A3B8; font-family: 'JetBrains Mono', monospace; }
+    .stat-badge {
+      background: rgba(99, 102, 241, 0.18); border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #A5B4FC; padding: 4px 10px; border-radius: 20px; font-size: 11px;
+      font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-left: 10px;
+    }
+
+    .search-box {
+      background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px; padding: 6px 14px; display: flex; align-items: center; gap: 8px; width: 220px;
+    }
+    .search-box input {
+      background: transparent; border: none; outline: none; color: #FFF;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 100%;
+    }
+    .search-box input::placeholder { color: #64748B; }
+
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #F8FAFC; padding: 8px 14px; border-radius: 10px; font-size: 12px;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.3); transform: translateY(-1px); }
+    .btn.active { background: linear-gradient(135deg, #3B82F6, #6366F1); border-color: #818CF8; box-shadow: 0 0 16px rgba(99, 102, 241, 0.5); }
+
+    /* Left Layer Selector */
+    .layer-selector {
+      position: absolute; left: 20px; top: 96px; display: flex; flex-direction: column; gap: 6px;
+      z-index: 10; background: rgba(15, 20, 32, 0.75); backdrop-filter: blur(20px);
+      padding: 12px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+    .layer-pill {
+      display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 8px;
+      font-size: 11px; font-weight: 600; cursor: pointer; background: transparent;
+      border: 1px solid transparent; transition: all 0.15s; color: #94A3B8;
+    }
+    .layer-pill:hover { color: #FFFFFF; background: rgba(255, 255, 255, 0.06); }
+    .layer-pill.active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); color: #FFFFFF; }
+    .layer-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+    .pill-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: 0.6; }
+
+    /* Right Inspector Sidebar */
+    .inspector {
+      position: absolute; right: 20px; top: 96px; bottom: 20px; width: 380px;
+      background: rgba(15, 20, 32, 0.88); backdrop-filter: blur(26px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 24px;
+      z-index: 10; display: flex; flex-direction: column; transform: translateX(420px);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: -20px 0 50px rgba(0,0,0,0.6);
+    }
+    .inspector.open { transform: translateX(0); }
+    .inspector-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+    .inspector-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; }
+    .inspector-title { font-size: 18px; font-weight: 800; color: #FFFFFF; word-break: break-all; }
+    .close-inspector { background: rgba(255, 255, 255, 0.08); border: none; color: #94A3B8; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .close-inspector:hover { background: rgba(255, 255, 255, 0.2); color: #FFF; }
+    .inspector-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    .inspector-item { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 12px 14px; }
+    .inspector-item label { display: block; font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; margin-bottom: 5px; font-family: 'JetBrains Mono', monospace; }
+    .inspector-item .val { font-size: 12.5px; color: #E2E8F0; line-height: 1.5; }
+    .dep-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .dep-tag { background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #A5B4FC; padding: 3px 8px; border-radius: 6px; font-size: 10.5px; font-family: 'JetBrains Mono', monospace; }
+
+    /* Bottom HUD Controls */
+    .hud-bottom {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 20, 32, 0.82); backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px;
+      padding: 10px 22px; display: flex; align-items: center; gap: 24px; z-index: 10;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    }
+    .slider-group { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; color: #94A3B8; }
+    .slider-group input[type="range"] { width: 140px; accent-color: #6366F1; cursor: pointer; }
+
+    /* Agent Drone Hologram */
+    .agent-status-card {
+      position: absolute; left: 20px; bottom: 20px; background: rgba(15, 20, 32, 0.82);
+      backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px; padding: 10px 16px; z-index: 10; display: flex;
+      align-items: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    }
+    .pulse-dot { width: 9px; height: 9px; border-radius: 50%; background: #10B981; box-shadow: 0 0 12px #10B981; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.25); opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation Bar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🧱</div>
+      <div class="brand-text">
+        <h1>MINDBOOK PRO · FULL 3D LEGO ARCHITECTURE</h1>
+        <p>7-TIER ENTERPRISE REPO TOPOLOGY · AST SPATIAL ENGINE</p>
+      </div>
+      <span class="stat-badge" id="block-count-badge">43 LEGO BLOCKS</span>
+    </div>
+
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="Search module / file..." oninput="searchModule(this.value)">
+    </div>
+
+    <div class="top-actions">
+      <a href="/cyberpunk" class="btn" style="text-decoration: none; border-color: #FF0055; color: #FF0055; background: rgba(255, 0, 85, 0.1);">
+        <span>🏙️</span> <span>Cyberpunk City</span>
+      </a>
+      <button class="btn" id="btn-drone" onclick="toggleDrone()">
+        <span>🛸</span> <span id="drone-btn-text">Agent Drone: ON</span>
+      </button>
+      <button class="btn" id="btn-lines" onclick="toggleConnections()">
+        <span>⚡</span> <span>Data Pipes</span>
+      </button>
+      <button class="btn" onclick="resetCamera()">
+        <span>🎯</span> <span>Reset View</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Left Layer Selector (7 Real Architecture Tiers) -->
+  <div class="layer-selector">
+    <div class="layer-pill active" onclick="filterLayer('all')">
+      <div class="layer-dot" style="background: #FFFFFF;"></div>
+      <span>Tüm Sistem (All)</span>
+      <span class="pill-count">43</span>
+    </div>
+    <div class="layer-pill" onclick="filterLayer('hardware')">
+      <div class="layer-dot" style="background: #0284C7;"></div>
+      <span>Tier 0: Native & Donanım</span>
+      <span class="pill-count">6</span>
+    </div>
+    <div class="layer-pill" onclick="filterLayer('cloud')">
+      <div class="layer-dot" style="background: #3B82F6;"></div>
+      <span>Tier 1: Bulut & Kriptografi</span>
+      <span class="pill-count">6</span>
+    </div>
+    <div class="layer-pill" onclick="filterLayer('context')">
+      <div class="layer-dot" style="background: #8B5CF6;"></div>
+      <span>Tier 2: Global State & Context</span>
+      <span class="pill-count">6</span>
+    </div>
+    <div class="layer-pill" onclick="filterLayer('services')">
+      <div class="layer-dot" style="background: #D946EF;"></div>
+      <span>Tier 3: Domain Servisleri</span>
+      <span class="pill-count">5</span>
+    </div>
+    <div class="layer-pill" onclick="filterLayer('hook')">
+      <div class="layer-dot" style="background: #10B981;"></div>
+      <span>Tier 4: Reaktif Hooks</span>
+      <span class="pill-count">6</span>
+    </div>
+    <div class="layer-pill" onclick="filterLayer('component')">
+      <div class="layer-dot" style="background: #F59E0B;"></div>
+      <span>Tier 5: UI & Araç Çubukları</span>
+      <span class="pill-count">8</span>
+    </div>
+    <div class="layer-pill" onclick="filterLayer('screen')">
+      <div class="layer-dot" style="background: #EF4444;"></div>
+      <span>Tier 6: Ekranlar & Modallar</span>
+      <span class="pill-count">6</span>
+    </div>
+  </div>
+
+  <!-- Right Inspector Drawer -->
+  <div class="inspector" id="inspector">
+    <div class="inspector-header">
+      <div>
+        <span class="inspector-badge" id="insp-badge">TIER 5 · UI</span>
+        <h2 class="inspector-title" id="insp-title">InNoteSearchBar.tsx</h2>
+      </div>
+      <button class="close-inspector" onclick="closeInspector()">✕</button>
+    </div>
+    <div class="inspector-content">
+      <div class="inspector-item">
+        <label>Katman / Sorumluluk</label>
+        <div class="val" id="insp-role">Editörün ana arama arayüzü; canlı sayaç, önceki/sonraki atlama ve temizleme butonları.</div>
+      </div>
+      <div class="inspector-item">
+        <label>Dosya Yolu</label>
+        <div class="val" id="insp-path" style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">components/editor/InNoteSearchBar.tsx</div>
+      </div>
+      <div class="inspector-item">
+        <label>Bağlantılar & Veri Boruları</label>
+        <div class="dep-tags" id="insp-deps">
+          <span class="dep-tag">useNoteSearch</span>
+          <span class="dep-tag">EditorContext</span>
+        </div>
+      </div>
+      <div class="inspector-item">
+        <label>Mimari Sağlık & Derleme Durumu</label>
+        <div class="val" style="color: #10B981; font-weight: 700;" id="insp-status">● TypeScript Valid · 0 Errors</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom HUD: Explode View Slider -->
+  <div class="hud-bottom">
+    <div class="slider-group">
+      <span>Katmanları Patlat (Explode Tiers):</span>
+      <input type="range" id="explodeSlider" min="1" max="3.5" step="0.05" value="1" oninput="updateExplode(this.value)">
+    </div>
+  </div>
+
+  <!-- Left Bottom Agent Status -->
+  <div class="agent-status-card">
+    <div class="pulse-dot"></div>
+    <div>
+      <span style="color: #94A3B8;">AGENT:</span> <span id="agent-action-text" style="color: #38BDF8;">Patrolling Mindbook Architecture...</span>
+    </div>
+  </div>
+
+  <script>
+    // --- COMPREHENSIVE 43-MODULE 7-TIER ARCHITECTURE GRAPH ---
+    const ARCHITECTURE = [
+      // ==========================================
+      // TIER 0: NATIVE BRIDGES & HARDWARE (Tier 0)
+      // ==========================================
+      { id: 'biometrics', name: 'Local Auth / Biometrics', layer: 'hardware', tier: 0, x: -7.5, z: -6, width: 2.5, length: 1.8, color: 0x0284C7, path: 'expo-local-authentication', desc: 'Parmak izi, FaceID ve Android BiometricPrompt donanım köprüsü.', deps: [] },
+      { id: 'secure-store', name: 'Expo SecureStore', layer: 'hardware', tier: 0, x: -4.5, z: -6, width: 2.5, length: 1.8, color: 0x0369A1, path: 'expo-secure-store', desc: 'Android Keystore ve iOS Keychain donanımsal anahtar saklama.', deps: [] },
+      { id: 'filesystem', name: 'Expo FileSystem', layer: 'hardware', tier: 0, x: -1.5, z: -6, width: 2.5, length: 1.8, color: 0x0284C7, path: 'expo-file-system', desc: 'Cihaz içi offline depolama, yerel dosya ve yedek JSON okuma/yazma.', deps: [] },
+      { id: 'netinfo', name: 'NetInfo Bridge', layer: 'hardware', tier: 0, x: 1.5, z: -6, width: 2.5, length: 1.8, color: 0x0369A1, path: '@react-native-community/netinfo', desc: 'Wi-Fi/Hücresel ağ durumu takibi ve anlık bağlantı kopma tespiti.', deps: [] },
+      { id: 'image-picker', name: 'Image Picker & Loader', layer: 'hardware', tier: 0, x: 4.5, z: -6, width: 2.5, length: 1.8, color: 0x0284C7, path: 'expo-image-picker', desc: 'Kamera ve galeri entegrasyonu, not kapak görselleri ve profil resimleri.', deps: [] },
+      { id: 'haptics', name: 'Haptics & SystemUI', layer: 'hardware', tier: 0, x: 7.5, z: -6, width: 2.5, length: 1.8, color: 0x0369A1, path: 'expo-haptics', desc: 'Dokunsal titreşim geri bildirimleri, Android navigasyon çubuğu kontrolü.', deps: [] },
+
+      // ==========================================
+      // TIER 1: CLOUD SERVICES & CRYPTO VAULT (Tier 1)
+      // ==========================================
+      { id: 'supabase', name: 'Supabase PostgreSQL', layer: 'cloud', tier: 1, x: -7.5, z: -2.5, width: 2.5, length: 1.8, color: 0x2563EB, path: 'utils/supabase.ts', desc: 'PostgreSQL bulut veritabanı, notlar, kategoriler, kullanıcı oturumları.', deps: ['netinfo'] },
+      { id: 'aes-vault', name: 'AES-256 Vault', layer: 'cloud', tier: 1, x: -4.5, z: -2.5, width: 2.5, length: 1.8, color: 0x1D4ED8, path: 'utils/backup.tsx', desc: '64 karakterlik anahtar ile uçtan uca şifreleme ve 88 bulut yedeği kurtarma mekanizması.', deps: ['secure-store'] },
+      { id: 'sentry', name: 'Sentry Crash Reporter', layer: 'cloud', tier: 1, x: -1.5, z: -2.5, width: 2.5, length: 1.8, color: 0x3B82F6, path: '@sentry/react-native', desc: 'Canlı çökme raporlama, hata yakalama ve sourcemap eşleme.', deps: ['netinfo'] },
+      { id: 'cloudinary', name: 'Cloudinary CDN', layer: 'cloud', tier: 1, x: 1.5, z: -2.5, width: 2.5, length: 1.8, color: 0x2563EB, path: 'utils/cloudinaryService.ts', desc: 'Görselleri CDN üzerinde optimize depolama ve dönüştürme servisi.', deps: ['image-picker'] },
+      { id: 'gemini-api', name: 'Gemini AI Client', layer: 'cloud', tier: 1, x: 4.5, z: -2.5, width: 2.5, length: 1.8, color: 0x1D4ED8, path: 'hooks/useGeminiAI.ts', desc: 'Google Gemini Pro / Flash API istemcisi, prompt tamamlama motoru.', deps: ['netinfo'] },
+      { id: 'expo-updates', name: 'OTA Updates Service', layer: 'cloud', tier: 1, x: 7.5, z: -2.5, width: 2.5, length: 1.8, color: 0x3B82F6, path: 'expo-updates', desc: 'Google Play Store beklemeden uzaktan kablosuz kod güncelleme motoru.', deps: ['netinfo', 'filesystem'] },
+
+      // ==========================================
+      // TIER 2: GLOBAL STATE & CONTEXT PILLARS (Tier 2)
+      // ==========================================
+      { id: 'editor-ctx', name: 'EditorContext', layer: 'context', tier: 2, x: -7.5, z: 1, width: 2.5, length: 2, color: 0x7C3AED, path: 'context/EditorContext.tsx', desc: 'Editörün state omurgası; arama durumu, seçim aralıkları, başlık ve içerik senkronizasyonu.', deps: ['aes-vault'] },
+      { id: 'auth-ctx', name: 'AuthContext', layer: 'context', tier: 2, x: -4.5, z: 1, width: 2.5, length: 2, color: 0x8B5CF6, path: 'context/AuthContext.tsx', desc: 'Kullanıcı oturum yönetimi, PIN ve biyometrik kilit entegrasyonu.', deps: ['supabase', 'biometrics'] },
+      { id: 'chat-ctx', name: 'ChatContext', layer: 'context', tier: 2, x: -1.5, z: 1, width: 2.5, length: 2, color: 0x6D28D9, path: 'context/ChatContext.tsx', desc: 'Yapay zeka sohbet oturumları, konuşma geçmişi ve prompt state yönetimi.', deps: ['gemini-api'] },
+      { id: 'theme-ctx', name: 'ThemeContext', layer: 'context', tier: 2, x: 1.5, z: 1, width: 2.5, length: 2, color: 0x9333EA, path: 'context/ThemeContext.tsx', desc: 'Aurora efektleri, dinamik renk temaları, font ölçeklendirme.', deps: ['haptics'] },
+      { id: 'settings-ctx', name: 'SettingsContext', layer: 'context', tier: 2, x: 4.5, z: 1, width: 2.5, length: 2, color: 0x7C3AED, path: 'context/SettingsContext.tsx', desc: 'AI anahtarları, bildirimler ve uygulama tercihleri.', deps: ['secure-store'] },
+      { id: 'alert-ctx', name: 'AlertContext', layer: 'context', tier: 2, x: 7.5, z: 1, width: 2.5, length: 2, color: 0x8B5CF6, path: 'context/AlertContext.tsx', desc: 'Global toast bildirimleri, modern uyarı pencereleri ve hata mesajları.', deps: [] },
+
+      // ==========================================
+      // TIER 3: DOMAIN SERVICES & VAULTS (Tier 3)
+      // ==========================================
+      { id: 'app-lock-svc', name: 'AppLockService', layer: 'services', tier: 3, x: -6, z: 4.5, width: 2.5, length: 1.8, color: 0xC026D3, path: 'services/appLock/AppLockService.ts', desc: 'PIN, desen (pattern) kilidi, soğuma süresi (cooldown) ve güvenlik yönetimi.', deps: ['auth-ctx', 'biometrics'] },
+      { id: 'backup-svc', name: 'Backup & Restore Engine', layer: 'services', tier: 3, x: -3, z: 4.5, width: 2.5, length: 1.8, color: 0xD946EF, path: 'utils/backup.tsx', desc: 'Şifreli JSON dışa/içe aktarımı, 88 miras yedeği otomatik onarma.', deps: ['aes-vault', 'filesystem'] },
+      { id: 'version-svc', name: 'VersionHistoryService', layer: 'services', tier: 3, x: 0, z: 4.5, width: 2.5, length: 1.8, color: 0xA21CAF, path: 'services/VersionHistoryService.ts', desc: 'Notların zaman yolculuğu anlık görüntüleri (snapshots) ve diff takibi.', deps: ['supabase'] },
+      { id: 'chat-storage', name: 'ChatStorageService', layer: 'services', tier: 3, x: 3, z: 4.5, width: 2.5, length: 1.8, color: 0xC026D3, path: 'utils/chatStorage.ts', desc: 'Sohbet oturumlarını yerel şifreleyerek cihazda kalıcı saklama.', deps: ['chat-ctx', 'secure-store'] },
+      { id: 'network-mgr', name: 'NetworkManager', layer: 'services', tier: 3, x: 6, z: 4.5, width: 2.5, length: 1.8, color: 0xD946EF, path: 'utils/networkManager.ts', desc: 'Çevrimdışı işlem kuyruğu ve bağlantı geldiğinde otomatik yeniden deneme.', deps: ['netinfo'] },
+
+      // ==========================================
+      // TIER 4: REACTIVE HOOKS & ENGINES (Tier 4)
+      // ==========================================
+      { id: 'use-search', name: 'useNoteSearch', layer: 'hook', tier: 4, x: -7.5, z: 8, width: 2.5, length: 1.8, color: 0x059669, path: 'hooks/notes/useNoteSearch.ts', desc: 'Not içi anlık büyük/küçük harf duyarsız arama, dairesel eşleşme indeksi ve görsel satır hesaplama.', deps: ['editor-ctx'] },
+      { id: 'use-handlers', name: 'useNoteHandlers', layer: 'hook', tier: 4, x: -4.5, z: 8, width: 2.5, length: 1.8, color: 0x10B981, path: 'hooks/notes/useNoteHandlers.ts', desc: 'Markdown araç ekleme, okuma modu ve AI analizör yönlendirme işleyicileri.', deps: ['editor-ctx'] },
+      { id: 'use-editnote', name: 'useEditNote', layer: 'hook', tier: 4, x: -1.5, z: 8, width: 2.5, length: 1.8, color: 0x059669, path: 'hooks/notes/useEditNote.ts', desc: 'Debounced otomatik kaydetme, kelime sayısı ve okuma süresi hesaplamaları.', deps: ['editor-ctx', 'backup-svc'] },
+      { id: 'use-gemini', name: 'useGeminiAI', layer: 'hook', tier: 4, x: 1.5, z: 8, width: 2.5, length: 1.8, color: 0x10B981, path: 'hooks/useGeminiAI.ts', desc: 'Yazım düzeltme, metin zenginleştirme ve yapay zeka analiz motoru.', deps: ['gemini-api'] },
+      { id: 'use-nav', name: 'useSafeNavigation', layer: 'hook', tier: 4, x: 4.5, z: 8, width: 2.5, length: 1.8, color: 0x059669, path: 'hooks/useSafeNavigation.ts', desc: 'Çift tıklamaları önleyen güvenli ekran geçiş mekanizması.', deps: [] },
+      { id: 'use-theme', name: 'useTheme', layer: 'hook', tier: 4, x: 7.5, z: 8, width: 2.5, length: 1.8, color: 0x10B981, path: 'context/ThemeContext.tsx', desc: 'Tema renkleri ve yazı boyutlarına anlık reaktif erişim.', deps: ['theme-ctx'] },
+
+      // ==========================================
+      // TIER 5: UI ATOMS & TOOLBARS (Tier 5)
+      // ==========================================
+      { id: 'search-bar', name: 'InNoteSearchBar', layer: 'component', tier: 5, x: -8, z: 11.5, width: 2.3, length: 1.6, color: 0xF59E0B, path: 'components/editor/InNoteSearchBar.tsx', desc: 'Modern arama çubuğu: 1/5 canlı sayaç, yukarı/aşağı atlama butonları ve kapatma.', deps: ['use-search'] },
+      { id: 'editor-body', name: 'EditorBody', layer: 'component', tier: 5, x: -5.5, z: 11.5, width: 2.6, length: 1.6, color: 0xD97706, path: 'components/editor/EditorBody.tsx', desc: 'Görsel sarı/turuncu rozetlerle metin vurgulayan ve otomatik satıra kaydıran (scrollTo) ana gövde.', deps: ['editor-ctx', 'search-bar', 'use-search'] },
+      { id: 'editor-header', name: 'EditorHeader', layer: 'component', tier: 5, x: -3, z: 11.5, width: 2.4, length: 1.6, color: 0xF59E0B, path: 'components/editor/EditorHeader.tsx', desc: 'Editörün üst barı, büyüteç ikonu ve kaydetme durumu rozeti.', deps: ['editor-ctx'] },
+      { id: 'header-menu', name: 'EditorHeaderMenu', layer: 'component', tier: 5, x: -0.5, z: 11.5, width: 2.4, length: 1.6, color: 0xD97706, path: 'components/editor/EditorHeaderMenu.tsx', desc: '3 nokta menüsü: Notta Bul, Odak Modu, Okuma Modu, Kopyala.', deps: ['editor-ctx'] },
+      { id: 'markdown-bar', name: 'MarkdownToolbar', layer: 'component', tier: 5, x: 2, z: 11.5, width: 2.3, length: 1.6, color: 0xF59E0B, path: 'components/MarkdownToolbar.tsx', desc: 'Kalın, italik, liste ve başlık ekleme araç çubuğu.', deps: ['editor-ctx'] },
+      { id: 'prop-bar', name: 'NotePropertyToolbar', layer: 'component', tier: 5, x: 4.5, z: 11.5, width: 2.3, length: 1.6, color: 0xD97706, path: 'components/NotePropertyToolbar.tsx', desc: 'Kategori, renk ve etiket seçici araç çubuğu.', deps: ['editor-ctx'] },
+      { id: 'aurora-bg', name: 'AuroraBackground', layer: 'component', tier: 5, x: 7, z: 11.5, width: 2.3, length: 1.6, color: 0xF59E0B, path: 'components/AuroraBackground.tsx', desc: 'Canlı parlayan dinamik Aurora ışık dalgaları arka planı.', deps: ['theme-ctx'] },
+      { id: 'pricing-card', name: 'AISubscriptionPricing', layer: 'component', tier: 5, x: 9.5, z: 11.5, width: 2.3, length: 1.6, color: 0xD97706, path: 'components/AISubscriptionPricing.tsx', desc: 'Aylık, yıllık ve ömür boyu (founder) abonelik fiyatlandırma kartları.', deps: ['theme-ctx'] },
+
+      // ==========================================
+      // TIER 6: MASTER SCREENS & MODALS (Tier 6)
+      // ==========================================
+      { id: 'screen-edit', name: 'edit-note.tsx', layer: 'screen', tier: 6, x: -7, z: 15, width: 3.2, length: 2, color: 0xEF4444, path: 'app/(modal)/edit-note.tsx', desc: 'Kullanıcının notu düzenlediği ve okuduğu ana modal vitrini.', deps: ['editor-body', 'editor-header', 'editor-ctx'] },
+      { id: 'screen-notes', name: 'NotesScreen.tsx', layer: 'screen', tier: 6, x: -3.5, z: 15, width: 3.2, length: 2, color: 0xDC2626, path: 'app/screens/NotesScreen.tsx', desc: 'FlashList v2 ile sanallaştırılmış yüksek performanslı not listesi ekranı.', deps: ['theme-ctx', 'use-editnote'] },
+      { id: 'screen-chat', name: 'chat.tsx', layer: 'screen', tier: 6, x: 0, z: 15, width: 3.2, length: 2, color: 0xB91C1C, path: 'app/(tabs)/chat.tsx', desc: 'Yapay zeka asistanı ile interaktif sohbet ve not üretim ekranı.', deps: ['chat-ctx', 'use-gemini'] },
+      { id: 'screen-settings', name: 'settings.tsx', layer: 'screen', tier: 6, x: 3.5, z: 15, width: 3.2, length: 2, color: 0xEF4444, path: 'app/(tabs)/settings.tsx', desc: 'Güvenlik, biyometri, yedekleme ve tema ayarları yönetim merkezi.', deps: ['settings-ctx', 'app-lock-svc', 'backup-svc'] },
+      { id: 'modal-ai', name: 'ai-analyzer.tsx', layer: 'screen', tier: 6, x: 7, z: 15, width: 3.2, length: 2, color: 0xDC2626, path: 'app/(modal)/ai-analyzer.tsx', desc: 'Yazım denetimi, anlatım geliştirme ve özetleme modalı.', deps: ['use-gemini'] },
+      { id: 'modal-history', name: 'version-history.tsx', layer: 'screen', tier: 6, x: 10.5, z: 15, width: 3.2, length: 2, color: 0xB91C1C, path: 'app/(modal)/version-history.tsx', desc: 'Zaman makinesi: notun eski sürümlerini karşılaştırma ve geri yükleme modalı.', deps: ['version-svc'] },
+    ];
+
+    // --- SCENE SETUP ---
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x06080f, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(28, 34, 38);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2.05;
+    controls.target.set(0, 7, 5);
+
+    // --- LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.8);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xFFFFFF, 1.4);
+    dirLight.position.set(25, 50, 25);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    scene.add(dirLight);
+
+    const blueLight = new THREE.PointLight(0x3B82F6, 2.5, 60);
+    blueLight.position.set(-15, 12, -8);
+    scene.add(blueLight);
+
+    const purpleLight = new THREE.PointLight(0x8B5CF6, 2.5, 60);
+    purpleLight.position.set(15, 16, 12);
+    scene.add(purpleLight);
+
+    // --- GRID FLOOR ---
+    const grid = new THREE.GridHelper(60, 60, 0x334155, 0x1E293B);
+    grid.position.y = -0.5;
+    scene.add(grid);
+
+    // --- SOUND EFFECTS (Web Audio API) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSnapSound() {
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.09);
+      } catch (e) {}
+    }
+
+    // --- LEGO BRICKS BUILDER ---
+    const brickMeshes = [];
+    const brickGroup = new THREE.Group();
+    scene.add(brickGroup);
+
+    function createLegoBrick(item) {
+      const group = new THREE.Group();
+      group.userData = item;
+
+      const brickH = 0.9;
+      const w = item.width;
+      const l = item.length;
+
+      const bodyGeo = new THREE.BoxGeometry(w, brickH, l);
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: item.color,
+        roughness: 0.2,
+        metalness: 0.1,
+        clearcoat: 0.7,
+        clearcoatRoughness: 0.1,
+        reflectivity: 0.8
+      });
+      const body = new THREE.Mesh(bodyGeo, mat);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      group.add(body);
+
+      // Add Lego Studs
+      const studR = 0.22;
+      const studH = 0.20;
+      const studGeo = new THREE.CylinderGeometry(studR, studR, studH, 18);
+      const cols = Math.max(1, Math.round(w / 1.0));
+      const rows = Math.max(1, Math.round(l / 1.0));
+
+      const xStep = w / cols;
+      const zStep = l / rows;
+
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          const stud = new THREE.Mesh(studGeo, mat);
+          stud.position.x = -w / 2 + xStep / 2 + i * xStep;
+          stud.position.y = brickH / 2 + studH / 2;
+          stud.position.z = -l / 2 + zStep / 2 + j * zStep;
+          stud.castShadow = true;
+          stud.receiveShadow = true;
+          group.add(stud);
+        }
+      }
+
+      // Height by Tier (Each tier goes up 2.4 units)
+      const tierHeight = item.tier * 2.4;
+      group.position.set(item.x, tierHeight, item.z);
+      group.userData.baseY = tierHeight;
+
+      brickMeshes.push(group);
+      brickGroup.add(group);
+    }
+
+    ARCHITECTURE.forEach(item => createLegoBrick(item));
+
+    // --- DATA PIPES (CONNECTIONS) ---
+    const lineGroup = new THREE.Group();
+    scene.add(lineGroup);
+
+    function buildConnections(explodeFactor = 1) {
+      while(lineGroup.children.length > 0){ lineGroup.remove(lineGroup.children[0]); }
+
+      ARCHITECTURE.forEach(item => {
+        if (!item.deps || item.deps.length === 0) return;
+        const targetBrick = brickMeshes.find(b => b.userData.id === item.id);
+        if (!targetBrick) return;
+
+        item.deps.forEach(depId => {
+          const sourceBrick = brickMeshes.find(b => b.userData.id === depId);
+          if (!sourceBrick) return;
+
+          const p1 = new THREE.Vector3().copy(sourceBrick.position).add(new THREE.Vector3(0, 0.55, 0));
+          const p2 = new THREE.Vector3().copy(targetBrick.position).add(new THREE.Vector3(0, -0.55, 0));
+
+          const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+          mid.y += 0.8 * explodeFactor;
+
+          const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+          const points = curve.getPoints(24);
+          const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+
+          const lineMat = new THREE.LineBasicMaterial({
+            color: 0x818CF8,
+            transparent: true,
+            opacity: 0.55,
+            linewidth: 2
+          });
+
+          const line = new THREE.Line(lineGeo, lineMat);
+          lineGroup.add(line);
+        });
+      });
+    }
+
+    buildConnections();
+
+    // --- AGENT DRONE SIMULATION ---
+    const droneGroup = new THREE.Group();
+    scene.add(droneGroup);
+
+    const coreGeo = new THREE.SphereGeometry(0.35, 16, 16);
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0x38BDF8 });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    droneGroup.add(core);
+
+    const ringGeo = new THREE.TorusGeometry(0.7, 0.05, 16, 40);
+    const ringMat = new THREE.MeshStandardMaterial({ color: 0x0284C7, metalness: 0.9, roughness: 0.1 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    droneGroup.add(ring);
+
+    const laserGeo = new THREE.CylinderGeometry(0.03, 0.4, 3.5, 16);
+    const laserMat = new THREE.MeshBasicMaterial({ color: 0x38BDF8, transparent: true, opacity: 0.4 });
+    const laser = new THREE.Mesh(laserGeo, laserMat);
+    laser.position.y = -1.75;
+    droneGroup.add(laser);
+
+    let droneActive = true;
+    let droneTargetIndex = 0;
+    const droneWaypoints = ARCHITECTURE.map(a => ({ id: a.id, x: a.x, y: a.tier * 2.4 + 2.8, z: a.z, name: a.name }));
+
+    function updateDrone(delta) {
+      if (!droneActive) {
+        droneGroup.visible = false;
+        return;
+      }
+      droneGroup.visible = true;
+      ring.rotation.z += 4.0 * delta;
+
+      const wp = droneWaypoints[droneTargetIndex];
+      const targetPos = new THREE.Vector3(wp.x, wp.y, wp.z);
+
+      droneGroup.position.lerp(targetPos, 0.035);
+
+      if (droneGroup.position.distanceTo(targetPos) < 0.5) {
+        document.getElementById('agent-action-text').innerText = `Auditing ${wp.name}... [0 Errors]`;
+        droneTargetIndex = (droneTargetIndex + 1) % droneWaypoints.length;
+      }
+    }
+
+    // --- INTERACTION & CLICK INSPECTOR ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('click', onPointerClick);
+
+    function onPointerClick(e) {
+      if (e.target.closest('.topbar') || e.target.closest('.inspector') || e.target.closest('.layer-selector') || e.target.closest('.hud-bottom')) return;
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(brickGroup.children, true);
+
+      if (intersects.length > 0) {
+        let root = intersects[0].object;
+        while (root.parent && root.parent !== brickGroup) {
+          root = root.parent;
+        }
+        if (root.userData && root.userData.name) {
+          playSnapSound();
+          selectBrick(root);
+        }
+      }
+    }
+
+    function selectBrick(brick) {
+      const data = brick.userData;
+
+      const targetPos = new THREE.Vector3(brick.position.x + 4, brick.position.y + 4, brick.position.z + 8);
+      new TWEEN.Tween(camera.position)
+        .to(targetPos, 800)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+
+      new TWEEN.Tween(controls.target)
+        .to(brick.position, 800)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+
+      const badge = document.getElementById('insp-badge');
+      badge.innerText = `TIER ${data.tier} · ${data.layer.toUpperCase()}`;
+      badge.style.background = '#' + data.color.toString(16).padStart(6, '0') + '33';
+      badge.style.color = '#' + data.color.toString(16).padStart(6, '0');
+
+      document.getElementById('insp-title').innerText = data.name;
+      document.getElementById('insp-role').innerText = data.desc;
+      document.getElementById('insp-path').innerText = data.path;
+
+      const depsContainer = document.getElementById('insp-deps');
+      depsContainer.innerHTML = '';
+      if (data.deps && data.deps.length > 0) {
+        data.deps.forEach(d => {
+          const tag = document.createElement('span');
+          tag.className = 'dep-tag';
+          tag.innerText = d;
+          depsContainer.appendChild(tag);
+        });
+      } else {
+        depsContainer.innerHTML = '<span style="font-size: 11px; color: #64748B;">Bağımlılık yok (Kök modül)</span>';
+      }
+
+      document.getElementById('inspector').classList.add('open');
+    }
+
+    function closeInspector() {
+      document.getElementById('inspector').classList.remove('open');
+    }
+
+    function resetCamera() {
+      new TWEEN.Tween(camera.position)
+        .to({ x: 28, y: 34, z: 38 }, 1000)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+
+      new TWEEN.Tween(controls.target)
+        .to({ x: 0, y: 7, z: 5 }, 1000)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .start();
+      closeInspector();
+    }
+
+    function updateExplode(val) {
+      const factor = parseFloat(val);
+      brickMeshes.forEach(b => {
+        b.position.y = b.userData.baseY * factor;
+      });
+      droneWaypoints.forEach(wp => {
+        const item = ARCHITECTURE.find(a => a.id === wp.id);
+        if (item) wp.y = item.tier * 2.4 * factor + 2.8;
+      });
+      buildConnections(factor);
+    }
+
+    function toggleDrone() {
+      droneActive = !droneActive;
+      document.getElementById('drone-btn-text').innerText = droneActive ? 'Agent Drone: ON' : 'Agent Drone: OFF';
+    }
+
+    function toggleConnections() {
+      lineGroup.visible = !lineGroup.visible;
+    }
+
+    function filterLayer(layer) {
+      document.querySelectorAll('.layer-pill').forEach(p => p.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      brickMeshes.forEach(b => {
+        if (layer === 'all' || b.userData.layer === layer) {
+          b.visible = true;
+        } else {
+          b.visible = false;
+        }
+      });
+    }
+
+    function searchModule(q) {
+      const query = q.trim().toLowerCase();
+      if (!query) {
+        brickMeshes.forEach(b => b.visible = true);
+        return;
+      }
+      brickMeshes.forEach(b => {
+        const match = b.userData.name.toLowerCase().includes(query) || b.userData.path.toLowerCase().includes(query);
+        b.visible = match;
+        if (match) {
+          selectBrick(b);
+        }
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      controls.update();
+      TWEEN.update();
+      updateDrone(delta);
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

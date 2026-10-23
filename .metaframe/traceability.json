@@ -1,0 +1,101 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-10-19T21:18:35.487Z",
+  "entries": [
+    {
+      "prdId": "PRD-4772",
+      "adrId": "ADR-4782",
+      "planId": "PLAN-4784",
+      "targetFiles": [
+        "core",
+        "src/index.ts"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "prdId": "PRD-2806",
+      "adrId": "ADR-2817",
+      "planId": "PLAN-2819",
+      "targetFiles": [
+        "core",
+        "src/index.ts"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "prdId": "PRD-4550",
+      "adrId": "ADR-4563",
+      "planId": "PLAN-4566",
+      "targetFiles": [
+        "core",
+        "src/index.ts"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "prdId": "PRD-3145",
+      "adrId": "ADR-7816",
+      "planId": "",
+      "targetFiles": [
+        "apps/audio-visualizer/index.html",
+        "apps/audio-visualizer/src/audio-engine.js",
+        "apps/audio-visualizer/src/render-engine.js",
+        "apps/audio-visualizer/src/shaders/"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "adrId": "ADR-2104",
+      "planId": "PLAN-2408",
+      "targetFiles": [
+        "apps/audio-visualizer/index.html",
+        "apps/nexus-studio/index.html",
+        "apps/retro-pc-wireframe/index.html",
+        "apps/hacker-chat/index.html"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "prdId": "PRD-3958",
+      "adrId": "ADR-8874",
+      "planId": "",
+      "targetFiles": [
+        "apps/nexus-studio/index.html"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "prdId": "PRD-1968",
+      "adrId": "ADR-1404",
+      "planId": "",
+      "targetFiles": [
+        "apps/retro-pc-wireframe/index.html",
+        "apps/retro-pc-wireframe/src/scene.js",
+        "apps/retro-pc-wireframe/src/styles.css"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "prdId": "PRD-3532",
+      "adrId": "ADR-7111",
+      "planId": "",
+      "targetFiles": [
+        "apps/retro-pc-wireframe/index.html",
+        "apps/retro-pc-wireframe/src/components/Scene.js",
+        "apps/retro-pc-wireframe/src/shaders/CyberGrid.frag"
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "prdId": "PRD-2221",
+      "adrId": "ADR-2104",
+      "planId": "",
+      "targetFiles": [
+        "apps/hacker-chat/index.html",
+        "apps/hacker-chat/styles.css",
+        "apps/hacker-chat/canvas-engine.js"
+      ],
+      "status": "DRAFT"
+    }
+  ]
+}

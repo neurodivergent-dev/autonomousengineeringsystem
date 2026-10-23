@@ -1,0 +1,40 @@
+{
+  "file": "mini-meta-cli/tools.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 11,
+    "jsx": false,
+    "imports": 3,
+    "exports": 1,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "state, tools ve types modüllerini içeren bir yardımcı dosyadır."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/state.ts",
+      "mini-meta-cli/tools/index.ts",
+      "mini-meta-cli/types.ts"
+    ],
+    "calls": [
+      "cwd",
+      "createToolRegistry"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "80d235c4-c292-49e2-a7f3-1fcb8fe520fd",
+    "fileHash": "7769bbc8a9ae6d0ea98e0a1800e157ca",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358369069
+}

@@ -1,0 +1,50 @@
+{
+  "file": "mini-meta-cli/ollama.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 91,
+    "jsx": false,
+    "imports": 1,
+    "exports": 1,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "mini-meta-cli/types.ts dosyasını içe aktaran bir dosyadır."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/types.ts"
+    ],
+    "calls": [
+      "replace",
+      "setTimeout",
+      "abort",
+      "fetch",
+      "stringify",
+      "clearTimeout",
+      "catch",
+      "text",
+      "json",
+      "String",
+      "includes",
+      "log",
+      "sleep",
+      "error"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "32f8839a-6fdb-4860-af6c-e96cd7000b73",
+    "fileHash": "df1f821761ed5147491636a3ec5e0476",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358357961
+}

@@ -1,0 +1,48 @@
+{
+  "file": "src/agents/solutions-architect.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 84,
+    "jsx": false,
+    "imports": 3,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "client, ast-bridge ve tip tanımlamalarını kullanan mimari çözüm modülü."
+  },
+  "graph": {
+    "dependencies": [
+      "src/llm/client.ts",
+      "src/intelligence/ast-bridge.ts",
+      "src/types/index.ts"
+    ],
+    "calls": [
+      "toISOString",
+      "slice",
+      "toString",
+      "now",
+      "getImpact",
+      "push",
+      "stringify",
+      "from",
+      "chat",
+      "extractJSON"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "b4123115-f6da-4c5d-b9c0-8d85ee3a5b95",
+    "fileHash": "d234658199a53e16f27c01c2d968eb3b",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358374595
+}

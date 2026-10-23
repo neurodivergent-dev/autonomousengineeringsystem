@@ -1,0 +1,33 @@
+{
+  "file": "src/types/index.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 108,
+    "jsx": false,
+    "imports": 0,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "Dosya herhangi bir entity, hook veya import içermemektedir."
+  },
+  "graph": {
+    "dependencies": [],
+    "calls": [],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "d8124e51-fcbc-46e5-a4f6-536ed41c85d4",
+    "fileHash": "6086b75901fcec47f614540cd94bcaa0",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358379931
+}

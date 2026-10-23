@@ -1,0 +1,462 @@
+{
+  "file": "i18next-local-inference/i18n-dashboard.tsx",
+  "objective": {
+    "language": "TypeScript (TSX)",
+    "lines": 1449,
+    "jsx": false,
+    "imports": 4,
+    "exports": 1,
+    "functions": 62,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "fs, path ve os kullanarak locale dosyalarını tarayan ve yöneten modül."
+  },
+  "graph": {
+    "dependencies": [
+      "fs",
+      "path",
+      "os",
+      "i18next-local-inference/dashboard.html"
+    ],
+    "calls": [
+      "existsSync",
+      "join",
+      "filter",
+      "readdirSync",
+      "test",
+      "isLocaleDir",
+      "shift",
+      "has",
+      "startsWith",
+      "isDirectory",
+      "statSync",
+      "push",
+      "homedir",
+      "parse",
+      "readFileSync",
+      "isArray",
+      "slice",
+      "loadRecents",
+      "writeFileSync",
+      "stringify",
+      "resolve",
+      "buildTranslatorSystem",
+      "discoverLocalesDir",
+      "rememberRecent",
+      "log",
+      "error",
+      "mkdirSync",
+      "on",
+      "some",
+      "sort",
+      "map",
+      "replace",
+      "includes",
+      "reduce",
+      "split",
+      "keys",
+      "concat",
+      "flattenKeys",
+      "walkSourceFiles",
+      "indexOf",
+      "add",
+      "from",
+      "exec",
+      "loadLocale",
+      "extractDynamicPrefixes",
+      "trim",
+      "fetch",
+      "json",
+      "every",
+      "loadStateFile"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "isLocaleDir",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "discoverLocalesDir",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "loadRecents",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "rememberRecent",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "applyProject",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "ensureStateDir",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "loadStateFile",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isIgnoredSame",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "listLocaleCodes",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "loadLocale",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "saveLocale",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "getPath",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "setPath",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "flattenKeys",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "walkSourceFiles",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "extractDynamicPrefixes",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "scanCodeUsage",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "findKeyContext",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "generateMissingKeyValue",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "wordCount",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isTranslatableSource",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isGap",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "acceptTranslatedValue",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "loadConfirmedSame",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "saveConfirmedSame",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isConfirmedSame",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "markConfirmedSame",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "loadFlaggedSuspicious",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "saveFlaggedSuspicious",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "markFlaggedSuspicious",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "unflagSuspicious",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "loadTranslationCache",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "saveTranslationCache",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "buildData",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "buildTranslatorSystem",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "buildSchema",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "translateKeyViaOllama",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "translateKey",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "judgeSameTranslation",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "sleep",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "broadcastAutoFix",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "autoFixTranslatePass",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "autoVerifyPass",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "autoFixLoop",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "handleTranslate",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "streamTranslateSection",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "send",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "handleSave",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "handleAddKey",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "handleAddMissingKey",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "handleVerifySame",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "handleConfirmSame",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "streamVerifySection",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "send",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "streamTranslateSuspicious",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "send",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "projectInfo",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "resetPassCounters",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "handleSetProject",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "handleSaveConfig",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "handleBrowse",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "handleOllamaModels",
+      "type": "function",
+      "async": true,
+      "exported": false
+    }
+  ],
+  "identity": {
+    "analysisId": "ef33de59-a739-4c9d-97be-b2171d3cbc8d",
+    "fileHash": "8f964ebe75aa11c0d0ffa3b04195a0fb",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358354748
+}

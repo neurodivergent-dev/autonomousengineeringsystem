@@ -1,0 +1,68 @@
+{
+  "file": "mini-meta-cli/tools/web.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 138,
+    "jsx": false,
+    "imports": 2,
+    "exports": 3,
+    "functions": 3,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "child_process ve mini-meta-cli/types.ts kullanarak araçlar oluşturur."
+  },
+  "graph": {
+    "dependencies": [
+      "child_process",
+      "mini-meta-cli/types.ts"
+    ],
+    "calls": [
+      "String",
+      "execSync",
+      "replace",
+      "match",
+      "filter",
+      "map",
+      "trim",
+      "join",
+      "slice",
+      "split",
+      "push",
+      "encodeURIComponent"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "createFetchUrlTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "createNewsTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "createSearchTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "d2e9e7a3-3eb4-4d65-b5ba-128d526e6084",
+    "fileHash": "c7a1280785a9ba342dfcad83c0b83682",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358367593
+}

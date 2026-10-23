@@ -1,0 +1,27 @@
+{
+  "id": "PRD-4550",
+  "title": "Siber ve Futuristik Kisisel Portfolyo ve Blog: Ter",
+  "version": "1.0.0",
+  "status": "APPROVED",
+  "overview": "Siber ve Futuristik Kisisel Portfolyo ve Blog: Terminal hacker temali, projeleri sergileyen, interaktif Markdown blog motorlu, ses ve animasyonlu dev portfolyosu",
+  "userStories": [
+    {
+      "persona": "Engineer/User",
+      "want": "Siber ve Futuristik Kisisel Portfolyo ve Blog: Terminal hacker temali, projeleri sergileyen, interaktif Markdown blog motorlu, ses ve animasyonlu dev portfolyosu",
+      "soThat": "the application gains requested capabilities without regressions"
+    }
+  ],
+  "functionalRequirements": [
+    "Siber ve Futuristik Kisisel Portfolyo ve Blog: Terminal hacker temali, projeleri sergileyen, interaktif Markdown blog motorlu, ses ve animasyonlu dev portfolyosu"
+  ],
+  "nonFunctionalRequirements": [
+    "Must pass 0-error TypeScript compilation and theme guidelines."
+  ],
+  "acceptanceCriteria": [
+    "Feature is implemented and verified by 6-gate safety chain."
+  ],
+  "targetDomains": [
+    "core"
+  ],
+  "createdAt": "2026-10-19T12:39:24.550Z"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "metaframe-autonomous-engineering-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified Codebase Intelligence & Multi-Agent Autonomous Engineering System",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "metaframe": "bun run src/cli.ts",
+    "analyze": "bun run repo-intelligence-layer/analysis.tsx",
+    "city": "bun run tools/serve-city.ts",
+    "gates": "node repo-intelligence-layer/scripts/blast-radius.js full",
+    "i18n": "bun run i18next-local-inference/i18n-dashboard.tsx",
+    "cli:mini": "bun run mini-meta-cli/index.ts"
+  }
+}

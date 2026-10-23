@@ -1,0 +1,21 @@
+{
+  "id": "PLAN-4784",
+  "adrRef": "ADR-4782",
+  "prdRef": "PRD-4772",
+  "title": "Plan: Add biometric authentication support to user sessi",
+  "status": "APPROVED",
+  "targetFiles": [
+    "src/index.ts"
+  ],
+  "steps": [],
+  "blastRadiusRisk": "LOW",
+  "verificationGateChecklist": [
+    "Gate 1: TypeScript zero-error compilation",
+    "Gate 2: Blast radius verification",
+    "Gate 3: Theme design token enforcement",
+    "Gate 4: Zero-emoji UX compliance",
+    "Gate 5: i18n translation integrity",
+    "Gate 6: AST code health & anti-pattern clean"
+  ],
+  "createdAt": "2026-10-17T21:22:44.784Z"
+}

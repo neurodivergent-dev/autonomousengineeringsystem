@@ -1,0 +1,65 @@
+{
+  "file": "mini-meta-cli/index.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 88,
+    "jsx": false,
+    "imports": 2,
+    "exports": 0,
+    "functions": 2,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "readline kullanarak printHelp ve ask fonksiyonlarını sunan bir CLI arayüzüdür."
+  },
+  "graph": {
+    "dependencies": [
+      "readline",
+      "mini-meta-cli/engine.ts"
+    ],
+    "calls": [
+      "split",
+      "find",
+      "startsWith",
+      "createInterface",
+      "on",
+      "log",
+      "padEnd",
+      "question",
+      "trim",
+      "ask",
+      "toLowerCase",
+      "exit",
+      "clearHistory",
+      "printHelp",
+      "process"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "printHelp",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "ask",
+      "type": "function",
+      "async": true,
+      "exported": false
+    }
+  ],
+  "identity": {
+    "analysisId": "9862bd10-1360-4f3c-88c7-a163a828ef8b",
+    "fileHash": "cd2ec680d082c879ec76a38069788a26",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358357187
+}

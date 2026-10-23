@@ -1,0 +1,34 @@
+{
+  "id": "ADR-2104",
+  "prdRef": "PRD-2221",
+  "title": "Architectural approach for Hacker-Style Encrypted Messaging Interface",
+  "status": "ACCEPTED",
+  "context": "The requirement demands a high-fidelity 'Cyber-noir' aesthetic involving complex visual effects (Matrix rain, scanlines, glassmorphism) and dynamic state-based animations (decryption, pulsing). The architecture must balance these heavy visual effects with a responsive messaging interface.",
+  "decision": "Implement a layered rendering architecture: 1) A dedicated HTML5 Canvas layer for the 'Matrix' background to ensure high-performance animation of thousands of characters. 2) A CSS-driven UI layer for the glassmorphic components, utilizing CSS filters and variables for the 'Cyber-noir' theme. 3) A state-driven animation controller to manage the 'Decryption' and 'Pulse' effects independently of the UI logic.",
+  "alternativesConsidered": [
+    "Pure CSS/SVG for Matrix Rain: Rejected due to the high overhead of managing thousands of DOM elements or SVG paths for the falling character effect.",
+    "WebGL for background effects: Rejected as it introduces unnecessary complexity and overhead for a 2D canvas-based visual effect."
+  ],
+  "consequences": {
+    "positive": [
+      "High visual fidelity and immersive user experience.",
+      "Separation of concerns between the visual effects (Canvas) and the UI components (DOM/CSS).",
+      "Scalable styling via CSS variables for easy theme adjustments."
+    ],
+    "negative": [
+      "Increased client-side resource consumption due to the continuous Canvas animation loop.",
+      "Potential performance overhead on low-end mobile devices."
+    ],
+    "risks": [
+      "Potential frame drops if the Canvas loop is not optimized.",
+      "Accessibility concerns regarding the 'flicker' and 'scanline' effects for sensitive users."
+    ]
+  },
+  "impactedModules": [
+    "apps/hacker-chat/index.html",
+    "apps/hacker-chat/styles.css",
+    "apps/hacker-chat/canvas-engine.js"
+  ],
+  "blastRadiusRisk": "LOW",
+  "createdAt": "2026-10-19T21:17:32.104Z"
+}

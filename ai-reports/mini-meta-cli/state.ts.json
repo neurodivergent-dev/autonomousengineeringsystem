@@ -1,0 +1,53 @@
+{
+  "file": "mini-meta-cli/state.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 52,
+    "jsx": false,
+    "imports": 1,
+    "exports": 0,
+    "functions": 1,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "mini-meta-cli/types.ts içinden normalizePath entity'sini kullanır."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/types.ts"
+    ],
+    "calls": [
+      "cwd",
+      "add",
+      "normalizePath",
+      "has",
+      "map",
+      "String",
+      "formatTodos",
+      "join",
+      "toLowerCase",
+      "replace"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "normalizePath",
+      "type": "function",
+      "async": false,
+      "exported": false
+    }
+  ],
+  "identity": {
+    "analysisId": "c2c5b65e-c27c-4e7c-89f0-87790cb54c7f",
+    "fileHash": "ad5203faaa0bda47cc243134745e336a",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358361101
+}

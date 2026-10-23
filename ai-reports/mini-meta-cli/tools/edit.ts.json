@@ -1,0 +1,91 @@
+{
+  "file": "mini-meta-cli/tools/edit.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 125,
+    "jsx": false,
+    "imports": 4,
+    "exports": 1,
+    "functions": 5,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "fs, types, state ve prompt kullanarak düzenleme aracı oluşturan modül."
+  },
+  "graph": {
+    "dependencies": [
+      "fs",
+      "mini-meta-cli/types.ts",
+      "mini-meta-cli/state.ts",
+      "mini-meta-cli/prompt.ts"
+    ],
+    "calls": [
+      "replaceAll",
+      "includes",
+      "normalizeQuotes",
+      "indexOf",
+      "substring",
+      "trim",
+      "replace",
+      "collapse",
+      "resolvePath",
+      "String",
+      "existsSync",
+      "wasRead",
+      "Boolean",
+      "split",
+      "readFileSync",
+      "findActualString",
+      "slice",
+      "countOccurrences",
+      "join",
+      "writeFileSync",
+      "markRead"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "normalizeQuotes",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "findActualString",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "collapse",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "countOccurrences",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "createEditTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "e98e2eef-2893-4ede-80f2-1a394fa73f5a",
+    "fileHash": "82a559c01d9363e2065f88b308092f54",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358361888
+}

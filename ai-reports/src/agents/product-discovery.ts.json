@@ -1,0 +1,43 @@
+{
+  "file": "src/agents/product-discovery.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 66,
+    "jsx": false,
+    "imports": 2,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "src/llm/client.ts ve src/types/index.ts dosyalarını kullanan bir modül."
+  },
+  "graph": {
+    "dependencies": [
+      "src/llm/client.ts",
+      "src/types/index.ts"
+    ],
+    "calls": [
+      "toISOString",
+      "slice",
+      "toString",
+      "now",
+      "chat",
+      "extractJSON"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "1b9be7fa-9289-4395-92c5-f1cfbf999958",
+    "fileHash": "18b5da0ad13c1b5b570746414aaf483e",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358373767
+}

@@ -1,0 +1,31 @@
+{
+  "id": "ADR-8874",
+  "prdRef": "PRD-3958",
+  "title": "Architectural approach for Quantum AI Studio Cyberpunk Landing Page",
+  "status": "ACCEPTED",
+  "context": "The landing page requires a high-fidelity 'Cyberpunk' aesthetic involving complex visual effects like particle systems, glassmorphism, and neon glows. To maintain performance while achieving these effects, a structured approach to asset management and CSS styling is required for the nexus-studio module.",
+  "decision": "Implement a layered UI architecture: 1) Use a lightweight Canvas-based library (e.g., tsparticles) for the interactive background to ensure high FPS. 2) Utilize CSS Custom Properties (Variables) to manage neon glow colors and glassmorphism opacity across all components. 3) Use a dedicated animation library (e.g., Framer Motion or GSAP) for the counter-up and hover interactions to ensure smooth transitions.",
+  "alternativesConsidered": [
+    "Pure CSS/Vanilla JS (Discarded: High complexity to implement custom particle physics without a library)",
+    "Three.js/WebGL (Discarded: Excessive overhead and bundle size for a 2D landing page)"
+  ],
+  "consequences": {
+    "positive": [
+      "Consistent styling across the UI via centralized CSS variables",
+      "High-performance interactive background with low CPU overhead",
+      "Modular implementation of interactive components"
+    ],
+    "negative": [
+      "Slight increase in initial bundle size due to the inclusion of animation and particle libraries"
+    ],
+    "risks": [
+      "Potential performance degradation on low-end mobile devices due to heavy backdrop-filter usage",
+      "Browser compatibility issues with complex CSS filter combinations"
+    ]
+  },
+  "impactedModules": [
+    "apps/nexus-studio/index.html"
+  ],
+  "blastRadiusRisk": "LOW",
+  "createdAt": "2026-10-19T13:18:48.874Z"
+}

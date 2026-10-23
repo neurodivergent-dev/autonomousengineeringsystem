@@ -1,0 +1,26 @@
+{
+  "id": "ADR-4782",
+  "prdRef": "PRD-4772",
+  "title": "Architecture Decision for Add biometric authentication support to user sessi",
+  "status": "ACCEPTED",
+  "context": "Add biometric authentication support to user session",
+  "decision": "Adopt modular, AST-grounded implementation conforming to existing repository architecture.",
+  "alternativesConsidered": [
+    "Direct monolithic modification (discarded: increases blast radius)"
+  ],
+  "consequences": {
+    "positive": [
+      "Preserves clean module boundaries",
+      "Passes deterministic verification gates"
+    ],
+    "negative": [
+      "Requires explicit interface updates across callers"
+    ],
+    "risks": []
+  },
+  "impactedModules": [
+    "core"
+  ],
+  "blastRadiusRisk": "LOW",
+  "createdAt": "2026-10-17T21:22:44.782Z"
+}

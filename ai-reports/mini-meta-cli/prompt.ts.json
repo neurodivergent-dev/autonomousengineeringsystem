@@ -1,0 +1,78 @@
+{
+  "file": "mini-meta-cli/prompt.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 108,
+    "jsx": false,
+    "imports": 3,
+    "exports": 4,
+    "functions": 5,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "mini-meta-cli/types.ts, os ve path kullanarak prompt yapılarını oluşturur."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/types.ts",
+      "os",
+      "path"
+    ],
+    "calls": [
+      "join",
+      "map",
+      "type",
+      "release",
+      "slice",
+      "toISOString",
+      "truncate",
+      "isAbsolute",
+      "resolve"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "buildSystemPrompt",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "buildFewShotMessages",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "toolResultFeedback",
+      "type": "function",
+      "async": false,
+      "exported": true
+    },
+    {
+      "name": "truncate",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "resolvePath",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "5d294b08-e353-4ffe-9c3d-6a2eddfdc7cd",
+    "fileHash": "4ad2cda784e44803c286b4d268bfc309",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358360328
+}

@@ -1,0 +1,259 @@
+{
+  "file": "repo-intelligence-layer/analysis.tsx",
+  "objective": {
+    "language": "TypeScript (TSX)",
+    "lines": 1764,
+    "jsx": false,
+    "imports": 5,
+    "exports": 0,
+    "functions": 28,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "TypeScript kullanarak dosyaları analiz eden ve state yönetimi sağlayan modül."
+  },
+  "graph": {
+    "dependencies": [
+      "fs",
+      "path",
+      "crypto",
+      "child_process",
+      "typescript"
+    ],
+    "calls": [
+      "cwd",
+      "join",
+      "on",
+      "error",
+      "trim",
+      "toString",
+      "execSync",
+      "readdirSync",
+      "isDirectory",
+      "statSync",
+      "getCodeFiles",
+      "endsWith",
+      "push",
+      "existsSync",
+      "parse",
+      "readFileSync",
+      "writeFileSync",
+      "stringify",
+      "digest",
+      "update",
+      "createHash",
+      "send",
+      "unshift",
+      "now",
+      "slice",
+      "broadcast",
+      "replace",
+      "relative",
+      "startsWith",
+      "pop",
+      "split",
+      "test",
+      "createSourceFile",
+      "canHaveModifiers",
+      "getModifiers",
+      "some",
+      "isComponentName",
+      "isHookName",
+      "isImportDeclaration",
+      "isExportAssignment",
+      "isExportDeclaration",
+      "isNamedExports",
+      "isJsxElement",
+      "isJsxSelfClosingElement",
+      "isJsxFragment",
+      "add",
+      "getText",
+      "isFunctionDeclaration",
+      "hasExportModifier",
+      "addEntity"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "getCodeFiles",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "loadState",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "saveState",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "hashContent",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "broadcast",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "logEvent",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "relPath",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "computeRoute",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "analyzeWithAst",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isComponentName",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isHookName",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "hasExportModifier",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "isAsyncFn",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "addEntity",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "visit",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "safeAnalyzeWithAst",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "extractSidecarViaLLM",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "stripRepetitionLoop",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "generateDeepSummary",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "persistDeepSummary",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "handleExplainRequest",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "extractDependencies",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "resolveLocalImport",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "getJsonSidecars",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "rebuildKnowledgeGraph",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "analyzeFile",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "watchLoop",
+      "type": "function",
+      "async": true,
+      "exported": false
+    },
+    {
+      "name": "startDashboard",
+      "type": "function",
+      "async": false,
+      "exported": false
+    }
+  ],
+  "identity": {
+    "analysisId": "6a6a093b-2279-4444-9685-f7f4d7df7058",
+    "fileHash": "d6ba11a8c2fc027189476314f04d47a4",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358371371
+}

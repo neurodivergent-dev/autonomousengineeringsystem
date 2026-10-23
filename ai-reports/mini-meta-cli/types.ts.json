@@ -1,0 +1,33 @@
+{
+  "file": "mini-meta-cli/types.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 67,
+    "jsx": false,
+    "imports": 0,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "Herhangi bir entity, import veya fonksiyon içermeyen tip tanımlama dosyası."
+  },
+  "graph": {
+    "dependencies": [],
+    "calls": [],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "eaff8f29-b22b-4dfb-a6a0-3a9ec362b15a",
+    "fileHash": "8bcc26e2e5590993daf65ae9efa8ea5a",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358370598
+}

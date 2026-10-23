@@ -1,0 +1,47 @@
+{
+  "file": "src/agents/implementation-planner.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 94,
+    "jsx": false,
+    "imports": 3,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "LLM istemcisi ve AST köprüsü kullanarak uygulama planı oluşturur."
+  },
+  "graph": {
+    "dependencies": [
+      "src/llm/client.ts",
+      "src/intelligence/ast-bridge.ts",
+      "src/types/index.ts"
+    ],
+    "calls": [
+      "toISOString",
+      "slice",
+      "toString",
+      "now",
+      "map",
+      "getFileCard",
+      "stringify",
+      "chat",
+      "extractJSON"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "fb8fd7b3-3e04-43f5-a952-b370ff69ab8c",
+    "fileHash": "aa4f17e31cc3183f11ecd824df30fc66",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358372119
+}

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aperture AST // Portal Gun Test Chamber</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #000;
+      color: #00F0FF;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    /* Crosshair in Center */
+    .crosshair-container {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 10; display: flex; align-items: center; justify-content: center;
+    }
+    .crosshair-dot { width: 4px; height: 4px; background: #FFF; border-radius: 50%; }
+    .crosshair-ring {
+      position: absolute; width: 36px; height: 36px;
+      border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 50%;
+      border-top-color: #00A2FF; border-bottom-color: #FF6A00;
+    }
+    .crosshair-blue-status {
+      position: absolute; left: -18px; width: 8px; height: 8px; border-radius: 50%;
+      background: #334155; border: 1px solid #00A2FF;
+    }
+    .crosshair-blue-status.active { background: #00A2FF; box-shadow: 0 0 10px #00A2FF; }
+    .crosshair-orange-status {
+      position: absolute; right: -18px; width: 8px; height: 8px; border-radius: 50%;
+      background: #334155; border: 1px solid #FF6A00;
+    }
+    .crosshair-orange-status.active { background: #FF6A00; box-shadow: 0 0 10px #FF6A00; }
+
+    /* Top HUD */
+    .topbar {
+      position: absolute; top: 16px; left: 20px; right: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      z-index: 10; pointer-events: none;
+    }
+    .aperture-badge {
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px;
+      padding: 10px 18px; display: flex; align-items: center; gap: 12px; pointer-events: auto;
+    }
+    .aperture-logo { font-size: 22px; }
+    .aperture-text h1 {
+      font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 900;
+      color: #FFF; letter-spacing: 1.5px;
+    }
+    .aperture-text p { font-size: 9.5px; color: #94A3B8; }
+
+    .nav-btn {
+      background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(0, 240, 255, 0.4);
+      color: #00F0FF; font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 700;
+      padding: 8px 14px; border-radius: 3px; cursor: pointer; text-decoration: none;
+      display: flex; align-items: center; gap: 6px; pointer-events: auto; transition: all 0.2s;
+    }
+    .nav-btn:hover { background: #00F0FF; color: #000; box-shadow: 0 0 20px #00F0FF; }
+
+    /* GLaDOS Subtitles & Instructions */
+    .glados-box {
+      position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(20px);
+      border: 1px solid #F59E0B; border-radius: 4px; padding: 12px 28px;
+      z-index: 10; text-align: center; max-width: 680px; width: 90%;
+      box-shadow: 0 0 35px rgba(245, 158, 11, 0.25);
+    }
+    .glados-name { font-size: 10px; font-weight: 900; color: #F59E0B; letter-spacing: 2px; }
+    .glados-text { font-size: 12px; color: #FFF; margin-top: 4px; line-height: 1.5; }
+
+    /* Controls Overlay */
+    .controls-hint {
+      position: absolute; top: 90px; left: 20px;
+      background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px;
+      padding: 12px 16px; font-size: 10.5px; color: #94A3B8; line-height: 1.8;
+      z-index: 10; pointer-events: none;
+    }
+    .kbd {
+      background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #FFF; padding: 2px 6px; border-radius: 3px; font-weight: 800;
+    }
+    .kbd.blue { border-color: #00A2FF; color: #00A2FF; }
+    .kbd.orange { border-color: #FF6A00; color: #FF6A00; }
+
+    /* Click to Play Screen */
+    .start-screen {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(2, 4, 10, 0.88); backdrop-filter: blur(20px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 100; cursor: pointer; text-align: center;
+    }
+    .start-card {
+      background: rgba(15, 23, 42, 0.95); border: 2px solid #00F0FF;
+      box-shadow: 0 0 60px rgba(0, 240, 255, 0.3); border-radius: 6px;
+      padding: 36px 48px; max-width: 560px; display: flex; flex-direction: column; align-items: center; gap: 18px;
+    }
+    .start-title {
+      font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900;
+      color: #FFF; text-shadow: 0 0 20px #00F0FF; letter-spacing: 2px;
+    }
+    .play-btn {
+      background: linear-gradient(135deg, #00A2FF, #FF6A00); border: none;
+      color: #FFF; font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 900;
+      padding: 14px 40px; border-radius: 4px; cursor: pointer; letter-spacing: 2px;
+      box-shadow: 0 0 30px rgba(0, 162, 255, 0.5); transition: all 0.2s;
+    }
+    .play-btn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(255, 106, 0, 0.8); }
+  </style>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <!-- Reticle Crosshair -->
+  <div class="crosshair-container">
+    <div class="crosshair-ring"></div>
+    <div class="crosshair-dot"></div>
+    <div class="crosshair-blue-status" id="hud-blue-dot"></div>
+    <div class="crosshair-orange-status" id="hud-orange-dot"></div>
+  </div>
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="aperture-badge">
+      <div class="aperture-logo">🌀</div>
+      <div class="aperture-text">
+        <h1>APERTURE AST LABORATORIES</h1>
+        <p>TEST CHAMBER 01 // FUNCTION RE-ENTRANCY PORTAL</p>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <a href="/factory" class="nav-btn"><span>🏭</span> <span>Code Factory</span></a>
+      <a href="/workforce" class="nav-btn"><span>🤖</span> <span>Workforce</span></a>
+      <a href="/city" class="nav-btn"><span>💃</span> <span>City</span></a>
+    </div>
+  </div>
+
+  <!-- Controls Reference -->
+  <div class="controls-hint">
+    <div><span class="kbd">W A S D</span> Yürü (Walk)</div>
+    <div><span class="kbd">SPACE</span> Zıpla (Jump)</div>
+    <div><span class="kbd blue">SOL TIK (LMB)</span> MAVİ PORTAL AÇ</div>
+    <div><span class="kbd orange">SAĞ TIK (RMB)</span> TURUNCU PORTAL AÇ</div>
+    <div><span class="kbd">E</span> AST KÜPÜNÜ TUT / BIRAK</div>
+  </div>
+
+  <!-- GLaDOS Interactive Subtitles -->
+  <div class="glados-box" id="glados-box">
+    <div class="glados-name">// GLaDOS // DETERMINISTIC AUTOMATION AI:</div>
+    <div class="glados-text" id="glados-msg">
+      "Test odasına hoş geldin denek. Kırmızı buton kapıyı açar. AST Küpünü portallardan geçirerek butona koy ve odayı tamamla."
+    </div>
+  </div>
+
+  <!-- Click to Lock Mouse & Play -->
+  <div class="start-screen" id="start-screen" onclick="lockAndPlay()">
+    <div class="start-card">
+      <div style="font-size: 45px;">🌀🔫📦</div>
+      <div class="start-title">PORTAL GUN TEST CHAMBER</div>
+      <div style="font-size: 11px; font-weight: 800; color: #10B981; letter-spacing: 2px;">
+        VALVE PHYSICS // CODE TELEPORTATION RUNTIME
+      </div>
+      <div style="font-size: 12px; color: #94A3B8; line-height: 1.6;">
+        Mouse imlecini kilitlemek ve oynamak için ekrana tıkla.
+        <br>
+        <b>Mavi</b> ve <b>Turuncu</b> portalları duvarlara ateşle. Portaldan portala ışınlan.
+        AST Küpünü alıp kırmızı butona yerleştir, çıkış kapısını aç!
+      </div>
+      <button class="play-btn">START TEST CHAMBER</button>
+    </div>
+  </div>
+
+  <!-- Victory Screen Modal -->
+  <div class="start-screen" id="victory-screen" style="display: none;">
+    <div class="start-card" style="border-color: #10B981; box-shadow: 0 0 70px rgba(16, 185, 129, 0.4);">
+      <div style="font-size: 55px;">🍰🎉🚀</div>
+      <div class="start-title" style="color: #10B981; text-shadow: 0 0 25px #10B981;">CHAMBER 01 TAMAMLANDI!</div>
+      <div style="font-size: 11px; font-weight: 800; color: #00F0FF; letter-spacing: 2px;">
+        COMPILER RE-ENTRANCY VERIFIED (0 ERRORS)
+      </div>
+      <div style="font-size: 13px; color: #FFF; line-height: 1.7; background: #000; padding: 14px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); width: 100%;">
+        <div style="color: #F59E0B; font-weight: 800;">// GLaDOS EVALUATION REPORT:</div>
+        <div>AST Companion Cube: <b style="color:#10B981;">SAFELY DELIVERED</b></div>
+        <div>Weighted Pressure Button: <b style="color:#10B981;">ACTUATED</b></div>
+        <div>Aperture Exit Protocol: <b style="color:#10B981;">AUTHORIZED</b></div>
+        <div style="color: #10B981; margin-top: 6px;">"The cake is NOT a lie. Test Chamber 01 tamamlandı!"</div>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 8px;">
+        <button class="play-btn" style="background: linear-gradient(135deg, #10B981, #059669);" onclick="replayChamber()">
+          🔄 TEKRAR OYNA
+        </button>
+        <a href="/factory" class="play-btn" style="text-decoration:none; display:flex; align-items:center; background: linear-gradient(135deg, #F59E0B, #D97706);">
+          🏭 CODE FACTORY
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 🎵 WEB AUDIO PROCEDURAL SYNTHESIZER
+    // ==========================================
+    let audioCtx = null;
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      } catch(e) {}
+    }
+
+    function playPortalFireSound(isOrange = false) {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        const startFreq = isOrange ? 420 : 680;
+        osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.22);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.26);
+      } catch(e) {}
+    }
+
+    function playTeleportWhoosh() {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(720, audioCtx.currentTime + 0.18);
+        osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.35);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.38);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } catch(e) {}
+    }
+
+    function playButtonChime() {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.48);
+      } catch(e) {}
+    }
+
+    function playVictoryFanfare() {
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          setTimeout(() => {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.48);
+          }, idx * 120);
+        });
+      } catch(e) {}
+    }
+
+    // ==========================================
+    // 🎮 THREE.JS APERTURE TEST CHAMBER SETUP
+    // ==========================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a);
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 2.2, 14);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = false; // Disable shadow map clipping issues
+    document.getElementById('game-container').appendChild(renderer.domElement);
+
+    const controls = new THREE.PointerLockControls(camera, document.body);
+
+    function lockAndPlay() {
+      initAudio();
+      controls.lock();
+    }
+    controls.addEventListener('lock', () => {
+      document.getElementById('start-screen').style.display = 'none';
+    });
+    controls.addEventListener('unlock', () => {
+      document.getElementById('start-screen').style.display = 'flex';
+    });
+
+    // --- BRIGHT APERTURE SCI-FI LIGHTING ---
+    const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x334155, 2.2);
+    scene.add(hemiLight);
+
+    const ambLight = new THREE.AmbientLight(0xFFFFFF, 1.2);
+    scene.add(ambLight);
+
+    // 4 Corner Ceiling Fluorescent Tubes INSIDE the room (y = 12)
+    const lightPositions = [
+      [-12, 12, -12],
+      [12, 12, -12],
+      [-12, 12, 12],
+      [12, 12, 12]
+    ];
+    lightPositions.forEach(pos => {
+      const pLight = new THREE.PointLight(0xF8FAFC, 3.0, 35);
+      pLight.position.set(pos[0], pos[1], pos[2]);
+      scene.add(pLight);
+
+      // Visible glowing ceiling light fixture
+      const fixture = new THREE.Mesh(
+        new THREE.BoxGeometry(4.0, 0.2, 1.2),
+        new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+      );
+      fixture.position.set(pos[0], 13.9, pos[2]);
+      scene.add(fixture);
+    });
+
+    // ==========================================
+    // 🏢 CHAMBER GEOMETRY (PORTAL-COMPATIBLE WALLS)
+    // ==========================================
+    const wallMeshes = [];
+
+    // Helper: Tile texture generator
+    function createTileTexture(color = '#F8FAFC', line = '#64748B') {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 256, 256);
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(0, 0, 256, 256);
+      ctx.strokeRect(64, 64, 128, 128);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    const whiteTileTex = createTileTexture('#F8FAFC', '#94A3B8');
+    whiteTileTex.repeat.set(10, 8);
+
+    const darkTileTex = createTileTexture('#1E293B', '#0F172A');
+    darkTileTex.repeat.set(12, 12);
+
+    const portalWallMat = new THREE.MeshStandardMaterial({
+      map: whiteTileTex, roughness: 0.2, metalness: 0.05, side: THREE.DoubleSide
+    });
+    const darkWallMat = new THREE.MeshStandardMaterial({
+      map: darkTileTex, roughness: 0.5, metalness: 0.3, side: THREE.DoubleSide
+    });
+
+    // Floor (Dark tiles, 40 x 50)
+    const floorGeo = new THREE.PlaneGeometry(40, 50);
+    const floor = new THREE.Mesh(floorGeo, darkWallMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Ceiling
+    const ceil = new THREE.Mesh(floorGeo, darkWallMat);
+    ceil.position.y = 14;
+    ceil.rotation.x = Math.PI / 2;
+    scene.add(ceil);
+
+    // Back Wall (z = 25)
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(40, 14), portalWallMat);
+    backWall.position.set(0, 7, 25);
+    backWall.rotation.y = Math.PI;
+    backWall.receiveShadow = true;
+    scene.add(backWall);
+    wallMeshes.push(backWall);
+
+    // Front Wall (z = -25, with door)
+    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(40, 14), portalWallMat);
+    frontWall.position.set(0, 7, -25);
+    frontWall.receiveShadow = true;
+    scene.add(frontWall);
+    wallMeshes.push(frontWall);
+
+    // Left Wall (x = -20)
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(50, 14), portalWallMat);
+    leftWall.position.set(-20, 7, 0);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.receiveShadow = true;
+    scene.add(leftWall);
+    wallMeshes.push(leftWall);
+
+    // Right Wall (x = 20)
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(50, 14), portalWallMat);
+    rightWall.position.set(20, 7, 0);
+    rightWall.rotation.y = -Math.PI / 2;
+    rightWall.receiveShadow = true;
+    scene.add(rightWall);
+    wallMeshes.push(rightWall);
+
+    // High Elevated Ledge in the back (Must use portal to reach it!)
+    const ledgeGeo = new THREE.BoxGeometry(20, 6, 12);
+    const ledgeMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+    const ledge = new THREE.Mesh(ledgeGeo, ledgeMat);
+    ledge.position.set(0, 3, -19);
+    scene.add(ledge);
+
+    // Front face of high ledge (Portal surface)
+    const ledgeFront = new THREE.Mesh(new THREE.PlaneGeometry(20, 6), portalWallMat);
+    ledgeFront.position.set(0, 3, -12.98);
+    scene.add(ledgeFront);
+    wallMeshes.push(ledgeFront);
+
+    // ==========================================
+    // 🚪 APERTURE EXIT DOOR (Opens on button press)
+    // ==========================================
+    const doorGroup = new THREE.Group();
+    doorGroup.position.set(0, 6, -24.9);
+    scene.add(doorGroup);
+
+    const doorMat = new THREE.MeshStandardMaterial({
+      color: 0x0284c7, emissive: 0x0369a1, emissiveIntensity: 0.6, metalness: 0.8
+    });
+    const doorL = new THREE.Mesh(new THREE.BoxGeometry(2.0, 4.0, 0.2), doorMat);
+    const doorR = new THREE.Mesh(new THREE.BoxGeometry(2.0, 4.0, 0.2), doorMat);
+    doorL.position.set(-1.0, 2.0, 0);
+    doorR.position.set(1.0, 2.0, 0);
+    doorGroup.add(doorL);
+    doorGroup.add(doorR);
+
+    // Elevator Cabin behind exit door
+    const eleCabin = new THREE.Mesh(
+      new THREE.BoxGeometry(6, 6, 6),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, side: THREE.BackSide })
+    );
+    eleCabin.position.set(0, 8.0, -27.8);
+    scene.add(eleCabin);
+
+    const eleLight = new THREE.PointLight(0x10B981, 4.0, 12);
+    eleLight.position.set(0, 9.5, -27.5);
+    scene.add(eleLight);
+
+    let isDoorOpen = false;
+    let hasWon = false;
+
+    function openExitDoor() {
+      if (isDoorOpen) return;
+      isDoorOpen = true;
+      playButtonChime();
+      document.getElementById('glados-msg').innerText =
+        '"Tebrikler denek. Çıkış kapısı açıldı. Fonksiyon re-entrancy testini tamamladın. Şimdi asansöre gir ve pastanı al."';
+
+      if (typeof TWEEN !== 'undefined') {
+        new TWEEN.Tween(doorL.position).to({ x: -2.8 }, 800).start();
+        new TWEEN.Tween(doorR.position).to({ x: 2.8 }, 800).start();
+      } else {
+        doorL.position.x = -2.8;
+        doorR.position.x = 2.8;
+      }
+    }
+
+    function triggerVictorySequence() {
+      if (hasWon) return;
+      hasWon = true;
+      playVictoryFanfare();
+
+      // Slide doors shut
+      if (typeof TWEEN !== 'undefined') {
+        new TWEEN.Tween(doorL.position).to({ x: -1.0 }, 400).start();
+        new TWEEN.Tween(doorR.position).to({ x: 1.0 }, 400).start();
+      } else {
+        doorL.position.x = -1.0;
+        doorR.position.x = 1.0;
+      }
+
+      document.getElementById('glados-msg').innerText =
+        '"Mükemmel. Denek #06-ANKARA, Test Chamber 01 tamamlandı. 0 Compiler Hatası. Pasta servis ediliyor."';
+
+      setTimeout(() => {
+        controls.unlock();
+        document.getElementById('victory-screen').style.display = 'flex';
+      }, 700);
+    }
+
+    function replayChamber() {
+      hasWon = false;
+      isDoorOpen = false;
+      doorL.position.x = -1.0;
+      doorR.position.x = 1.0;
+      astCube.position.set(-8, 0.8, 4);
+      buttonCap.position.y = 0.2;
+      bluePlaced = false;
+      orangePlaced = false;
+      bluePortal.visible = false;
+      orangePortal.visible = false;
+      document.getElementById('hud-blue-dot').classList.remove('active');
+      document.getElementById('hud-orange-dot').classList.remove('active');
+      camera.position.set(0, 2.2, 14);
+      document.getElementById('victory-screen').style.display = 'none';
+      controls.lock();
+    }
+
+    // ==========================================
+    // 🔴 HEAVY MECHANICAL FLOOR BUTTON
+    // ==========================================
+    const buttonGroup = new THREE.Group();
+    buttonGroup.position.set(0, 6.0, -18); // Sits on top of high ledge!
+    scene.add(buttonGroup);
+
+    const buttonBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.4, 0.2, 24),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 })
+    );
+    buttonGroup.add(buttonBase);
+
+    const buttonCap = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.8, 1.8, 0.35, 24),
+      new THREE.MeshStandardMaterial({ color: 0xDC2626, emissive: 0xEF4444, emissiveIntensity: 0.5 })
+    );
+    buttonCap.position.y = 0.2;
+    buttonGroup.add(buttonCap);
+
+    // ==========================================
+    // 📦 WEIGHTED AST COMPANION CUBE
+    // ==========================================
+    const cubeGeo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+    const cubeMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.45,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const astCube = new THREE.Mesh(cubeGeo, cubeMat);
+    astCube.position.set(-8, 0.8, 4);
+    astCube.castShadow = true;
+    scene.add(astCube);
+
+    let isHoldingCube = false;
+
+    // ==========================================
+    // 🔫 FIRST-PERSON PORTAL GUN MODEL
+    // ==========================================
+    const gunGroup = new THREE.Group();
+    camera.add(gunGroup);
+    scene.add(camera);
+
+    gunGroup.position.set(0.42, -0.35, -0.7);
+    gunGroup.rotation.y = -Math.PI / 18;
+
+    // Gun White Shell Body
+    const gunBodyGeo = new THREE.CylinderGeometry(0.08, 0.12, 0.6, 12);
+    const gunBodyMat = new THREE.MeshStandardMaterial({ color: 0xF8FAFC, roughness: 0.1, metalness: 0.2 });
+    const gunBody = new THREE.Mesh(gunBodyGeo, gunBodyMat);
+    gunBody.rotation.x = Math.PI / 2;
+    gunGroup.add(gunBody);
+
+    // Neon Conduit Tube (Glows Blue or Orange)
+    const conduitGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.3, 8);
+    const conduitMat = new THREE.MeshBasicMaterial({ color: 0x00A2FF });
+    const conduit = new THREE.Mesh(conduitGeo, conduitMat);
+    conduit.rotation.x = Math.PI / 2;
+    conduit.position.set(0, 0.08, -0.05);
+    gunGroup.add(conduit);
+
+    // Weapon illumination light
+    const gunLight = new THREE.PointLight(0x00A2FF, 3.0, 10);
+    gunLight.position.set(0, 0.1, -0.2);
+    gunGroup.add(gunLight);
+    gunGroup.userData.gunLight = gunLight;
+
+    // 3 Front Claw Prongs
+    const clawMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 });
+    for (let i = 0; i < 3; i++) {
+      const angle = (i * Math.PI * 2) / 3;
+      const claw = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.2), clawMat);
+      claw.position.set(Math.cos(angle) * 0.09, Math.sin(angle) * 0.09, -0.38);
+      gunGroup.add(claw);
+    }
+
+    // ==========================================
+    // 🌀 PORTAL MESHES & TELEPORTATION ENGINE
+    // ==========================================
+    function createPortalMesh(hexColor) {
+      const g = new THREE.Group();
+      // Outer Glowing Ring
+      const ringGeo = new THREE.TorusGeometry(1.4, 0.15, 12, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: hexColor });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      g.add(ring);
+
+      // Inner Swirl Vortex
+      const vortexGeo = new THREE.CircleGeometry(1.35, 32);
+      const vortexMat = new THREE.MeshBasicMaterial({
+        color: hexColor, transparent: true, opacity: 0.75, side: THREE.DoubleSide
+      });
+      const vortex = new THREE.Mesh(vortexGeo, vortexMat);
+      g.add(vortex);
+
+      // Omni light cast from portal
+      const pLight = new THREE.PointLight(hexColor, 3.5, 8);
+      g.add(pLight);
+
+      g.visible = false;
+      scene.add(g);
+      return g;
+    }
+
+    const bluePortal = createPortalMesh(0x00A2FF);
+    const orangePortal = createPortalMesh(0xFF6A00);
+
+    let bluePlaced = false;
+    let orangePlaced = false;
+    let lastTeleportTime = 0;
+
+    const raycaster = new THREE.Raycaster();
+
+    function firePortal(isOrange = false) {
+      playPortalFireSound(isOrange);
+
+      // Recoil gun animation
+      gunGroup.position.z += 0.08;
+      setTimeout(() => { gunGroup.position.z -= 0.08; }, 60);
+
+      conduitMat.color.setHex(isOrange ? 0xFF6A00 : 0x00A2FF);
+      if (gunGroup.userData.gunLight) gunGroup.userData.gunLight.color.setHex(isOrange ? 0xFF6A00 : 0x00A2FF);
+
+      // Raycast straight forward from camera center
+      raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+      const intersects = raycaster.intersectObjects(wallMeshes);
+
+      if (intersects.length > 0) {
+        const hit = intersects[0];
+        const normal = hit.face.normal.clone();
+        normal.transformDirection(hit.object.matrixWorld);
+
+        const targetPortal = isOrange ? orangePortal : bluePortal;
+        targetPortal.position.copy(hit.point).add(normal.clone().multiplyScalar(0.08));
+        targetPortal.lookAt(targetPortal.position.clone().add(normal));
+        targetPortal.visible = true;
+
+        if (isOrange) {
+          orangePlaced = true;
+          document.getElementById('hud-orange-dot').classList.add('active');
+        } else {
+          bluePlaced = true;
+          document.getElementById('hud-blue-dot').classList.add('active');
+        }
+      }
+    }
+
+    window.addEventListener('mousedown', (e) => {
+      if (!controls.isLocked) return;
+      if (e.button === 0) firePortal(false); // Left Click: Blue
+      else if (e.button === 2) firePortal(true); // Right Click: Orange
+    });
+    window.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Toggle Pick up AST Cube
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'e' || e.key === 'E') {
+        if (isHoldingCube) {
+          isHoldingCube = false;
+        } else {
+          // Check if looking at cube
+          raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+          const hits = raycaster.intersectObject(astCube);
+          if (hits.length > 0 && hits[0].distance < 6.0) {
+            isHoldingCube = true;
+          }
+        }
+      }
+    });
+
+    // ==========================================
+    // 🏃‍♂️ FPS PLAYER MOVEMENT & COLLISION
+    // ==========================================
+    const keys = { w: false, a: false, s: false, d: false, space: false };
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyW') keys.w = true;
+      if (e.code === 'KeyA') keys.a = true;
+      if (e.code === 'KeyS') keys.s = true;
+      if (e.code === 'KeyD') keys.d = true;
+      if (e.code === 'Space') keys.space = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'KeyW') keys.w = false;
+      if (e.code === 'KeyA') keys.a = false;
+      if (e.code === 'KeyS') keys.s = false;
+      if (e.code === 'KeyD') keys.d = false;
+      if (e.code === 'Space') keys.space = false;
+    });
+
+    let velocityY = 0;
+    const GRAVITY = 28;
+    const MOVE_SPEED = 12;
+
+    function checkPortalTeleport(time) {
+      if (!bluePlaced || !orangePlaced) return;
+      if (time - lastTeleportTime < 0.8) return; // Cooldown
+
+      const pPos = camera.position;
+
+      // Check distance to Blue Portal
+      if (pPos.distanceTo(bluePortal.position) < 1.6) {
+        teleportPlayer(bluePortal, orangePortal);
+        lastTeleportTime = time;
+      }
+      // Check distance to Orange Portal
+      else if (pPos.distanceTo(orangePortal.position) < 1.6) {
+        teleportPlayer(orangePortal, bluePortal);
+        lastTeleportTime = time;
+      }
+    }
+
+    function teleportPlayer(fromPortal, toPortal) {
+      playTeleportWhoosh();
+
+      // Exit position with forward offset along the destination portal normal
+      const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(toPortal.quaternion);
+      camera.position.copy(toPortal.position).add(forward.multiplyScalar(2.2));
+      camera.position.y = Math.max(camera.position.y, 1.8);
+    }
+
+    // ==========================================
+    // 🔄 MAIN GAME LOOP
+    // ==========================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const time = clock.getElapsedTime();
+      if (typeof TWEEN !== 'undefined') TWEEN.update();
+
+      if (controls.isLocked) {
+        // Horizontal Movement
+        const moveVector = new THREE.Vector3();
+        if (keys.w) moveVector.z -= 1;
+        if (keys.s) moveVector.z += 1;
+        if (keys.a) moveVector.x -= 1;
+        if (keys.d) moveVector.x += 1;
+        moveVector.normalize();
+
+        controls.moveRight(moveVector.x * MOVE_SPEED * delta);
+        controls.moveForward(-moveVector.z * MOVE_SPEED * delta);
+
+        // Jump & Gravity
+        if (keys.space && camera.position.y <= 2.05) {
+          velocityY = 10;
+        }
+        velocityY -= GRAVITY * delta;
+        camera.position.y += velocityY * delta;
+
+        // Ground Floor Collision (y = 2.0)
+        let groundY = 2.0;
+        // On top of high ledge in the back
+        if (camera.position.z < -13 && Math.abs(camera.position.x) < 10) {
+          groundY = 8.0;
+        }
+
+        if (camera.position.y < groundY) {
+          camera.position.y = groundY;
+          velocityY = 0;
+        }
+
+        // Room Bounds (Clamping)
+        camera.position.x = Math.max(-18.5, Math.min(18.5, camera.position.x));
+        if (isDoorOpen && Math.abs(camera.position.x) < 2.5 && camera.position.y > 5.5) {
+          // Walking into exit elevator cabin!
+          camera.position.z = Math.max(-28.0, Math.min(23.5, camera.position.z));
+          if (camera.position.z < -25.2) {
+            triggerVictorySequence();
+          }
+        } else {
+          camera.position.z = Math.max(-23.5, Math.min(23.5, camera.position.z));
+        }
+
+        // Hold Cube in Tractor Beam
+        if (isHoldingCube) {
+          const holdTarget = camera.position.clone()
+            .add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(3.2));
+          astCube.position.lerp(holdTarget, 0.25);
+        } else {
+          // Cube gravity
+          let cubeFloorY = 0.8;
+          if (astCube.position.z < -13 && Math.abs(astCube.position.x) < 10) {
+            cubeFloorY = 6.8;
+          }
+          if (astCube.position.y > cubeFloorY) {
+            astCube.position.y -= 15 * delta;
+          } else {
+            astCube.position.y = cubeFloorY;
+          }
+        }
+
+        // Check if Cube or Player is pressing Button on ledge
+        const distCubeToBtn = astCube.position.distanceTo(buttonGroup.position);
+        const distPlayerToBtn = camera.position.distanceTo(buttonGroup.position);
+
+        if (distCubeToBtn < 2.2 || distPlayerToBtn < 2.5) {
+          buttonCap.position.y = 0.05;
+          openExitDoor();
+        } else if (!isDoorOpen) {
+          buttonCap.position.y = 0.2;
+        }
+
+        // Teleport checks
+        checkPortalTeleport(time);
+
+        // Animate Portals
+        if (bluePlaced) bluePortal.children[1].rotation.z += 0.04;
+        if (orangePlaced) orangePortal.children[1].rotation.z -= 0.04;
+
+        // Walk weapon bobbing
+        if (moveVector.length() > 0 && camera.position.y <= groundY + 0.1) {
+          gunGroup.position.y = -0.35 + Math.sin(time * 12) * 0.02;
+          gunGroup.position.x = 0.42 + Math.cos(time * 6) * 0.015;
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

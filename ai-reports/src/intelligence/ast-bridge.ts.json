@@ -1,0 +1,56 @@
+{
+  "file": "src/intelligence/ast-bridge.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 154,
+    "jsx": false,
+    "imports": 4,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "fs, path ve child_process kullanarak src/types/index.ts ile çalışan modül."
+  },
+  "graph": {
+    "dependencies": [
+      "fs",
+      "path",
+      "child_process",
+      "src/types/index.ts"
+    ],
+    "calls": [
+      "cwd",
+      "join",
+      "existsSync",
+      "hasKnowledgeGraph",
+      "readFileSync",
+      "parse",
+      "trim",
+      "execSync",
+      "toString",
+      "queryTool",
+      "filter",
+      "map",
+      "split",
+      "startsWith",
+      "includes",
+      "push",
+      "replace"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "078cfeb8-4c97-4d06-9be3-4827b53763ec",
+    "fileHash": "9a5fb73df82d5bd3f75c8e7bef989406",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358377681
+}

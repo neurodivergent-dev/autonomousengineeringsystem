@@ -1,0 +1,177 @@
+{
+  "i18next-local-inference/dashboard-client.tsx": {
+    "hash": "ddc6bcaf411080fed06d1a80e23a9496",
+    "lastAnalyzed": 1792358353890,
+    "reportPath": "ai-reports/i18next-local-inference/dashboard-client.tsx.md"
+  },
+  "i18next-local-inference/i18n-dashboard.tsx": {
+    "hash": "8f964ebe75aa11c0d0ffa3b04195a0fb",
+    "lastAnalyzed": 1792358354749,
+    "reportPath": "ai-reports/i18next-local-inference/i18n-dashboard.tsx.md"
+  },
+  "mini-meta-cli/engine.ts": {
+    "hash": "e99fb8fb45f7d996c63c26999eb4a2b9",
+    "lastAnalyzed": 1792358355621,
+    "reportPath": "ai-reports/mini-meta-cli/engine.ts.md"
+  },
+  "mini-meta-cli/history.ts": {
+    "hash": "cc8a451f3f3bcbb090c1faed8316c9c2",
+    "lastAnalyzed": 1792358356426,
+    "reportPath": "ai-reports/mini-meta-cli/history.ts.md"
+  },
+  "mini-meta-cli/index.ts": {
+    "hash": "cd2ec680d082c879ec76a38069788a26",
+    "lastAnalyzed": 1792358357187,
+    "reportPath": "ai-reports/mini-meta-cli/index.ts.md"
+  },
+  "mini-meta-cli/ollama.ts": {
+    "hash": "df1f821761ed5147491636a3ec5e0476",
+    "lastAnalyzed": 1792358357962,
+    "reportPath": "ai-reports/mini-meta-cli/ollama.ts.md"
+  },
+  "mini-meta-cli/parser.ts": {
+    "hash": "b927eafafacb2f09b9540b9488364473",
+    "lastAnalyzed": 1792358358779,
+    "reportPath": "ai-reports/mini-meta-cli/parser.ts.md"
+  },
+  "mini-meta-cli/permissions.ts": {
+    "hash": "09af4def431456ca1480e63919a6edd0",
+    "lastAnalyzed": 1792358359493,
+    "reportPath": "ai-reports/mini-meta-cli/permissions.ts.md"
+  },
+  "mini-meta-cli/prompt.ts": {
+    "hash": "4ad2cda784e44803c286b4d268bfc309",
+    "lastAnalyzed": 1792358360328,
+    "reportPath": "ai-reports/mini-meta-cli/prompt.ts.md"
+  },
+  "mini-meta-cli/state.ts": {
+    "hash": "ad5203faaa0bda47cc243134745e336a",
+    "lastAnalyzed": 1792358361102,
+    "reportPath": "ai-reports/mini-meta-cli/state.ts.md"
+  },
+  "mini-meta-cli/tools/edit.ts": {
+    "hash": "82a559c01d9363e2065f88b308092f54",
+    "lastAnalyzed": 1792358361889,
+    "reportPath": "ai-reports/mini-meta-cli/tools/edit.ts.md"
+  },
+  "mini-meta-cli/tools/glob.ts": {
+    "hash": "4199543c8a5a241e5c568dfb16dae70d",
+    "lastAnalyzed": 1792358362639,
+    "reportPath": "ai-reports/mini-meta-cli/tools/glob.ts.md"
+  },
+  "mini-meta-cli/tools/grep.ts": {
+    "hash": "9946c249dcdc062071ba4d303014df91",
+    "lastAnalyzed": 1792358363569,
+    "reportPath": "ai-reports/mini-meta-cli/tools/grep.ts.md"
+  },
+  "mini-meta-cli/tools/index.ts": {
+    "hash": "66e8a09abfc084b330fd9f47b27be861",
+    "lastAnalyzed": 1792358364361,
+    "reportPath": "ai-reports/mini-meta-cli/tools/index.ts.md"
+  },
+  "mini-meta-cli/tools/read.ts": {
+    "hash": "010a6f4184652200f3f514381f289898",
+    "lastAnalyzed": 1792358365183,
+    "reportPath": "ai-reports/mini-meta-cli/tools/read.ts.md"
+  },
+  "mini-meta-cli/tools/shell.ts": {
+    "hash": "70ca3c32036b9e119958bd98e7f17b6a",
+    "lastAnalyzed": 1792358365912,
+    "reportPath": "ai-reports/mini-meta-cli/tools/shell.ts.md"
+  },
+  "mini-meta-cli/tools/todo.ts": {
+    "hash": "164d7b26a0df075e949b01ae3ddd9b23",
+    "lastAnalyzed": 1792358366803,
+    "reportPath": "ai-reports/mini-meta-cli/tools/todo.ts.md"
+  },
+  "mini-meta-cli/tools/web.ts": {
+    "hash": "c7a1280785a9ba342dfcad83c0b83682",
+    "lastAnalyzed": 1792358367594,
+    "reportPath": "ai-reports/mini-meta-cli/tools/web.ts.md"
+  },
+  "mini-meta-cli/tools/write.ts": {
+    "hash": "255641045f584ca5f236852e10776719",
+    "lastAnalyzed": 1792358368367,
+    "reportPath": "ai-reports/mini-meta-cli/tools/write.ts.md"
+  },
+  "mini-meta-cli/tools.ts": {
+    "hash": "7769bbc8a9ae6d0ea98e0a1800e157ca",
+    "lastAnalyzed": 1792358369070,
+    "reportPath": "ai-reports/mini-meta-cli/tools.ts.md"
+  },
+  "mini-meta-cli/tui.tsx": {
+    "hash": "3c075414caab025623c658e6c0a919c3",
+    "lastAnalyzed": 1792358369819,
+    "reportPath": "ai-reports/mini-meta-cli/tui.tsx.md"
+  },
+  "mini-meta-cli/types.ts": {
+    "hash": "8bcc26e2e5590993daf65ae9efa8ea5a",
+    "lastAnalyzed": 1792358370599,
+    "reportPath": "ai-reports/mini-meta-cli/types.ts.md"
+  },
+  "repo-intelligence-layer/analysis.tsx": {
+    "hash": "d6ba11a8c2fc027189476314f04d47a4",
+    "lastAnalyzed": 1792358371371,
+    "reportPath": "ai-reports/repo-intelligence-layer/analysis.tsx.md"
+  },
+  "src/agents/implementation-planner.ts": {
+    "hash": "aa4f17e31cc3183f11ecd824df30fc66",
+    "lastAnalyzed": 1792358372119,
+    "reportPath": "ai-reports/src/agents/implementation-planner.ts.md"
+  },
+  "src/agents/orchestrator.ts": {
+    "hash": "fd4562a435b84022e19485c161be1408",
+    "lastAnalyzed": 1792358372961,
+    "reportPath": "ai-reports/src/agents/orchestrator.ts.md"
+  },
+  "src/agents/product-discovery.ts": {
+    "hash": "18b5da0ad13c1b5b570746414aaf483e",
+    "lastAnalyzed": 1792358373768,
+    "reportPath": "ai-reports/src/agents/product-discovery.ts.md"
+  },
+  "src/agents/solutions-architect.ts": {
+    "hash": "d234658199a53e16f27c01c2d968eb3b",
+    "lastAnalyzed": 1792358374596,
+    "reportPath": "ai-reports/src/agents/solutions-architect.ts.md"
+  },
+  "src/cli.ts": {
+    "hash": "4115c66b56d65f8402ff3ad3262298e3",
+    "lastAnalyzed": 1792358375492,
+    "reportPath": "ai-reports/src/cli.ts.md"
+  },
+  "src/examples/bad-code.ts": {
+    "hash": "c7d9a32851d9d834d3634eb1f45c45d3",
+    "lastAnalyzed": 1792358376093,
+    "reportPath": "ai-reports/src/examples/bad-code.ts.md"
+  },
+  "src/gates/gate-runner.ts": {
+    "hash": "90a71b49e8d44bb513964e021e82f0cb",
+    "lastAnalyzed": 1792358376825,
+    "reportPath": "ai-reports/src/gates/gate-runner.ts.md"
+  },
+  "src/intelligence/ast-bridge.ts": {
+    "hash": "9a5fb73df82d5bd3f75c8e7bef989406",
+    "lastAnalyzed": 1792358377681,
+    "reportPath": "ai-reports/src/intelligence/ast-bridge.ts.md"
+  },
+  "src/knowledge/store.ts": {
+    "hash": "5e15057951c3baaf2c6ddcca4d9523a0",
+    "lastAnalyzed": 1792358378500,
+    "reportPath": "ai-reports/src/knowledge/store.ts.md"
+  },
+  "src/llm/client.ts": {
+    "hash": "04dc8088883890c6a327bb3b7e62e26b",
+    "lastAnalyzed": 1792358379226,
+    "reportPath": "ai-reports/src/llm/client.ts.md"
+  },
+  "src/types/index.ts": {
+    "hash": "6086b75901fcec47f614540cd94bcaa0",
+    "lastAnalyzed": 1792358379932,
+    "reportPath": "ai-reports/src/types/index.ts.md"
+  },
+  "tools/serve-city.ts": {
+    "hash": "ce271f16711ddf29a3024c0a4632c396",
+    "lastAnalyzed": 1792363563893,
+    "reportPath": "ai-reports/tools/serve-city.ts.md"
+  }
+}

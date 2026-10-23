@@ -1,0 +1,3 @@
+> Hızlı indeksleme modu devrede. Mimari Markdown raporu oluşturulması es geçildi.
+
+Sadece yapısal AST analizi ve semantik (JSON) kimlik oluşturuluyor...

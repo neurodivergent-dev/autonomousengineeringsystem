@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Melih // Senior Systems & Autonomous AI Architect</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #040711;
+      --bg-card: rgba(8, 14, 28, 0.85);
+      --border: rgba(0, 240, 255, 0.25);
+      --border-hover: #00F0FF;
+      --cyan: #00F0FF;
+      --green: #10B981;
+      --amber: #F59E0B;
+      --pink: #EC4899;
+      --purple: #8B5CF6;
+      --text: #E2E8F0;
+      --text-muted: #94A3B8;
+      --font-code: 'JetBrains Mono', monospace;
+      --font-display: 'Orbitron', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-code);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* CRT Scanline & Grain Overlay */
+    .crt-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none; z-index: 999; opacity: 0.7;
+    }
+
+    /* Background Cyber Grid */
+    .grid-bg {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 48px 48px, 48px 48px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(4, 7, 17, 0.88); backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand-group { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+    .brand-badge {
+      font-family: var(--font-display); font-size: 18px; font-weight: 900;
+      color: var(--cyan); background: rgba(0, 240, 255, 0.1); border: 1px solid var(--cyan);
+      padding: 4px 10px; border-radius: 4px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+    }
+    .brand-meta { display: flex; flex-direction: column; }
+    .brand-name { font-family: var(--font-display); font-size: 14px; font-weight: 900; color: #FFF; letter-spacing: 1.5px; }
+    .brand-role { font-size: 9.5px; color: var(--green); letter-spacing: 1px; }
+
+    nav { display: flex; align-items: center; gap: 18px; }
+    .nav-link {
+      color: var(--text-muted); font-size: 11px; text-decoration: none;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+    .nav-link:hover, .nav-link.active { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .cyber-btn {
+      background: rgba(0, 240, 255, 0.08); border: 1px solid var(--cyan);
+      color: var(--cyan); padding: 7px 14px; font-family: var(--font-display);
+      font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase;
+      letter-spacing: 1px; border-radius: 3px; display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; transition: all 0.2s;
+    }
+    .cyber-btn:hover { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--cyan); transform: translateY(-1px); }
+    .cyber-btn.green { border-color: var(--green); color: var(--green); background: rgba(16, 185, 129, 0.1); }
+    .cyber-btn.green:hover { background: var(--green); color: #000; box-shadow: 0 0 20px var(--green); }
+    .cyber-btn.amber { border-color: var(--amber); color: var(--amber); background: rgba(245, 158, 11, 0.1); }
+    .cyber-btn.amber:hover { background: var(--amber); color: #000; box-shadow: 0 0 20px var(--amber); }
+
+    /* Layout Container */
+    main { max-width: 1180px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 10; display: flex; flex-direction: column; gap: 70px; }
+
+    /* Hero Section */
+    .hero-section {
+      display: flex; flex-direction: column; gap: 20px; padding: 40px 0 20px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+    }
+    .hero-tags { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .hero-tag {
+      font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 3px;
+      border: 1px solid; letter-spacing: 1px;
+    }
+    .hero-tag.cyan { border-color: var(--cyan); color: var(--cyan); background: rgba(0, 240, 255, 0.08); }
+    .hero-tag.green { border-color: var(--green); color: var(--green); background: rgba(16, 185, 129, 0.08); }
+    .hero-tag.amber { border-color: var(--amber); color: var(--amber); background: rgba(245, 158, 11, 0.08); }
+
+    .hero-title {
+      font-family: var(--font-display); font-size: clamp(28px, 5vw, 48px); font-weight: 900;
+      color: #FFF; line-height: 1.2; letter-spacing: 1px;
+    }
+    .hero-title .gradient-text {
+      background: linear-gradient(135deg, var(--cyan), var(--green));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .hero-bio { max-width: 760px; font-size: 13.5px; color: var(--text-muted); line-height: 1.8; }
+    .hero-bio b { color: #FFF; }
+
+    .hero-cta { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+
+    /* Terminal Section */
+    .terminal-container {
+      background: rgba(3, 7, 18, 0.96); border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden; box-shadow: 0 0 45px rgba(0,0,0,0.8);
+    }
+    .terminal-header {
+      background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+      padding: 10px 16px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .terminal-dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.red { background: #EF4444; }
+    .dot.yellow { background: #F59E0B; }
+    .dot.green { background: #10B981; }
+    .terminal-title { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+
+    .terminal-body {
+      padding: 20px; font-size: 12px; min-height: 260px; max-height: 380px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .term-line { display: flex; gap: 10px; line-height: 1.6; word-break: break-word; }
+    .term-prompt { color: var(--green); font-weight: 800; user-select: none; }
+    .term-cmd { color: #FFF; font-weight: 700; }
+    .term-out { color: var(--text-muted); margin-left: 20px; }
+    .term-out.cyan { color: var(--cyan); }
+    .term-out.green { color: var(--green); }
+    .term-out.amber { color: var(--amber); }
+
+    .term-input-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .term-input {
+      background: none; border: none; outline: none; color: #FFF;
+      font-family: var(--font-code); font-size: 12px; width: 100%;
+    }
+
+    /* Section Headings */
+    .section-head {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2); padding-bottom: 12px;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-family: var(--font-display); font-size: 18px; font-weight: 900;
+      color: #FFF; letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title span.prefix { color: var(--cyan); }
+    .section-meta { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; }
+
+    /* Projects Grid */
+    .projects-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;
+    }
+    .project-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 24px; display: flex; flex-direction: column; gap: 16px;
+      transition: all 0.25s; position: relative; overflow: hidden;
+    }
+    .project-card:hover {
+      border-color: var(--cyan); transform: translateY(-3px);
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.15);
+    }
+    .project-card::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+      background: var(--cyan); opacity: 0.7;
+    }
+    .project-card.amber::before { background: var(--amber); }
+    .project-card.green::before { background: var(--green); }
+
+    .proj-header { display: flex; align-items: center; justify-content: space-between; }
+    .proj-icon { font-size: 24px; }
+    .proj-badge {
+      font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 2px;
+      border: 1px solid; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .proj-badge.cyan { border-color: var(--cyan); color: var(--cyan); background: rgba(0, 240, 255, 0.1); }
+    .proj-badge.green { border-color: var(--green); color: var(--green); background: rgba(16, 185, 129, 0.1); }
+    .proj-badge.amber { border-color: var(--amber); color: var(--amber); background: rgba(245, 158, 11, 0.1); }
+
+    .proj-title { font-family: var(--font-display); font-size: 15px; font-weight: 900; color: #FFF; }
+    .proj-desc { font-size: 12px; color: var(--text-muted); line-height: 1.7; flex: 1; }
+    .proj-tech { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .tech-pill {
+      font-size: 9.5px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2px 7px; border-radius: 3px; color: #94A3B8;
+    }
+    .proj-links { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+
+    /* Interactive Markdown Blog Section */
+    .blog-container { display: flex; flex-direction: column; gap: 18px; }
+    .blog-item {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
+      padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .blog-item:hover {
+      border-color: var(--green); background: rgba(16, 185, 129, 0.05); transform: translateX(6px);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+    }
+    .blog-info { display: flex; flex-direction: column; gap: 6px; max-width: 80%; }
+    .blog-meta { display: flex; align-items: center; gap: 12px; font-size: 10px; color: var(--text-muted); }
+    .blog-meta span.date { color: var(--amber); }
+    .blog-meta span.tag { color: var(--cyan); background: rgba(0, 240, 255, 0.08); padding: 1px 6px; border-radius: 2px; }
+    .blog-title { font-family: var(--font-display); font-size: 14px; font-weight: 800; color: #FFF; }
+    .blog-snippet { font-size: 11.5px; color: var(--text-muted); }
+
+    /* Article Reader Modal */
+    .reader-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(2, 4, 10, 0.9); backdrop-filter: blur(24px);
+      z-index: 1000; display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .reader-content {
+      background: #060913; border: 1px solid var(--cyan); border-radius: 6px;
+      box-shadow: 0 0 60px rgba(0, 240, 255, 0.3); width: 100%; max-width: 800px;
+      max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .reader-header {
+      background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border);
+      padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .reader-header-title { font-family: var(--font-display); font-size: 13px; font-weight: 900; color: #FFF; }
+    .close-btn {
+      background: none; border: 1px solid var(--border); color: var(--cyan);
+      font-size: 14px; padding: 4px 10px; cursor: pointer; border-radius: 3px;
+    }
+    .close-btn:hover { background: #FF0055; color: #FFF; border-color: #FF0055; }
+    .reader-body {
+      padding: 32px 36px; overflow-y: auto; font-size: 13px; line-height: 1.8; color: #CBD5E1;
+    }
+    .reader-body h1, .reader-body h2, .reader-body h3 {
+      font-family: var(--font-display); color: #FFF; margin: 24px 0 12px;
+    }
+    .reader-body h1 { font-size: 20px; color: var(--cyan); }
+    .reader-body h2 { font-size: 16px; color: var(--green); }
+    .reader-body pre {
+      background: #020409; border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 4px; padding: 14px; margin: 16px 0; overflow-x: auto;
+      font-family: var(--font-code); font-size: 11.5px; color: #A5B4FC;
+    }
+    .reader-body blockquote {
+      border-left: 3px solid var(--amber); padding-left: 14px; margin: 16px 0;
+      color: var(--amber); font-style: italic; background: rgba(245, 158, 11, 0.05); padding-top: 6px; padding-bottom: 6px;
+    }
+
+    /* Tech Stack Radar */
+    .skills-matrix {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;
+    }
+    .skill-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
+      padding: 16px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .skill-name { font-family: var(--font-display); font-size: 11.5px; font-weight: 800; color: #FFF; display: flex; justify-content: space-between; }
+    .skill-bar-bg { height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden; }
+    .skill-bar-fill { height: 100%; border-radius: 3px; }
+    .skill-bar-fill.cyan { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+    .skill-bar-fill.green { background: var(--green); box-shadow: 0 0 10px var(--green); }
+    .skill-bar-fill.amber { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border); padding: 30px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1180px; margin: 0 auto; font-size: 11px; color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="crt-overlay"></div>
+  <div class="grid-bg"></div>
+
+  <!-- Header -->
+  <header>
+    <a href="#" class="brand-group">
+      <div class="brand-badge">⚡M</div>
+      <div class="brand-meta">
+        <span class="brand-name">MELİH.SYS</span>
+        <span class="brand-role">// AUTONOMOUS SYSTEMS ARCHITECT</span>
+      </div>
+    </a>
+
+    <nav>
+      <a href="#about" class="nav-link">About</a>
+      <a href="#terminal" class="nav-link">Terminal</a>
+      <a href="#projects" class="nav-link">Projects</a>
+      <a href="#blog" class="nav-link">Blog</a>
+      <a href="#skills" class="nav-link">Tech Radar</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="cyber-btn" id="audio-toggle" onclick="toggleAudio()">
+        <span>🔊</span> <span id="audio-txt">SFX: ON</span>
+      </button>
+      <a href="/workforce" class="cyber-btn green">
+        <span>🤖</span> <span>Workforce</span>
+      </a>
+      <a href="/city" class="cyber-btn amber">
+        <span>🌆</span> <span>City</span>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section" id="about">
+      <div class="hero-tags">
+        <span class="hero-tag cyan">SYS: ONLINE</span>
+        <span class="hero-tag green">0 TOKENS AST TELEMETRY</span>
+        <span class="hero-tag amber">LOC: 140,000+ TESTED</span>
+      </div>
+
+      <h1 class="hero-title">
+        Engineering Deterministic <br>
+        <span class="gradient-text">Autonomous Multi-Agent Systems</span>
+      </h1>
+
+      <p class="hero-bio">
+        Merhaba, ben <b>Melih</b>. Sıfır token israflı soyut sözdizimi ağaçları (AST), 
+        kapalı devre doğrulama mekanizmaları (6-Gate Safety Chains) ve 
+        kendi kendine derlenip çalışan otonom yazılım fabrikaları inşa ediyorum.
+      </p>
+
+      <div class="hero-cta">
+        <a href="#terminal" class="cyber-btn"><span>>_</span> <span>Açık Terminal Shell</span></a>
+        <a href="#projects" class="cyber-btn green"><span>🚀</span> <span>Projeleri İncele</span></a>
+        <a href="#blog" class="cyber-btn amber"><span>📝</span> <span>Teknik Blog</span></a>
+      </div>
+    </section>
+
+    <!-- Interactive Hacker Terminal -->
+    <section id="terminal">
+      <div class="section-head">
+        <div class="section-title"><span class="prefix">//</span> INTERACTIVE HACKER SHELL</div>
+        <div class="section-meta">TYPE 'help' FOR COMMAND ARSENAL</div>
+      </div>
+
+      <div class="terminal-container">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+          </div>
+          <div class="terminal-title">guest@melih-core:~ (zsh - 80x24)</div>
+          <button class="cyber-btn" style="padding: 2px 8px; font-size: 9px;" onclick="clearTerm()">CLEAR</button>
+        </div>
+
+        <div class="terminal-body" id="term-logs">
+          <div class="term-line">
+            <span class="term-prompt">melih-core:~$</span>
+            <span class="term-cmd">system --audit</span>
+          </div>
+          <div class="term-out green">
+            [SYS_OK] MetaFrame AST Runtime v2.4 initialized.<br>
+            [SYS_OK] 4 Autonomous Agents stationed (Orion, Daedalus, Vulcan, Aegis).<br>
+            [SYS_OK] Type 'help' to explore bio, projects, blog, and matrix mode.
+          </div>
+        </div>
+
+        <div class="term-input-row" style="padding: 10px 20px; background: rgba(8, 14, 28, 0.95); border-top: 1px solid rgba(0,240,255,0.15);">
+          <span class="term-prompt">melih-core:~$</span>
+          <input type="text" class="term-input" id="term-input" placeholder="komut yazın (örn: help, projects, blog, whoami)..." autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Projects Grid -->
+    <section id="projects">
+      <div class="section-head">
+        <div class="section-title"><span class="prefix">//</span> SIGNATURE ARCHITECTURES</div>
+        <div class="section-meta">PRODUCTION & EXPERIMENTAL CODEBASES</div>
+      </div>
+
+      <div class="projects-grid">
+        <!-- Project 1: MetaFrame -->
+        <div class="project-card">
+          <div class="proj-header">
+            <div class="proj-icon">🤖</div>
+            <span class="proj-badge cyan">CORE RUNTIME</span>
+          </div>
+          <div class="proj-title">MetaFrame Autonomous System</div>
+          <div class="proj-desc">
+            Kod tabanını AST seviyesinde parse eden, gereksinimden (PRD) mimari karara (ADR) ve 6-kapılı 
+            derleme testine kadar otonom yazılım üreten multi-agent mühendislik motoru.
+          </div>
+          <div class="proj-tech">
+            <span class="tech-pill">TypeScript</span>
+            <span class="tech-pill">Bun</span>
+            <span class="tech-pill">AST Parser</span>
+            <span class="tech-pill">Deterministic Gates</span>
+          </div>
+          <div class="proj-links">
+            <a href="/workforce" class="cyber-btn" style="font-size: 9px; padding: 4px 10px;"><span>🛸</span> 3D Workforce</a>
+            <a href="/factory" class="cyber-btn green" style="font-size: 9px; padding: 4px 10px;"><span>🏭</span> Code Factory</a>
+          </div>
+        </div>
+
+        <!-- Project 2: Mindbook Pro -->
+        <div class="project-card green">
+          <div class="proj-header">
+            <div class="proj-icon">🛡️</div>
+            <span class="proj-badge green">APP PRODUCT</span>
+          </div>
+          <div class="proj-title">Mindbook Pro Vault</div>
+          <div class="proj-desc">
+            Gizlilik odaklı, çevrimdışı öncelikli, verileri yerel AES-256 şifreli kasada saklayan 
+            ve sıfır bilgi (zero-knowledge) senkronizasyon sunan yeni nesil zihin haritası & not alma uygulaması.
+          </div>
+          <div class="proj-tech">
+            <span class="tech-pill">React Native</span>
+            <span class="tech-pill">Expo</span>
+            <span class="tech-pill">AES-256</span>
+            <span class="tech-pill">Local SQLite</span>
+          </div>
+          <div class="proj-links">
+            <a href="https://github.com/neurodivergent-dev/mindbook-pro" target="_blank" class="cyber-btn green" style="font-size: 9px; padding: 4px 10px;"><span>⚡</span> GitHub Repo</a>
+          </div>
+        </div>
+
+        <!-- Project 3: Spatial City & Portal Chamber -->
+        <div class="project-card amber">
+          <div class="proj-header">
+            <div class="proj-icon">🌆</div>
+            <span class="proj-badge amber">3D VISUALIZER</span>
+          </div>
+          <div class="proj-title">Cyberpunk AST Spatial City</div>
+          <div class="proj-desc">
+            Kod bağımlılıklarını 3D devasa bir siber metropol olarak görselleştiren, FPS drone kokpiti, 
+            Çankırı Caddesi modu ve Valve tarzı Portal Gun fizik motoru içeren Three.js ortamı.
+          </div>
+          <div class="proj-tech">
+            <span class="tech-pill">Three.js</span>
+            <span class="tech-pill">WebGL</span>
+            <span class="tech-pill">Web Audio API</span>
+            <span class="tech-pill">PointerLock</span>
+          </div>
+          <div class="proj-links">
+            <a href="/city" class="cyber-btn amber" style="font-size: 9px; padding: 4px 10px;"><span>💃</span> 06 Ankara City</a>
+            <a href="/portal" class="cyber-btn" style="font-size: 9px; padding: 4px 10px;"><span>🌀</span> Portal Gun</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Markdown Blog Section -->
+    <section id="blog">
+      <div class="section-head">
+        <div class="section-title"><span class="prefix">//</span> TECHNICAL ESSAYS & BLOG</div>
+        <div class="section-meta">CLICK TO OPEN NATIVE MARKDOWN READER</div>
+      </div>
+
+      <div class="blog-container">
+        <!-- Article 1 -->
+        <div class="blog-item" onclick="openArticle('ast-zero-token')">
+          <div class="blog-info">
+            <div class="blog-meta">
+              <span class="date">OCT 2026</span>
+              <span class="tag">ARCHITECTURE</span>
+              <span>5 MIN READ</span>
+            </div>
+            <div class="blog-title">0-Token AST Mimarisi: LLM'leri Kod Dosyalarında Boğmadan Haritalamak</div>
+            <div class="blog-snippet">
+              Yapay zeka modellerine tüm kod tabanını düz metin olarak okutup milyonlarca token yakmak yerine, 
+              AST ile soyut bilgi grafiği çıkararak 0.6ms'de kesin doğruluk elde etmenin detayları.
+            </div>
+          </div>
+          <div class="cyber-btn" style="font-size: 9px;">READ ➔</div>
+        </div>
+
+        <!-- Article 2 -->
+        <div class="blog-item" onclick="openArticle('closed-loop-gates')">
+          <div class="blog-info">
+            <div class="blog-meta">
+              <span class="date">OCT 2026</span>
+              <span class="tag">RELIABILITY</span>
+              <span>6 MIN READ</span>
+            </div>
+            <div class="blog-title">Kapalı Devre Otonom Mühendislik: AEGIS'in 6 Deterministik Kapısı</div>
+            <div class="blog-snippet">
+              Kod yazan ajanların derlenmeyen, tip hatası içeren veya yan etki üreten kodları diske kaydetmesini 
+              engelleyen 6 katmanlı iskân ruhsatı mekanizması.
+            </div>
+          </div>
+          <div class="cyber-btn green" style="font-size: 9px;">READ ➔</div>
+        </div>
+
+        <!-- Article 3 -->
+        <div class="blog-item" onclick="openArticle('webaudio-synthesis')">
+          <div class="blog-info">
+            <div class="blog-meta">
+              <span class="date">OCT 2026</span>
+              <span class="tag">CREATIVE TECH</span>
+              <span>4 MIN READ</span>
+            </div>
+            <div class="blog-title">Web Audio API ile Sıfır Harici Dosya Prosedürel Ses Sentezi</div>
+            <div class="blog-snippet">
+              Oyunlarda ve arayüzlerde harici MP3 yüklemeden osilatörler, harmonik dalgalar ve bas filtreleriyle 
+              canlı mekanik ve fütüristik ses dünyası kurmak.
+            </div>
+          </div>
+          <div class="cyber-btn amber" style="font-size: 9px;">READ ➔</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills Radar -->
+    <section id="skills">
+      <div class="section-head">
+        <div class="section-title"><span class="prefix">//</span> TECHNICAL PROFICIENCY RADAR</div>
+        <div class="section-meta">CORE CAPABILITIES & TOOLS</div>
+      </div>
+
+      <div class="skills-matrix">
+        <div class="skill-card">
+          <div class="skill-name"><span>TypeScript / JavaScript</span> <span>98%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill cyan" style="width: 98%;"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-name"><span>Bun & Node.js Runtimes</span> <span>95%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill green" style="width: 95%;"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-name"><span>AST & Compiler Engineering</span> <span>92%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill cyan" style="width: 92%;"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-name"><span>Multi-Agent Orchestration</span> <span>94%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill amber" style="width: 94%;"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-name"><span>React & React Native (Expo)</span> <span>96%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill cyan" style="width: 96%;"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-name"><span>Three.js / WebGL 3D</span> <span>88%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill green" style="width: 88%;"></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Markdown Article Reader Modal -->
+  <div class="reader-modal" id="reader-modal" onclick="closeReader(event)">
+    <div class="reader-content" onclick="event.stopPropagation()">
+      <div class="reader-header">
+        <span class="reader-header-title" id="reader-title">// MARKDOWN READER</span>
+        <button class="close-btn" onclick="closeReaderDirect()">✕</button>
+      </div>
+      <div class="reader-body" id="reader-body">
+        <!-- Rendered markdown content appears here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div>© 2026 Melih. Built with MetaFrame Autonomous Engineering System.</div>
+    <div style="display: flex; gap: 14px;">
+      <a href="https://github.com/neurodivergent-dev" target="_blank" style="color: var(--cyan); text-decoration: none;">GitHub</a>
+      <a href="#" style="color: var(--green); text-decoration: none;">Twitter / X</a>
+      <a href="#" style="color: var(--amber); text-decoration: none;">PGP Public Key</a>
+    </div>
+  </footer>
+
+  <script>
+    // ==========================================
+    // 🎵 PROCEDURAL RETRO KEY CLICK & SFX
+    // ==========================================
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      } catch(e) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audio-txt').innerText = audioEnabled ? 'SFX: ON' : 'SFX: OFF';
+    }
+
+    function playKeyClick() {
+      if (!audioEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(450 + Math.random() * 100, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+      } catch(e) {}
+    }
+
+    function playChirp() {
+      if (!audioEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.12);
+      } catch(e) {}
+    }
+
+    // ==========================================
+    // 💻 INTERACTIVE HACKER TERMINAL ENGINE
+    // ==========================================
+    const termInput = document.getElementById('term-input');
+    const termLogs = document.getElementById('term-logs');
+
+    const COMMANDS = {
+      help: () => `
+Mevcut Komutlar Arsenal:
+  • whoami      - Geliştirici kimlik kartı ve uzmanlıklar
+  • projects    - İmza açık kaynak ve mimari projeler
+  • blog        - Yayınlanan teknik makaleler listesi
+  • cat <slug>  - Blog yazısını terminalde oku (örn: cat ast)
+  • skills      - Yetenek ve teknoloji radarı
+  • matrix      - Siber yağmur simülasyonu
+  • clear       - Terminal ekranını temizle
+  • contact     - İletişim ve PGP anahtarı
+`,
+      whoami: () => `
+[IDENTITY] Melih // Senior Autonomous Systems & AI Architect
+[SPECIALTY] Zero-Token AST Parsers, Multi-Agent Runtime, Deterministic Closed-Loop Gates.
+[STATUS] Active // Building MetaFrame & Mindbook Vault.
+`,
+      projects: () => `
+MİMARİ PROJELER:
+  1. MetaFrame Autonomous System  [TypeScript / Bun / AST / Multi-Agent]
+  2. Mindbook Pro Vault           [React Native / AES-256 / Offline-First]
+  3. Cyberpunk AST Spatial City   [Three.js / WebGL / Web Audio API]
+  4. Aperture AST Portal Chamber  [Valve Physics / PointerLock FPS]
+`,
+      blog: () => `
+TEKNİK MAKALELER:
+  1. ast-zero-token     - 0-Token AST Mimarisi (cat ast-zero-token)
+  2. closed-loop-gates  - AEGIS'in 6 Deterministik Kapısı (cat closed-loop-gates)
+  3. webaudio-synthesis - Prosedürel Ses Sentezi (cat webaudio-synthesis)
+`,
+      skills: () => `
+YETENEK RADARI:
+  • TypeScript / JS        : 98% [Senior Architect]
+  • Bun / Node.js          : 95% [High-throughput Systems]
+  • AST & Compilers        : 92% [Static Analysis]
+  • Multi-Agent Systems    : 94% [Deterministic Workflows]
+  • React & React Native   : 96% [Production Scale]
+  • Three.js / WebGL       : 88% [Spatial Visualization]
+`,
+      contact: () => `
+İLETİŞİM BAĞLANTILARI:
+  • GitHub  : https://github.com/neurodivergent-dev
+  • Matrix  : @melih:matrix.org
+  • Email   : contact@neurodivergent.dev
+`,
+      matrix: () => {
+        document.body.style.filter = 'hue-rotate(90deg) contrast(1.2)';
+        setTimeout(() => { document.body.style.filter = 'none'; }, 4000);
+        return `[MATRIX_EFFECT] 4 saniye boyunca yeşil siber yağmur protokolü aktif edildi.`;
+      }
+    };
+
+    termInput.addEventListener('keydown', (e) => {
+      playKeyClick();
+      if (e.key === 'Enter') {
+        const fullCmd = termInput.value.trim();
+        termInput.value = '';
+        if (!fullCmd) return;
+
+        printTermLine(fullCmd, 'cmd');
+        const parts = fullCmd.split(' ');
+        const mainCmd = parts[0].toLowerCase();
+        const arg = parts[1]?.toLowerCase();
+
+        if (mainCmd === 'clear') {
+          clearTerm();
+          return;
+        }
+
+        if (mainCmd === 'cat') {
+          if (arg && ARTICLES[arg]) {
+            openArticle(arg);
+            printTermOutput(`"${ARTICLES[arg].title}" makalesi okuyucuda açıldı.`, 'green');
+          } else {
+            printTermOutput(`Hata: Belirtilen makale bulunamadı. Kullanım: cat ast-zero-token`, 'amber');
+          }
+          return;
+        }
+
+        if (COMMANDS[mainCmd]) {
+          const out = COMMANDS[mainCmd]();
+          printTermOutput(out, 'cyan');
+        } else {
+          printTermOutput(`Komut bulunamadı: '${fullCmd}'. Komut listesi için 'help' yazın.`, 'amber');
+        }
+      }
+    });
+
+    function printTermLine(cmd) {
+      const line = document.createElement('div');
+      line.className = 'term-line';
+      line.innerHTML = `<span class="term-prompt">melih-core:~$</span><span class="term-cmd">${escapeHTML(cmd)}</span>`;
+      termLogs.appendChild(line);
+      termLogs.scrollTop = termLogs.scrollHeight;
+    }
+
+    function printTermOutput(text, colorClass = '') {
+      const out = document.createElement('div');
+      out.className = `term-out ${colorClass}`;
+      out.innerHTML = text.replace(/\n/g, '<br>');
+      termLogs.appendChild(out);
+      termLogs.scrollTop = termLogs.scrollHeight;
+    }
+
+    function clearTerm() {
+      termLogs.innerHTML = '';
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag] || tag));
+    }
+
+    // ==========================================
+    // 📝 MARKDOWN BLOG ENGINE & MODAL VIEWER
+    // ==========================================
+    const ARTICLES = {
+      'ast-zero-token': {
+        title: '0-Token AST Mimarisi: LLM\'leri Kod Dosyalarında Boğmadan Haritalamak',
+        date: '19 EKİM 2026',
+        author: 'Melih',
+        markdown: `
+# 0-Token AST Mimarisi
+
+Geleneksel yapay zeka kod asistanlarının en büyük problemi **bağlam körlüğü (context blindness)** ve yüksek token israfıdır. Bir asistanın projedeki bir fonksiyonu anlaması için tüm dosyaları baştan sona LLM'e göndermek hem maliyetli hem de yavaştır.
+
+> **Temel Tez:** Kod metin değildir; kod bir grafiktir. Fonksiyonlar arasındaki bağıntıları yapay zekaya tahmin ettirmek yerine, derleyicinin (AST) matematiksel kesinliğiyle çıkarmak gerekir.
+
+## AST Neyi Çözer?
+1. **Milisaniyelik Tarama:** TypeScript Compiler API veya SWC ile 100.000 satırlık kod tabanı 0.6ms içinde taranır.
+2. **0 Token Tüketimi:** Bir fonksiyona kimin referans verdiğini bulmak için LLM çağrısı yapılmaz.
+3. **Kesin Etki Alanı (Blast Radius):** \`useNotes.ts\` değiştiğinde tam olarak hangi 4 dosyanın etkileneceği deterministik olarak hesaplanır.
+
+\`\`\`typescript
+export function calculateBlastRadius(filePath: string): ImpactReport {
+  const node = astGraph.getNode(filePath);
+  return {
+    risk: node.dependents.length > 5 ? 'HIGH' : 'LOW',
+    affected: node.getTransitiveDependents()
+  };
+}
+\`\`\`
+`
+      },
+      'closed-loop-gates': {
+        title: 'Kapalı Devre Otonom Mühendislik: AEGIS\'in 6 Deterministik Kapısı',
+        date: '18 EKİM 2026',
+        author: 'Melih',
+        markdown: `
+# Kapalı Devre Otonom Mühendislik
+
+Bir otonom ajanın (LLM) kod yazması yetmez; **yazdığı kodu kendi kendine derleyebilmesi ve sınırları ihlal etmediğini kanıtlaması gerekir.**
+
+## 6 Deterministik Güvenlik Kapısı
+- **Gate 1: TypeScript Compiler:** \`tsc --noEmit\` ile sıfır tip hatası kuralı.
+- **Gate 2: Blast Radius İzolasyonu:** Yeni katın eski çekirdek modülleri kirletmediğinin doğrulanması.
+- **Gate 3: Tema Token Kontratı:** Rastgele hex renk kullanımının engellenmesi, sadece merkezi tasarım tokenlarının kullanımı.
+- **Gate 4: Sıfır Emoji Kuralı:** Kod içine kaçak emoji girmesinin linter ile engellenmesi.
+- **Gate 5: i18n Bütünlüğü:** Her metin anahtarının localization tablolarında tam karşılığı olması.
+- **Gate 6: Bilişsel Karmaşıklık (Cognitive Complexity):** Fonksiyon karmaşıklığının 15'in altında tutulması.
+
+> *"İskân ruhsatı almayan kod, diske dahi kaydedilemez."*
+`
+      },
+      'webaudio-synthesis': {
+        title: 'Web Audio API ile Sıfır Harici Dosya Prosedürel Ses Sentezi',
+        date: '17 EKİM 2026',
+        author: 'Melih',
+        markdown: `
+# Prosedürel Ses Sentezi
+
+Web uygulamalarında harici ses dosyaları (MP3/WAV) bant genişliği tüketir ve gecikme üretir. Web Audio API ise tarayıcının yerel donanımını kullanarak saf matematiksel dalgalardan anlık ses üretir.
+
+## Nasıl Çalışır?
+Bir osilatör (\`OscillatorNode\`) oluşturulur ve frekansı bir kazanç (\`GainNode\`) devresine bağlanarak milisaniyeler içinde söndürülür:
+
+\`\`\`javascript
+const osc = audioCtx.createOscillator();
+osc.type = 'triangle';
+osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+\`\`\`
+
+Bu yöntemle hidrolik pres vuruşlarından lazer portal seslerine kadar her şey sıfır bayt indirmeyle üretilir.
+`
+      }
+    };
+
+    function parseSimpleMarkdown(md) {
+      let html = md
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+        .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
+        .replace(/\*(.*)\*/gim, '<i>$1</i>')
+        .replace(/`([^`]+)`/gim, '<code style="background: rgba(0,240,255,0.1); color: var(--cyan); padding: 2px 5px; border-radius: 3px;">$1</code>')
+        .replace(/```([a-z]*)\n([\s\S]*?)```/gim, '<pre><code>$2</code></pre>')
+        .replace(/\n\n/gim, '<p style="margin: 12px 0;"></p>');
+      return html;
+    }
+
+    function openArticle(slug) {
+      playChirp();
+      const article = ARTICLES[slug];
+      if (!article) return;
+
+      document.getElementById('reader-title').innerText = `// READ: ${article.title}`;
+      document.getElementById('reader-body').innerHTML = `
+        <div style="font-size: 11px; color: var(--amber); margin-bottom: 12px; font-weight: 700;">
+          YAYIN: ${article.date} · YAZAR: ${article.author}
+        </div>
+        ${parseSimpleMarkdown(article.markdown)}
+      `;
+      document.getElementById('reader-modal').style.display = 'flex';
+    }
+
+    function closeReader(e) {
+      if (e.target.id === 'reader-modal') closeReaderDirect();
+    }
+    function closeReaderDirect() {
+      playChirp();
+      document.getElementById('reader-modal').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

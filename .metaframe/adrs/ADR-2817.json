@@ -1,0 +1,26 @@
+{
+  "id": "ADR-2817",
+  "prdRef": "PRD-2806",
+  "title": "Architecture Decision for Kullanici oturumu icin ping health check",
+  "status": "ACCEPTED",
+  "context": "Kullanici oturumu icin ping health check",
+  "decision": "Adopt modular, AST-grounded implementation conforming to existing repository architecture.",
+  "alternativesConsidered": [
+    "Direct monolithic modification (discarded: increases blast radius)"
+  ],
+  "consequences": {
+    "positive": [
+      "Preserves clean module boundaries",
+      "Passes deterministic verification gates"
+    ],
+    "negative": [
+      "Requires explicit interface updates across callers"
+    ],
+    "risks": []
+  },
+  "impactedModules": [
+    "core"
+  ],
+  "blastRadiusRisk": "LOW",
+  "createdAt": "2026-10-17T23:38:42.817Z"
+}

@@ -1,0 +1,63 @@
+{
+  "file": "mini-meta-cli/tools/write.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 46,
+    "jsx": false,
+    "imports": 5,
+    "exports": 1,
+    "functions": 2,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "cleanMarkdownFences ve createWriteTool içeren yazma aracı modülüdür."
+  },
+  "graph": {
+    "dependencies": [
+      "fs",
+      "path",
+      "mini-meta-cli/types.ts",
+      "mini-meta-cli/state.ts",
+      "mini-meta-cli/prompt.ts"
+    ],
+    "calls": [
+      "trimEnd",
+      "replace",
+      "resolvePath",
+      "String",
+      "dirname",
+      "existsSync",
+      "mkdirSync",
+      "cleanMarkdownFences",
+      "writeFileSync",
+      "markRead"
+    ],
+    "renders": []
+  },
+  "entities": [
+    {
+      "name": "cleanMarkdownFences",
+      "type": "function",
+      "async": false,
+      "exported": false
+    },
+    {
+      "name": "createWriteTool",
+      "type": "function",
+      "async": false,
+      "exported": true
+    }
+  ],
+  "identity": {
+    "analysisId": "2d79bab9-e273-47a4-beb1-59e3de0e9e8c",
+    "fileHash": "255641045f584ca5f236852e10776719",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358368366
+}

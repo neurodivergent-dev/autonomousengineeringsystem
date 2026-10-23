@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetaFrame Studio | Gemma 12B Neural Prompt Refiner & Autonomous Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Rajdhani:wght@500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --bg-surface: #0e121b;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --border-color: rgba(0, 243, 255, 0.18);
+      --border-glow: rgba(0, 243, 255, 0.5);
+      --neon-cyan: #00f3ff;
+      --neon-pink: #ff007f;
+      --neon-green: #00ff88;
+      --neon-yellow: #ffd000;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 243, 255, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(255, 0, 127, 0.05) 0%, transparent 40%);
+    }
+
+    /* Header */
+    header {
+      background: rgba(10, 14, 23, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+      color: #000;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
+    }
+
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.25rem;
+      letter-spacing: 1px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--neon-green);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--neon-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--neon-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .nav-shortcuts {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .nav-btn {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      color: var(--neon-cyan);
+      border-color: var(--border-color);
+      background: rgba(0, 243, 255, 0.05);
+    }
+
+    /* Stepper Bar */
+    .stepper-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(14, 18, 27, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .step-node {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-family: 'Orbitron', sans-serif;
+      color: var(--text-muted);
+      transition: all 0.3s;
+    }
+
+    .step-node.active {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px rgba(0, 243, 255, 0.6);
+    }
+
+    .step-node.active .step-num {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 12px var(--neon-cyan);
+    }
+
+    .step-node.completed {
+      color: var(--neon-green);
+    }
+
+    .step-node.completed .step-num {
+      background: var(--neon-green);
+      color: #000;
+    }
+
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 0 0.5rem;
+    }
+
+    /* Main Grid */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      max-width: 1900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Studio Card */
+    .studio-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+    }
+
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .step-badge {
+      background: rgba(0, 243, 255, 0.15);
+      color: var(--neon-cyan);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Form Inputs */
+    label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      display: block;
+    }
+
+    textarea, input {
+      width: 100%;
+      background: rgba(7, 10, 16, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.05rem;
+      padding: 0.85rem;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    textarea:focus, input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(0, 243, 255, 0.3);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .pill-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      border-radius: 20px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pill:hover {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      background: rgba(0, 243, 255, 0.1);
+    }
+
+    /* Buttons */
+    .btn {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      padding: 0.85rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn-refine {
+      background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(0, 243, 255, 0.05));
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.25);
+    }
+
+    .btn-refine:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.6);
+    }
+
+    .btn-build {
+      background: linear-gradient(135deg, #ff007f, #9900ff);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
+    }
+
+    .btn-build:hover {
+      box-shadow: 0 0 35px rgba(255, 0, 127, 0.8);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    /* Refined Output Box */
+    .refinement-result {
+      background: rgba(0, 243, 255, 0.03);
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .metrics-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      background: rgba(0, 255, 136, 0.15);
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+    }
+
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .tag-item {
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.8rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      color: var(--neon-cyan);
+    }
+
+    /* Terminal & Preview */
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--neon-cyan);
+      background: rgba(0, 243, 255, 0.1);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+    }
+
+    .tab-content {
+      display: none;
+      flex: 1;
+      height: 100%;
+    }
+
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-box {
+      background: #030508;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      height: 480px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    /* Live Code Stream Pane */
+    .code-stream-box {
+      background: #020408;
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--neon-green);
+      height: 480px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.4;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .stream-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--neon-cyan);
+      background: rgba(0, 243, 255, 0.05);
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+    }
+
+    .preview-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      height: 100%;
+    }
+
+    .preview-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--neon-cyan);
+    }
+
+    iframe {
+      width: 100%;
+      height: 520px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: #000;
+    }
+
+    /* Spinners & Animations */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <div class="logo-badge">MF</div>
+      <div>
+        <div class="brand-title">METAFRAME STUDIO</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">AST-Grounded Autonomous Engineering</div>
+      </div>
+    </div>
+
+    <div class="status-badge">
+      <div class="dot"></div>
+      <span>OLLAMA ACTIVE: gemma4:12b (100% GPU)</span>
+    </div>
+
+    <div class="nav-shortcuts">
+      <a href="/portfolio" target="_blank" class="nav-btn">🚀 Portfolyo</a>
+      <a href="/apps/retro-pc-wireframe/index.html" target="_blank" class="nav-btn">🕹️ Retro-PC 3D</a>
+      <a href="/apps/nexus-studio/index.html" target="_blank" class="nav-btn">⚡ Quantum AI</a>
+      <a href="/city" target="_blank" class="nav-btn">🌆 3D City</a>
+    </div>
+  </header>
+
+  <!-- Studio Main Section -->
+  <main>
+    <!-- Left Column: Neural Prompt Studio -->
+    <div class="studio-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🧠 Neural Prompt Studio</span>
+        </div>
+        <div class="step-badge">STAGE 1: REFINE</div>
+      </div>
+
+      <!-- Raw Prompt Input -->
+      <div>
+        <label for="raw-prompt">Kullanıcı Ham İsteği (Raw Intent):</label>
+        <textarea id="raw-prompt" placeholder="Örnek: Bana neon renkli bir siber güvenlik dashboardu yap...">Bana fütüristik, neon temalı bir siber güvenlik savunma merkezi dashboardu yap. Canlı threat map, sistem zafiyet skorları, aktif ajan durumu ve saldırı logları içeren modern interaktif bir arayüz olsun.</textarea>
+
+        <div class="pill-container">
+          <span class="pill" onclick="setPreset('Kripto alım satım ve borsa arayüzü, canlı fiyat grafiği ve emir defteri')">📈 Cyber Crypto Exchange</span>
+          <span class="pill" onclick="setPreset('Synthesizer ve ses efektleri üreten bir retro synthwave müzik stüdyosu')">🎹 Synthwave Audio DAW</span>
+          <span class="pill" onclick="setPreset('AI robotik cerrahi ve nöral implant sağlık takip paneli')">🦾 Neural Implants Hub</span>
+          <span class="pill" onclick="setPreset('Matrix kod yağmuru arka planlı şifreli hacker mesajlaşma arayüzü')">💻 Matrix Cipher Terminal</span>
+        </div>
+      </div>
+
+      <button id="btn-refine" class="btn btn-refine" onclick="handleRefine()">
+        <span class="spinner" id="spinner-refine"></span>
+        <span id="btn-refine-text">🛡️ Gemma 12B ile Güvenli Hale Getir & Zenginleştir</span>
+      </button>
+
+      <!-- Stage 2: Refined Result -->
+      <div class="panel-header" style="margin-top: 0.5rem;">
+        <div class="panel-title">
+          <span>🎯 Güvenli & Cilalanmış Mühendislik Speki</span>
+        </div>
+        <div class="step-badge">STAGE 2: SPEC</div>
+      </div>
+
+      <div class="refinement-result" id="refinement-box">
+        <div class="metrics-bar">
+          <div style="font-weight: 700; font-size: 1.1rem; color: #fff;" id="spec-title">Siber Güvenlik Savunma Merkezi</div>
+          <div class="score-badge" id="spec-safety">🛡️ %98 GÜVENLİ (Zero Injection)</div>
+        </div>
+
+        <div>
+          <label>Hedef Dosya Yolu:</label>
+          <input type="text" id="target-file" value="apps/cyber-defense/index.html">
+        </div>
+
+        <div>
+          <label>Gemma Tarafından Eklenen Güvenlik & UX Geliştirmeleri:</label>
+          <div class="tags-list" id="spec-tags">
+            <span class="tag-item">✔ Glassmorphism kartlar ve neon grid</span>
+            <span class="tag-item">✔ Canvas tabanlı interaktif threat radarı</span>
+            <span class="tag-item">✔ Gerçek zamanlı log simülasyonu</span>
+            <span class="tag-item">✔ Zero placeholder üretim standardı</span>
+          </div>
+        </div>
+
+        <div>
+          <label>Cilalanmış Nihai Prompt (Düzenlenebilir):</label>
+          <textarea id="refined-prompt" style="min-height: 120px;">Create a complete, modern cyber security command center dashboard in apps/cyber-defense/index.html with interactive radar canvas, live threat counter metrics, agent deployment status cards, and real-time security incident logs with dark neon styling.</textarea>
+        </div>
+      </div>
+
+      <!-- Stage 3: Launch Autonomous Engine -->
+      <button id="btn-build" class="btn btn-build" onclick="handleBuildStream()">
+        <span class="spinner" id="spinner-build"></span>
+        <span id="btn-build-text">⚡ Otonom İnşayı Başlat (Canlı Kod Akışıyla)</span>
+      </button>
+    </div>
+
+    <!-- Right Column: Live Pipeline Monitor & Preview -->
+    <div class="studio-panel">
+      <!-- Live Stepper Tracker -->
+      <div class="stepper-bar">
+        <div class="step-node" id="step-node-1"><span class="step-num">1</span> AST Harita</div>
+        <div class="step-line"></div>
+        <div class="step-node" id="step-node-2"><span class="step-num">2</span> Orion PRD</div>
+        <div class="step-line"></div>
+        <div class="step-node" id="step-node-3"><span class="step-num">3</span> Daedalus ADR</div>
+        <div class="step-line"></div>
+        <div class="step-node" id="step-node-4"><span class="step-num">4</span> Vulcan Plan</div>
+        <div class="step-line"></div>
+        <div class="step-node" id="step-node-5"><span class="step-num">5</span> Gemma Kod</div>
+        <div class="step-line"></div>
+        <div class="step-node" id="step-node-6"><span class="step-num">6</span> Aegis Kapı</div>
+      </div>
+
+      <div class="panel-header">
+        <div class="tabs-nav">
+          <button class="tab-btn active" id="tab-log-btn" onclick="switchTab('log')">📋 SDLC Günlüğü</button>
+          <button class="tab-btn" id="tab-code-btn" onclick="switchTab('code')">⚡ Canlı Kod Akışı (<span id="code-bytes">0 B</span>)</button>
+          <button class="tab-btn" id="tab-preview-btn" onclick="switchTab('preview')">👁️ Canlı Önizleme (Iframe)</button>
+        </div>
+        <div class="step-badge" id="pipeline-status">HAZIR</div>
+      </div>
+
+      <!-- Tab 1: Terminal Log Stream -->
+      <div class="tab-content active" id="tab-log">
+        <div class="terminal-box" id="terminal-output">
+[MetaFrame Studio] Hazır.
+Ollama Modeli: gemma4:12b (100% GPU VRAM)
+Deterministik Kapılar: 6 Kapı (TypeScript, Blast Radius, Token, Emoji, i18n, AST Health)
+Self-Healing Motoru: Devrede (Hatalar cerrahi olarak yamalanır)
+
+1. Sol taraftan kaba promptunuzu girin.
+2. "Gemma 12B ile Güvenli Hale Getir" butonuna basarak promptu cilalayın.
+3. "Otonom İnşayı Başlat" butonuyla adım adım canlı akışı ve kodların satır satır yazılışını izleyin!
+        </div>
+      </div>
+
+      <!-- Tab 2: Live Code Stream -->
+      <div class="tab-content" id="tab-code">
+        <div class="stream-meta">
+          <span id="stream-file-label">Hedef: Belirleniyor...</span>
+          <span id="stream-tokens-label">Gemma 12B Canlı Kod Sentezi</span>
+        </div>
+        <div class="code-stream-box" id="code-stream-output">// Kod üretimi başladığında Gemma 12B'nin yazdığı tüm satırlar burada anlık olarak akacaktır...</div>
+      </div>
+
+      <!-- Tab 3: Live App Preview -->
+      <div class="tab-content" id="tab-preview">
+        <div class="preview-container">
+          <div class="preview-toolbar">
+            <span class="preview-url" id="preview-url-text">http://localhost:5960/apps/retro-pc-wireframe/index.html</span>
+            <div>
+              <button class="nav-btn" onclick="reloadPreview()">🔄 Yenile</button>
+              <a id="preview-ext-link" href="/apps/retro-pc-wireframe/index.html" target="_blank" class="nav-btn" style="color: var(--neon-cyan);">🔗 Yeni Sekmede Aç</a>
+            </div>
+          </div>
+          <iframe id="preview-frame" src="/apps/retro-pc-wireframe/index.html"></iframe>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let accumulatedCode = '';
+
+    function setPreset(text) {
+      document.getElementById('raw-prompt').value = text;
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-log').classList.toggle('active', tab === 'log');
+      document.getElementById('tab-code').classList.toggle('active', tab === 'code');
+      document.getElementById('tab-preview').classList.toggle('active', tab === 'preview');
+      document.getElementById('tab-log-btn').classList.toggle('active', tab === 'log');
+      document.getElementById('tab-code-btn').classList.toggle('active', tab === 'code');
+      document.getElementById('tab-preview-btn').classList.toggle('active', tab === 'preview');
+    }
+
+    function reloadPreview() {
+      const frame = document.getElementById('preview-frame');
+      frame.src = frame.src;
+    }
+
+    function setStepNode(activeNum) {
+      for (let i = 1; i <= 6; i++) {
+        const el = document.getElementById(`step-node-${i}`);
+        if (!el) continue;
+        el.classList.remove('active', 'completed');
+        if (i < activeNum) el.classList.add('completed');
+        else if (i === activeNum) el.classList.add('active');
+      }
+    }
+
+    // Call /api/refine
+    async function handleRefine() {
+      const rawPrompt = document.getElementById('raw-prompt').value.trim();
+      if (!rawPrompt) return alert('Lütfen bir prompt girin.');
+
+      const btn = document.getElementById('btn-refine');
+      const text = document.getElementById('btn-refine-text');
+      const spinner = document.getElementById('spinner-refine');
+
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      text.innerText = 'Gemma 12B promptu inceliyor ve güvenliğini artırıyor...';
+
+      logTerminal(`\n[Gemma 12B Prompt Refiner] Ham istek analiz ediliyor:\n> "${rawPrompt}"`);
+
+      try {
+        const res = await fetch('/api/refine', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: rawPrompt })
+        });
+        const data = await res.json();
+
+        if (data.success && data.result) {
+          const r = data.result;
+          document.getElementById('spec-title').innerText = r.title || 'Geliştirilmiş Spek';
+          document.getElementById('spec-safety').innerText = `🛡️ %${r.safetyScore || 98} GÜVENLİ (${r.safetyVerdict || 'SAFE'})`;
+          document.getElementById('target-file').value = r.suggestedFile || 'apps/app/index.html';
+          document.getElementById('refined-prompt').value = r.refinedPrompt || rawPrompt;
+
+          const tagsContainer = document.getElementById('spec-tags');
+          tagsContainer.innerHTML = '';
+          (r.keyEnhancements || ['Tasarım ve mimari optimize edildi']).forEach(enh => {
+            const span = document.createElement('span');
+            span.className = 'tag-item';
+            span.innerText = '✔ ' + enh;
+            tagsContainer.appendChild(span);
+          });
+
+          logTerminal(`✔ Prompt optimize edildi ve güvenlik onayından geçti! (${r.safetyScore}% Güvenlik Skoru)`);
+          logTerminal(`  Önerilen Hedef: ${r.suggestedFile}`);
+        } else {
+          logTerminal(`⚠ Hata: ${data.error || 'Bilinmeyen hata'}`);
+        }
+      } catch (err) {
+        logTerminal(`✖ Bağlantı hatası: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        text.innerText = '🛡️ Gemma 12B ile Güvenli Hale Getir & Zenginleştir';
+      }
+    }
+
+    // Call /api/build-stream via EventSource for Real-Time Streaming
+    function handleBuildStream() {
+      const prompt = document.getElementById('refined-prompt').value.trim();
+      const targetFile = document.getElementById('target-file').value.trim();
+      if (!prompt) return alert('Lütfen bir prompt belirleyin.');
+
+      const btn = document.getElementById('btn-build');
+      const text = document.getElementById('btn-build-text');
+      const spinner = document.getElementById('spinner-build');
+      const statusBadge = document.getElementById('pipeline-status');
+
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      text.innerText = 'Canlı Kodlama Sürüyor...';
+      statusBadge.innerText = 'ÜRETİMDE';
+      statusBadge.style.color = 'var(--neon-yellow)';
+
+      accumulatedCode = '';
+      document.getElementById('code-stream-output').innerText = '';
+      document.getElementById('code-bytes').innerText = '0 B';
+      document.getElementById('stream-file-label').innerText = `Hedef: ${targetFile}`;
+
+      setStepNode(1);
+      switchTab('code'); // Switch to live code stream to watch Gemma type!
+
+      logTerminal(`\n\x1b[35m=== METAFRAME REAL-TIME STREAMING INITIATED ===\x1b[0m`);
+      logTerminal(`Hedef: ${targetFile}`);
+      logTerminal(`Model: gemma4:12b (Ollama 100% GPU)`);
+
+      const url = `/api/build-stream?prompt=${encodeURIComponent(prompt)}&targetFile=${encodeURIComponent(targetFile)}`;
+      const eventSource = new EventSource(url);
+
+      eventSource.onmessage = (e) => {
+        try {
+          const ev = JSON.parse(e.data);
+
+          if (ev.type === 'phase') {
+            setStepNode(ev.phase);
+            logTerminal(`\n[Aşama ${ev.phase}] ${ev.message}`);
+          } else if (ev.type === 'prd_complete') {
+            logTerminal(`✔ PRD Hazırlandı: ${ev.prd.id} ("${ev.prd.title}")`);
+          } else if (ev.type === 'adr_complete') {
+            logTerminal(`✔ ADR Kararı Alındı: ${ev.adr.id} (Risk: ${ev.adr.blastRadiusRisk})`);
+          } else if (ev.type === 'plan_complete') {
+            logTerminal(`✔ Vulcan Planı: ${ev.plan.id} (${ev.plan.steps.length} adım)`);
+          } else if (ev.type === 'code_token') {
+            // Live code stream typing!
+            accumulatedCode += ev.token;
+            const codeBox = document.getElementById('code-stream-output');
+            codeBox.innerText = accumulatedCode;
+            codeBox.scrollTop = codeBox.scrollHeight;
+            document.getElementById('code-bytes').innerText = `${accumulatedCode.length} B`;
+          } else if (ev.type === 'code_complete') {
+            logTerminal(`\n✔ Gemma 12B kod yazımını tamamladı! Dosya diske yazıldı.`);
+          } else if (ev.type === 'gate_result') {
+            const icon = ev.gate.passed ? '✔ PASS' : '✖ FAIL';
+            logTerminal(`  ${icon} ${ev.gate.gateName} (${ev.gate.durationMs}ms)`);
+          } else if (ev.type === 'self_heal_start') {
+            logTerminal(`\n⚠ [Self-Healing] Kapı ihlali tespit edildi! Gemma 4 cerrahi yamayı hazırlıyor...`);
+          } else if (ev.type === 'self_heal_success') {
+            logTerminal(`✨ [Self-Healing] Cerrahi yama başarıyla uygulandı ve tüm kapılardan geçti!`);
+          } else if (ev.type === 'finish' || ev.type === 'done') {
+            eventSource.close();
+            btn.disabled = false;
+            spinner.style.display = 'none';
+            text.innerText = '⚡ Otonom İnşayı Başlat (Canlı Kod Akışıyla)';
+            statusBadge.innerText = 'BAŞARILI';
+            statusBadge.style.color = 'var(--neon-green)';
+            setStepNode(6);
+
+            logTerminal(`\n\x1b[32m🎉 OTONOM SÜREÇ BAŞARIYLA TAMAMLANDI!\x1b[0m`);
+
+            // Update iframe preview
+            const previewPath = `/${targetFile}`;
+            document.getElementById('preview-frame').src = previewPath;
+            document.getElementById('preview-url-text').innerText = `http://localhost:5960${previewPath}`;
+            document.getElementById('preview-ext-link').href = previewPath;
+
+            // Switch to preview tab after short delay
+            setTimeout(() => {
+              switchTab('preview');
+            }, 1200);
+          } else if (ev.type === 'error') {
+            logTerminal(`\n✖ Hata: ${ev.error}`);
+            eventSource.close();
+            btn.disabled = false;
+            spinner.style.display = 'none';
+            text.innerText = '⚡ Otonom İnşayı Başlat (Canlı Kod Akışıyla)';
+            statusBadge.innerText = 'HATA';
+            statusBadge.style.color = 'var(--neon-pink)';
+          }
+        } catch (err) {
+          console.error("SSE parse error", err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.warn("EventSource closed or ended");
+        eventSource.close();
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        text.innerText = '⚡ Otonom İnşayı Başlat (Canlı Kod Akışıyla)';
+      };
+    }
+
+    function logTerminal(msg) {
+      const term = document.getElementById('terminal-output');
+      term.innerText += '\n' + msg;
+      term.scrollTop = term.scrollHeight;
+    }
+  </script>
+</body>
+</html>

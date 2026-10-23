@@ -1,0 +1,40 @@
+{
+  "file": "mini-meta-cli/history.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 56,
+    "jsx": false,
+    "imports": 1,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "mini-meta-cli/types.ts modülünü içe aktaran bir dosyadır."
+  },
+  "graph": {
+    "dependencies": [
+      "mini-meta-cli/types.ts"
+    ],
+    "calls": [
+      "push",
+      "trim",
+      "slice",
+      "splice"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "f650861a-b403-478d-ad92-a2c7d3deef39",
+    "fileHash": "cc8a451f3f3bcbb090c1faed8316c9c2",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358356425
+}

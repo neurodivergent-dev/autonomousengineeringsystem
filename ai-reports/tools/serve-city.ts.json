@@ -1,0 +1,40 @@
+{
+  "file": "tools/serve-city.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 52,
+    "jsx": false,
+    "imports": 1,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "Path modülünü kullanarak servis işlemleri gerçekleştirir."
+  },
+  "graph": {
+    "dependencies": [
+      "path"
+    ],
+    "calls": [
+      "join",
+      "serve",
+      "file",
+      "log"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "77c7b93f-4056-40b0-b508-e0c1e5301fa4",
+    "fileHash": "ce271f16711ddf29a3024c0a4632c396",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792363563893
+}

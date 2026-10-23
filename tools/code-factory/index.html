@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetaFrame // Cyber-Industrial Code Factory (Factorio AST)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #040711;
+      color: #00F0FF;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    /* Top Command Header */
+    .topbar {
+      position: absolute; top: 16px; left: 20px; right: 20px; height: 68px;
+      background: rgba(8, 12, 22, 0.92); backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 4px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; z-index: 10;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
+      border-left: 4px solid #F59E0B;
+    }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .brand-icon {
+      font-size: 24px; background: rgba(245, 158, 11, 0.15); border: 1px solid #F59E0B;
+      padding: 6px 10px; border-radius: 4px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    }
+    .brand-title h1 {
+      font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 900;
+      color: #FFF; letter-spacing: 1.5px;
+    }
+    .brand-title p { font-size: 9.5px; color: #94A3B8; letter-spacing: 0.5px; }
+
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .factory-btn {
+      background: rgba(0, 240, 255, 0.08); border: 1px solid #00F0FF;
+      color: #00F0FF; padding: 8px 14px; font-family: 'Orbitron', sans-serif;
+      font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+      letter-spacing: 1px; transition: all 0.2s; border-radius: 3px; display: flex; align-items: center; gap: 6px;
+      text-decoration: none;
+    }
+    .factory-btn:hover { background: #00F0FF; color: #000; box-shadow: 0 0 20px #00F0FF; transform: translateY(-1px); }
+    .factory-btn.amber { border-color: #F59E0B; color: #F59E0B; background: rgba(245, 158, 11, 0.12); }
+    .factory-btn.amber:hover { background: #F59E0B; color: #000; box-shadow: 0 0 20px #F59E0B; }
+    .factory-btn.danger { border-color: #FF0055; color: #FF0055; background: rgba(255, 0, 85, 0.12); }
+    .factory-btn.danger:hover { background: #FF0055; color: #FFF; box-shadow: 0 0 20px #FF0055; }
+    .factory-btn.emerald { border-color: #10B981; color: #10B981; background: rgba(16, 185, 129, 0.12); }
+    .factory-btn.emerald:hover { background: #10B981; color: #000; box-shadow: 0 0 20px #10B981; }
+
+    /* Left Factory Telemetry Panel */
+    .telemetry-panel {
+      position: absolute; left: 20px; top: 100px; width: 310px;
+      background: rgba(8, 12, 22, 0.94); backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 4px; padding: 16px;
+      z-index: 10; display: flex; flex-direction: column; gap: 12px;
+      box-shadow: 0 0 35px rgba(0,0,0,0.8);
+    }
+    .panel-header {
+      font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 800;
+      color: #F59E0B; letter-spacing: 1.5px; border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+      padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .stat-label { font-size: 10px; color: #94A3B8; }
+    .stat-val { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 800; color: #FFF; }
+    .stat-val.gold { color: #F59E0B; text-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+    .stat-val.green { color: #10B981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+
+    /* Right Factory Log & Assembly Stages */
+    .assembly-panel {
+      position: absolute; right: 20px; top: 100px; width: 330px;
+      background: rgba(8, 12, 22, 0.94); backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 4px; padding: 16px;
+      z-index: 10; display: flex; flex-direction: column; gap: 10px;
+      box-shadow: 0 0 35px rgba(0,0,0,0.8);
+    }
+    .station-card {
+      background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(0, 240, 255, 0.2);
+      padding: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 4px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .station-card:hover { border-color: #00F0FF; background: rgba(0, 240, 255, 0.08); transform: translateX(-3px); }
+    .station-card.active { border-color: #10B981; background: rgba(16, 185, 129, 0.12); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+    .station-title { font-family: 'Orbitron', sans-serif; font-size: 10.5px; font-weight: 800; color: #FFF; display: flex; justify-content: space-between; }
+    .station-sub { font-size: 9px; color: #64748B; }
+
+    /* Bottom Control Bar */
+    .control-deck {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(8, 12, 22, 0.94); backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 6px;
+      padding: 12px 24px; z-index: 10; display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+    }
+    .speed-pill {
+      display: flex; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 4px; overflow: hidden;
+    }
+    .speed-btn {
+      background: none; border: none; color: #94A3B8; padding: 6px 12px; font-family: 'Orbitron', sans-serif;
+      font-size: 10px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+    }
+    .speed-btn.active { background: #00F0FF; color: #000; box-shadow: 0 0 15px #00F0FF; }
+
+    /* Interactive Hologram Callout for Selected Machine */
+    .machine-callout {
+      position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%);
+      background: rgba(8, 12, 22, 0.95); backdrop-filter: blur(20px);
+      border: 1px solid #10B981; border-radius: 4px; padding: 10px 20px;
+      display: none; align-items: center; gap: 16px; z-index: 15;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Top Command Bar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🏭</div>
+      <div class="brand-title">
+        <h1>METAFRAME CYBER-INDUSTRIAL CODE FACTORY</h1>
+        <p>CONTINUOUS AST AUTOMATION // FACTORIO CONVEYOR PIPELINE</p>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="factory-btn emerald" onclick="injectBatch()">
+        <span>⚡</span> <span>Inject Code Batch</span>
+      </button>
+      <button class="factory-btn danger" onclick="injectCorruptDefect()">
+        <span>🚨</span> <span>Inject AST Defect</span>
+      </button>
+      <button class="factory-btn amber" onclick="triggerStressTest()">
+        <span>🔥</span> <span>Bottleneck Stress Test</span>
+      </button>
+      <a href="/portal" class="factory-btn" style="border-color: #00A2FF; color: #00A2FF; background: rgba(0, 162, 255, 0.15);"><span>🌀</span> <span>PORTAL GUN</span></a>
+      <a href="/workforce" class="factory-btn"><span>🤖</span> <span>Workforce</span></a>
+      <a href="/city" class="factory-btn"><span>🌆</span> <span>City</span></a>
+      <button class="factory-btn" id="audio-btn" onclick="toggleFactoryAudio()">
+        <span>🔊</span> <span id="audio-lbl">Audio: ON</span>
+      </button>
+      <button class="factory-btn" onclick="resetFactoryCam()">
+        <span>🎯</span> <span>Reset Cam</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Left Factory Telemetry Panel -->
+  <div class="telemetry-panel">
+    <div class="panel-header">
+      <span>// FACTORY METRICS</span>
+      <span style="color: #10B981;">OPERATIONAL</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-label">AST Throughput</span>
+      <span class="stat-val gold" id="metric-throughput">240 Nodes/min</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Assembly Yield</span>
+      <span class="stat-val green" id="metric-yield">100.0% (0 Bugs)</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Conveyor Speed</span>
+      <span class="stat-val" id="metric-speed">1.0x Nominal</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Pipeline Latency</span>
+      <span class="stat-val" id="metric-latency">0.6 ms (AST Native)</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Token Cost</span>
+      <span class="stat-val green">$0.00 (Zero-LLM AST)</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Cargo Containers Shipped</span>
+      <span class="stat-val gold" id="metric-shipped">14 Pods</span>
+    </div>
+  </div>
+
+  <!-- Right Assembly Stations Panel -->
+  <div class="assembly-panel">
+    <div class="panel-header">
+      <span>// ASSEMBLY STATIONS</span>
+      <span style="color: #00F0FF;">4 ACTIVE HUBS</span>
+    </div>
+
+    <div class="station-card active" onclick="focusMachine('intake')">
+      <div class="station-title">
+        <span>1. ORION INTAKE GANTRY</span>
+        <span style="color: #10B981;">FEEDING</span>
+      </div>
+      <div class="station-sub">Raw Tokens ➔ AST Lexer Hopper</div>
+    </div>
+
+    <div class="station-card" onclick="focusMachine('blueprint')">
+      <div class="station-title">
+        <span>2. DAEDALUS CAD FABRICATOR</span>
+        <span style="color: #3B82F6;">ROUTING</span>
+      </div>
+      <div class="station-sub">Interface Contract Framing & Splitter</div>
+    </div>
+
+    <div class="station-card" onclick="focusMachine('stamp')">
+      <div class="station-title">
+        <span>3. VULCAN HYDRAULIC STAMP</span>
+        <span style="color: #F59E0B;">STAMPING</span>
+      </div>
+      <div class="station-sub">Twin Plasma Hydraulic Code Welder</div>
+    </div>
+
+    <div class="station-card" onclick="focusMachine('qc')">
+      <div class="station-title">
+        <span>4. AEGIS 6-GATE QC SORTER</span>
+        <span style="color: #EC4899;">SCANNING</span>
+      </div>
+      <div class="station-sub">Laser Defect Sorter & Scrap Kicker</div>
+    </div>
+  </div>
+
+  <!-- Bottom Control Deck -->
+  <div class="control-deck">
+    <span style="font-size: 11px; font-weight: 800; color: #94A3B8;">CONVEYOR OVERDRIVE:</span>
+    <div class="speed-pill">
+      <button class="speed-btn active" id="spd-1" onclick="setSpeed(1)">1X</button>
+      <button class="speed-btn" id="spd-2" onclick="setSpeed(2)">2X</button>
+      <button class="speed-btn" id="spd-4" onclick="setSpeed(4)">4X TURBO</button>
+    </div>
+    <span style="height: 20px; width: 1px; background: rgba(0, 240, 255, 0.3);"></span>
+    <button class="factory-btn emerald" onclick="injectBatch()">
+      <span>📦</span> <span>Spawn 5 Crates</span>
+    </button>
+    <button class="factory-btn danger" onclick="injectCorruptDefect()">
+      <span>🚯</span> <span>Test Defect Rejection</span>
+    </button>
+  </div>
+
+  <!-- Machine Interactive Callout Banner -->
+  <div class="machine-callout" id="machine-callout">
+    <span style="color: #10B981; font-weight: 800;" id="callout-title">● VULCAN HYDRAULIC STAMP</span>
+    <span style="color: #FFF;" id="callout-desc">Operating at 140 strokes/min. Cognitive complexity: 4 (Nominal).</span>
+  </div>
+
+  <script>
+    // ==========================================
+    // 🎵 PROCEDURAL INDUSTRIAL SOUND GENERATOR
+    // ==========================================
+    let audioCtx = null;
+    let audioEnabled = true;
+
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        startConveyorHum();
+      } catch(e) {}
+    }
+
+    function toggleFactoryAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audio-lbl').innerText = audioEnabled ? 'Audio: ON' : 'Audio: OFF';
+    }
+
+    // Heavy Hydraulic Stamp Piston: Deep metal thud + metallic ring
+    function playHydraulicStamp() {
+      if (!audioEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(35, audioCtx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.24);
+
+        // Metal Piston Air Hiss
+        setTimeout(() => {
+          const noiseOsc = audioCtx.createOscillator();
+          const noiseGain = audioCtx.createGain();
+          noiseOsc.type = 'square';
+          noiseOsc.frequency.setValueAtTime(400, audioCtx.currentTime);
+          noiseGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+          noiseOsc.connect(noiseGain);
+          noiseGain.connect(audioCtx.destination);
+          noiseOsc.start();
+          noiseOsc.stop(audioCtx.currentTime + 0.16);
+        }, 120);
+      } catch(e) {}
+    }
+
+    // Laser QC Scanner Chime
+    function playQCLaserPass() {
+      if (!audioEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      } catch(e) {}
+    }
+
+    // Defect Rejection Kicker Siren / Buzz
+    function playDefectRejectSound() {
+      if (!audioEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.32);
+      } catch(e) {}
+    }
+
+    // Continuous Sub-bass Conveyor Motor Hum
+    function startConveyorHum() {
+      try {
+        const humOsc = audioCtx.createOscillator();
+        const humGain = audioCtx.createGain();
+        humOsc.type = 'sine';
+        humOsc.frequency.setValueAtTime(60, audioCtx.currentTime);
+        humGain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+        humOsc.connect(humGain);
+        humGain.connect(audioCtx.destination);
+        humOsc.start();
+      } catch(e) {}
+    }
+
+    // ==========================================
+    // 🏭 THREE.JS FACTORY SCENE SETUP
+    // ==========================================
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x040711, 0.008);
+
+    // Classic Factorio Ortho/Isometric Cam Setup
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(38, 34, 42);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2.1;
+    controls.target.set(0, 1.5, 0);
+
+    // Lighting
+    const ambLight = new THREE.AmbientLight(0x0f172a, 1.8);
+    scene.add(ambLight);
+
+    const mainKeyLight = new THREE.DirectionalLight(0xF59E0B, 1.6);
+    mainKeyLight.position.set(30, 45, 20);
+    mainKeyLight.castShadow = true;
+    mainKeyLight.shadow.mapSize.width = 2048;
+    mainKeyLight.shadow.mapSize.height = 2048;
+    scene.add(mainKeyLight);
+
+    const cyanRimLight = new THREE.DirectionalLight(0x00F0FF, 1.2);
+    cyanRimLight.position.set(-30, 35, -25);
+    scene.add(cyanRimLight);
+
+    // ==========================================
+    // 🧱 INDUSTRIAL FLOOR & HAZARD STRIPES
+    // ==========================================
+    const floorGeo = new THREE.PlaneGeometry(90, 70);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x070b16,
+      roughness: 0.6,
+      metalness: 0.8
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Yellow/Black Hazard Border Grid
+    const gridHelper = new THREE.GridHelper(90, 45, 0xF59E0B, 0x1e293b);
+    gridHelper.position.y = 0.02;
+    scene.add(gridHelper);
+
+    // ==========================================
+    // 🛤️ MODULAR CONVEYOR BELT NETWORK
+    // ==========================================
+    const conveyorGroup = new THREE.Group();
+    scene.add(conveyorGroup);
+
+    // Waypoints for the automated S-curve conveyor loop:
+    // Path: Intake (-22, -8) -> Blueprint Router (-8, -8) -> Vulcan Stamp (6, -8) -> QC Laser (20, -8) -> Split to Cargo (20, 12)
+    const conveyorPoints = [
+      new THREE.Vector3(-24, 0.4, -8),
+      new THREE.Vector3(-8, 0.4, -8),
+      new THREE.Vector3(6, 0.4, -8),
+      new THREE.Vector3(20, 0.4, -8),
+      new THREE.Vector3(20, 0.4, 8),
+      new THREE.Vector3(-6, 0.4, 8),
+      new THREE.Vector3(-6, 0.4, -8)
+    ];
+
+    // Build physical conveyor rails
+    function buildConveyorLeg(p1, p2) {
+      const dir = new THREE.Vector3().subVectors(p2, p1);
+      const len = dir.length();
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+
+      const beltGeo = new THREE.BoxGeometry(1.6, 0.25, len);
+      const beltMat = new THREE.MeshStandardMaterial({ color: 0x181e2b, roughness: 0.5, metalness: 0.9 });
+      const belt = new THREE.Mesh(beltGeo, beltMat);
+      belt.position.copy(mid);
+      belt.lookAt(p2);
+      conveyorGroup.add(belt);
+
+      // Yellow neon side guide rails
+      [-0.85, 0.85].forEach(sideX => {
+        const railGeo = new THREE.BoxGeometry(0.08, 0.2, len);
+        const railMat = new THREE.MeshBasicMaterial({ color: 0xF59E0B });
+        const rail = new THREE.Mesh(railGeo, railMat);
+        rail.position.set(sideX, 0.15, 0);
+        belt.add(rail);
+      });
+    }
+
+    buildConveyorLeg(conveyorPoints[0], conveyorPoints[1]);
+    buildConveyorLeg(conveyorPoints[1], conveyorPoints[2]);
+    buildConveyorLeg(conveyorPoints[2], conveyorPoints[3]);
+    buildConveyorLeg(conveyorPoints[3], conveyorPoints[4]);
+    buildConveyorLeg(conveyorPoints[4], conveyorPoints[5]);
+
+    // ==========================================
+    // ⚙️ 4 AUTOMATED FACTORY STATIONS & AGENTS
+    // ==========================================
+
+    // 1. ORION INTAKE GANTRY (Feeds raw AST crates from inventory)
+    const orionStation = new THREE.Group();
+    orionStation.position.set(-24, 0, -8);
+    scene.add(orionStation);
+
+    // Gantry tower frame
+    const gantryFrameGeo = new THREE.BoxGeometry(3.5, 7.0, 3.5);
+    const gantryFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, wireframe: false });
+    const gantryTower = new THREE.Mesh(gantryFrameGeo, gantryFrameMat);
+    gantryTower.position.y = 3.5;
+    orionStation.add(gantryTower);
+
+    // Orion scanner dome on top
+    const orionDome = new THREE.Mesh(
+      new THREE.SphereGeometry(0.9, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0x10B981, emissive: 0x10B981, emissiveIntensity: 0.85 })
+    );
+    orionDome.position.y = 7.4;
+    orionStation.add(orionDome);
+
+    const orionLight = new THREE.PointLight(0x10B981, 4, 12);
+    orionLight.position.y = 7.5;
+    orionStation.add(orionLight);
+
+    // 2. DAEDALUS CAD FABRICATOR (Center Blueprint Router)
+    const daedalusStation = new THREE.Group();
+    daedalusStation.position.set(-8, 0, -8);
+    scene.add(daedalusStation);
+
+    const routerBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.6, 2.0, 8),
+      new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.9, roughness: 0.2 })
+    );
+    routerBase.position.y = 1.0;
+    daedalusStation.add(routerBase);
+
+    // Levitating Hologram Core
+    const holoCore = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.9, 0),
+      new THREE.MeshStandardMaterial({ color: 0x00F0FF, emissive: 0x00F0FF, emissiveIntensity: 1.2, wireframe: true })
+    );
+    holoCore.position.y = 3.2;
+    daedalusStation.add(holoCore);
+
+    const daedalusLight = new THREE.PointLight(0x00F0FF, 5, 14);
+    daedalusLight.position.y = 3.2;
+    daedalusStation.add(daedalusLight);
+
+    // 3. VULCAN HYDRAULIC CODE STAMP (Heavy Pneumatic Hammer)
+    const vulcanStation = new THREE.Group();
+    vulcanStation.position.set(6, 0, -8);
+    scene.add(vulcanStation);
+
+    // Heavy Industrial Arch Housing
+    const archMat = new THREE.MeshStandardMaterial({ color: 0x1e2433, metalness: 0.9, roughness: 0.3 });
+    const archPillarL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 7.5, 1.6), archMat);
+    const archPillarR = new THREE.Mesh(new THREE.BoxGeometry(1.2, 7.5, 1.6), archMat);
+    archPillarL.position.set(-1.8, 3.75, 0);
+    archPillarR.position.set(1.8, 3.75, 0);
+    vulcanStation.add(archPillarL);
+    vulcanStation.add(archPillarR);
+
+    const archTop = new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.4, 2.0), archMat);
+    archTop.position.y = 7.6;
+    vulcanStation.add(archTop);
+
+    // Vulcan's Warning Hazard Yellow Beacon
+    const vulcanBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.3, 0.5, 12),
+      new THREE.MeshStandardMaterial({ color: 0xF59E0B, emissive: 0xF59E0B, emissiveIntensity: 2.5 })
+    );
+    vulcanBeacon.position.set(0, 8.5, 0);
+    vulcanStation.add(vulcanBeacon);
+
+    // Moving Hydraulic Piston Hammer Head
+    const pistonShaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.3, 3.5, 12),
+      new THREE.MeshStandardMaterial({ color: 0x94A3B8, metalness: 0.95, roughness: 0.1 })
+    );
+    pistonShaft.position.y = 5.2;
+    vulcanStation.add(pistonShaft);
+
+    const hammerHead = new THREE.Mesh(
+      new THREE.BoxGeometry(2.0, 1.0, 1.8),
+      new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.8, emissive: 0xF59E0B, emissiveIntensity: 0.4 })
+    );
+    hammerHead.position.y = 3.0;
+    vulcanStation.add(hammerHead);
+    vulcanStation.userData = { hammerHead, pistonShaft };
+
+    const vulcanLight = new THREE.PointLight(0xF59E0B, 5, 15);
+    vulcanLight.position.set(0, 3.0, 1.5);
+    vulcanStation.add(vulcanLight);
+
+    // 4. AEGIS 6-GATE QC SCANNER (Laser Gantry & Rejection Chute)
+    const aegisStation = new THREE.Group();
+    aegisStation.position.set(20, 0, -8);
+    scene.add(aegisStation);
+
+    // Tunnel Housing
+    const tunnelGeo = new THREE.BoxGeometry(3.0, 4.0, 4.0);
+    const tunnelMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.9 });
+    const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
+    tunnel.position.y = 2.0;
+    aegisStation.add(tunnel);
+
+    // Volumetric Laser Curtain
+    const laserMat = new THREE.MeshBasicMaterial({ color: 0x10B981, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+    const laserCurtain = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 3.2), laserMat);
+    laserCurtain.position.set(0, 1.8, 0);
+    aegisStation.add(laserCurtain);
+    aegisStation.userData = { laserCurtain, laserMat };
+
+    // Defect Scrap Rejection Bin (Side chute)
+    const chuteMat = new THREE.MeshStandardMaterial({ color: 0x450a0a, metalness: 0.8 });
+    const chute = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.5, 2.0), chuteMat);
+    chute.position.set(0, 0.75, -3.5);
+    aegisStation.add(chute);
+
+    // 5. CARGO POD LOADING DOCK (End of line)
+    const cargoStation = new THREE.Group();
+    cargoStation.position.set(-6, 0, 8);
+    scene.add(cargoStation);
+
+    const cargoPodGeo = new THREE.BoxGeometry(5.0, 4.0, 7.0);
+    const cargoPodMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, metalness: 0.85, roughness: 0.2 });
+    const cargoPod = new THREE.Mesh(cargoPodGeo, cargoPodMat);
+    cargoPod.position.y = 2.0;
+    cargoStation.add(cargoPod);
+
+    // ==========================================
+    // 📦 CODE PACKAGES (CRATES ON CONVEYOR)
+    // ==========================================
+    const activeCrates = [];
+    let cratesShipped = 14;
+    let factorySpeed = 1.0;
+
+    function createCodeCrate(isCorrupt = false) {
+      const g = new THREE.Group();
+      const crateGeo = new THREE.BoxGeometry(1.0, 0.9, 1.0);
+      const crateMat = new THREE.MeshStandardMaterial({
+        color: isCorrupt ? 0xFF0055 : 0x00F0FF,
+        emissive: isCorrupt ? 0xFF0055 : 0x00F0FF,
+        emissiveIntensity: 0.65,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+      const mesh = new THREE.Mesh(crateGeo, crateMat);
+      mesh.position.y = 0.5;
+      mesh.castShadow = true;
+      g.add(mesh);
+
+      g.position.copy(conveyorPoints[0]);
+      g.userData = {
+        progress: 0,
+        stage: 0,
+        isCorrupt: isCorrupt,
+        stamped: false,
+        verified: false,
+        mesh: mesh
+      };
+
+      scene.add(g);
+      activeCrates.push(g);
+    }
+
+    function injectBatch() {
+      initAudio();
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => createCodeCrate(false), i * 700);
+      }
+    }
+
+    function injectCorruptDefect() {
+      initAudio();
+      createCodeCrate(true);
+      showCallout('🚨 CORRUPT AST DEFECT INJECTED', 'Aegis QC Laser will scan and kick it into scrap chute!');
+    }
+
+    function triggerStressTest() {
+      initAudio();
+      setSpeed(4);
+      for (let i = 0; i < 12; i++) {
+        setTimeout(() => createCodeCrate(i % 4 === 0), i * 350);
+      }
+      showCallout('🔥 BOTTLENECK STRESS TEST ACTIVE', 'Overclocking lines to 4x! Watching hydraulic welder & QC.');
+    }
+
+    function setSpeed(spd) {
+      factorySpeed = spd;
+      [1, 2, 4].forEach(s => {
+        const btn = document.getElementById(`spd-${s}`);
+        if (s === spd) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+      document.getElementById('metric-speed').innerText = `${spd}.0x Overdrive`;
+      document.getElementById('metric-throughput').innerText = `${Math.floor(240 * spd)} Nodes/min`;
+    }
+
+    // ==========================================
+    // 💥 HYDRAULIC STAMP & QC LOGIC
+    // ==========================================
+    let isStamping = false;
+    function triggerHammerDrop() {
+      if (isStamping) return;
+      isStamping = true;
+      playHydraulicStamp();
+
+      const hammer = vulcanStation.userData.hammerHead;
+      const shaft = vulcanStation.userData.pistonShaft;
+
+      new TWEEN.Tween(hammer.position)
+        .to({ y: 1.1 }, 90)
+        .easing(TWEEN.Easing.Quadratic.In)
+        .onComplete(() => {
+          // Camera micro-shake
+          camera.position.y -= 0.15;
+          setTimeout(() => { camera.position.y += 0.15; }, 40);
+
+          new TWEEN.Tween(hammer.position)
+            .to({ y: 3.0 }, 240)
+            .easing(TWEEN.Easing.Cubic.Out)
+            .onComplete(() => { isStamping = false; })
+            .start();
+        })
+        .start();
+    }
+
+    function showCallout(title, desc) {
+      const co = document.getElementById('machine-callout');
+      document.getElementById('callout-title').innerText = title;
+      document.getElementById('callout-desc').innerText = desc;
+      co.style.display = 'flex';
+      setTimeout(() => { co.style.display = 'none'; }, 4000);
+    }
+
+    function focusMachine(type) {
+      let target = new THREE.Vector3(0, 2, 0);
+      if (type === 'intake') {
+        target.copy(orionStation.position);
+        showCallout('🛰️ ORION INTAKE GANTRY', 'Raw TypeScript Tokens Hopper. High-speed AST parsing.');
+      } else if (type === 'blueprint') {
+        target.copy(daedalusStation.position);
+        showCallout('🏛️ DAEDALUS CAD FABRICATOR', 'Interface Contract Framing. 0.2ms zero-copy serialization.');
+      } else if (type === 'stamp') {
+        target.copy(vulcanStation.position);
+        showCallout('⚡ VULCAN HYDRAULIC STAMP', '140 Strokes/min code stamping. Fuses functions into AST blocks.');
+      } else if (type === 'qc') {
+        target.copy(aegisStation.position);
+        showCallout('🛡️ AEGIS 6-GATE QC SORTER', 'Real-time TSC 0-error laser check & blast-radius boundary audit.');
+      }
+      new TWEEN.Tween(controls.target).to({ x: target.x, y: target.y + 1, z: target.z }, 800).start();
+      new TWEEN.Tween(camera.position).to({ x: target.x + 12, y: target.y + 14, z: target.z + 16 }, 800).start();
+    }
+
+    function resetFactoryCam() {
+      new TWEEN.Tween(camera.position).to({ x: 38, y: 34, z: 42 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+      new TWEEN.Tween(controls.target).to({ x: 0, y: 1.5, z: 0 }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+    }
+
+    // ==========================================
+    // 🔄 MAIN SIMULATION & CONVEYOR LOOP
+    // ==========================================
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+      TWEEN.update();
+      controls.update();
+
+      // Spin Daedalus Hologram Core
+      holoCore.rotation.y += 0.03;
+      holoCore.rotation.x += 0.015;
+
+      // Pulse Orion Scanner Dome
+      orionDome.scale.setScalar(1 + Math.sin(time * 4) * 0.05);
+
+      // Spin Vulcan Beacon
+      vulcanBeacon.rotation.y += 0.08;
+
+      // Update Crates along conveyor
+      const step = 8.5 * delta * factorySpeed;
+      for (let i = activeCrates.length - 1; i >= 0; i--) {
+        const crate = activeCrates[i];
+        crate.userData.progress += step;
+
+        const curStage = crate.userData.stage;
+        if (curStage < conveyorPoints.length - 1) {
+          const pStart = conveyorPoints[curStage];
+          const pEnd = conveyorPoints[curStage + 1];
+          const dist = pStart.distanceTo(pEnd);
+
+          const alpha = Math.min(1.0, crate.userData.progress / dist);
+          crate.position.lerpVectors(pStart, pEnd, alpha);
+
+          // Machine interaction triggers:
+          // Near Vulcan Stamp (x ~ 6, z ~ -8)
+          if (curStage === 1 && alpha > 0.45 && !crate.userData.stamped) {
+            crate.userData.stamped = true;
+            triggerHammerDrop();
+            // Turn crate golden if normal
+            if (!crate.userData.isCorrupt) {
+              crate.userData.mesh.material.color.setHex(0xF59E0B);
+              crate.userData.mesh.material.emissive.setHex(0xF59E0B);
+            }
+          }
+
+          // Near Aegis QC Scanner (x ~ 20, z ~ -8)
+          if (curStage === 2 && alpha > 0.45 && !crate.userData.verified) {
+            crate.userData.verified = true;
+            if (crate.userData.isCorrupt) {
+              // REJECT DEFECT!
+              playDefectRejectSound();
+              aegisStation.userData.laserMat.color.setHex(0xFF0055);
+              setTimeout(() => aegisStation.userData.laserMat.color.setHex(0x10B981), 600);
+
+              // Kick crate into scrap chute
+              new TWEEN.Tween(crate.position)
+                .to({ z: -11.5, y: 0.2 }, 350)
+                .easing(TWEEN.Easing.Quadratic.In)
+                .onComplete(() => {
+                  scene.remove(crate);
+                  activeCrates.splice(i, 1);
+                })
+                .start();
+              continue;
+            } else {
+              // PASS QC!
+              playQCLaserPass();
+              crate.userData.mesh.material.color.setHex(0x10B981);
+              crate.userData.mesh.material.emissive.setHex(0x10B981);
+            }
+          }
+
+          if (alpha >= 1.0) {
+            crate.userData.stage++;
+            crate.userData.progress = 0;
+          }
+        } else {
+          // Reached Cargo Loading Dock!
+          cratesShipped++;
+          document.getElementById('metric-shipped').innerText = `${cratesShipped} Pods`;
+          scene.remove(crate);
+          activeCrates.splice(i, 1);
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Auto spawn initial batch
+    setTimeout(injectBatch, 1000);
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

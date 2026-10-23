@@ -1,0 +1,33 @@
+{
+  "id": "ADR-7111",
+  "prdRef": "PRD-3532",
+  "title": "Architectural approach for Interactive 3D Cyber-Grid Retro-Tech Landing Page",
+  "status": "ACCEPTED",
+  "context": "The project requires a high-fidelity 3D environment featuring a wireframe model with specific aesthetic effects (neon glow, glitching, and scanlines). To achieve this while maintaining performance and scalability, a robust 3D engine is required to handle the scene graph, animation loops, and custom shader effects.",
+  "decision": "Utilize Three.js as the primary 3D engine to render the wireframe model and handle the Y-axis rotation. Implement custom GLSL shaders for the 'Cyber-Grid' neon effects and the 'glitch' logic to ensure high performance. The UI components (Glassmorphic Navigation and System Status) will be implemented as a separate DOM/CSS layer overlaid on the canvas to ensure UI responsiveness and ease of styling.",
+  "alternativesConsidered": [
+    "Vanilla WebGL: Rejected due to high complexity and significant development overhead for basic 3D geometry and lighting.",
+    "Spline/Babylon.js: Rejected because Three.js offers the most mature ecosystem for custom shader passes required for the specific 'glitch' and 'scanline' requirements."
+  ],
+  "consequences": {
+    "positive": [
+      "High-performance 3D rendering with smooth rotation.",
+      "Modular shader implementation allows for easy adjustment of 'glitch' intensity.",
+      "Decoupled UI layer ensures that navigation and status panels remain responsive regardless of 3D scene complexity."
+    ],
+    "negative": [
+      "Increased initial bundle size due to the inclusion of the Three.js library."
+    ],
+    "risks": [
+      "Potential frame rate drops on low-end mobile devices during complex shader calculations.",
+      "Potential issues with depth testing when overlaying 2D UI elements over 3D space if not handled via a separate layer."
+    ]
+  },
+  "impactedModules": [
+    "apps/retro-pc-wireframe/index.html",
+    "apps/retro-pc-wireframe/src/components/Scene.js",
+    "apps/retro-pc-wireframe/src/shaders/CyberGrid.frag"
+  ],
+  "blastRadiusRisk": "LOW",
+  "createdAt": "2026-10-19T13:49:07.111Z"
+}

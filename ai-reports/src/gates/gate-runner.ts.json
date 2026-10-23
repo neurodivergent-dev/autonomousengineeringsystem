@@ -1,0 +1,61 @@
+{
+  "file": "src/gates/gate-runner.ts",
+  "objective": {
+    "language": "TypeScript",
+    "lines": 251,
+    "jsx": false,
+    "imports": 4,
+    "exports": 0,
+    "functions": 0,
+    "hooks": 0,
+    "components": 0,
+    "framework": "TypeScript",
+    "isRoute": false,
+    "isLayout": false,
+    "isDynamic": false,
+    "route": null
+  },
+  "semantic": {
+    "purpose": "child_process, path ve fs kullanarak dosya işlemlerini yönetir."
+  },
+  "graph": {
+    "dependencies": [
+      "child_process",
+      "path",
+      "fs",
+      "src/types/index.ts"
+    ],
+    "calls": [
+      "cwd",
+      "join",
+      "trim",
+      "execSync",
+      "now",
+      "existsSync",
+      "runCommand",
+      "map",
+      "filter",
+      "split",
+      "test",
+      "includes",
+      "push",
+      "slice",
+      "verifyTypeScript",
+      "verifyBlastRadius",
+      "verifyTheme",
+      "verifyZeroEmoji",
+      "verifyI18n",
+      "verifyCodeHealth",
+      "every",
+      "toISOString"
+    ],
+    "renders": []
+  },
+  "entities": [],
+  "identity": {
+    "analysisId": "4a0c5c1e-c670-4f5a-9543-2e140caa9659",
+    "fileHash": "90a71b49e8d44bb513964e021e82f0cb",
+    "gitCommit": "unknown"
+  },
+  "analyzedAt": 1792358376825
+}
