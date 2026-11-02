@@ -1,4 +1,4 @@
-# ⚡ MetaFrame Autonomous Engineering System
+⚡ MetaFrame Autonomous Engineering System
 ### Unified Codebase Intelligence, AST Knowledge Graph & Closed-Loop Agentic Architecture
 
 [![Runtime: Bun](https://img.shields.io/badge/Runtime-Bun%201.3+-F472B6?style=flat-square&logo=bun)](https://bun.sh)
@@ -246,5 +246,6 @@ MetaFrame strictly enforces three engineering laws:
 ## 📄 License
 
 MIT License © 2026 MetaFrame Autonomous Engineering System.
-#   a u t o n o m o u s e n g i n e e r i n g s y s t e m  
+#   a u t o n o m o u s e n g i n e e r i n g s y s t e m 
+ 
  
