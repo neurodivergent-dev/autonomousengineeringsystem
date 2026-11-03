@@ -44,6 +44,13 @@ interface ActiveWorkflow {
   adr?: any;
   plan?: any;
   execution?: any;
+  currentCodeStep?: {
+    targetFile: string;
+    index: number;
+    total: number;
+  };
+  streamingCode?: string;
+  tokenCount?: number;
   selfHeal?: { active: boolean; message?: string; failingGates?: string[] };
   gates: any[];
   error?: string;
@@ -334,6 +341,30 @@ export function App() {
             setActiveWorkflow((prev) => (prev ? { ...prev, adr: data.adr } : null));
           } else if (data.type === "plan_complete") {
             setActiveWorkflow((prev) => (prev ? { ...prev, plan: data.plan } : null));
+          } else if (data.type === "code_step_start") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentCodeStep: {
+                      targetFile: data.targetFile,
+                      index: data.index,
+                      total: data.total,
+                    },
+                    streamingCode: "",
+                  }
+                : null
+            );
+          } else if (data.type === "code_token") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    streamingCode: (prev.streamingCode || "") + data.token,
+                    tokenCount: (prev.tokenCount || 0) + 1,
+                  }
+                : null
+            );
           } else if (data.type === "code_complete") {
             setActiveWorkflow((prev) => (prev ? { ...prev, execution: data.execution } : null));
             // Refresh file tree & reload open files!
@@ -856,7 +887,35 @@ export function App() {
                       </div>
                     ) : activeWorkflow.currentPhase === 5 ? (
                       <div className="step-details">
-                        {activeWorkflow.phaseMessage || "Gemma 4 is generating full code and writing directly to disk..."}
+                        <div style={{ fontSize: "11px", color: "#38bdf8", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                          <span className="pulse-dot green" />
+                          <span>
+                            {activeWorkflow.currentCodeStep
+                              ? `Live Code Synthesis: ${activeWorkflow.currentCodeStep.targetFile} [${activeWorkflow.currentCodeStep.index}/${activeWorkflow.currentCodeStep.total}]`
+                              : "Gemma 4 GPU synthesizing code..."}
+                          </span>
+                        </div>
+
+                        {/* Live Monospaced Terminal with real-time autoscroll */}
+                        <div className="streaming-code-terminal">
+                          <div className="terminal-header">
+                            <span style={{ color: "#94a3b8" }}>
+                              {activeWorkflow.currentCodeStep?.targetFile || "source_stream.tsx"}
+                            </span>
+                            <span style={{ color: "#38bdf8", fontWeight: 700 }}>
+                              {activeWorkflow.tokenCount || 0} tokens
+                            </span>
+                          </div>
+                          <div
+                            className="terminal-body"
+                            ref={(el) => {
+                              if (el) el.scrollTop = el.scrollHeight;
+                            }}
+                          >
+                            {activeWorkflow.streamingCode || "// Establishing GPU token stream...\n// Preparing syntax AST..."}
+                            <span className="terminal-cursor">▋</span>
+                          </div>
+                        </div>
                       </div>
                     ) : null}
                   </div>

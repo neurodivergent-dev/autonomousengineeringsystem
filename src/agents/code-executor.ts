@@ -19,6 +19,12 @@ export interface PlanExecutionSummary {
   errors: string[];
 }
 
+export type CodeStepCallback = (event:
+  | { type: "code_step_start"; step: PlanStep; index: number; total: number; targetFile: string }
+  | { type: "code_token"; token: string; targetFile: string }
+  | { type: "code_step_done"; targetFile: string; codeLength: number }
+) => void;
+
 export class CodeExecutorAgent {
   private llm: SharedLLMClient;
   private repoRoot: string;
@@ -35,7 +41,8 @@ export class CodeExecutorAgent {
     plan: ImplementationPlan,
     prd?: PRD,
     adr?: ADR,
-    onToken?: (token: string) => void
+    onToken?: (token: string) => void,
+    onStepProgress?: CodeStepCallback
   ): Promise<PlanExecutionSummary> {
     console.log(`\n\x1b[35m[CodeExecutorAgent]\x1b[0m Executing ${plan.steps.length} plan steps using model \x1b[1m${this.llm.modelName}\x1b[0m...`);
 
@@ -45,6 +52,14 @@ export class CodeExecutorAgent {
     for (const step of plan.steps) {
       console.log(`\n\x1b[34m[Step ${step.order}/${plan.steps.length}]\x1b[0m ${step.actionType} -> \x1b[36m${step.targetFile}\x1b[0m`);
       console.log(`  Description: ${step.description}`);
+
+      onStepProgress?.({
+        type: "code_step_start",
+        step,
+        index: step.order || (results.length + 1),
+        total: plan.steps.length,
+        targetFile: step.targetFile,
+      });
 
       try {
         const fullPath = join(this.repoRoot, step.targetFile);
@@ -60,6 +75,11 @@ export class CodeExecutorAgent {
             codeLength: 0,
             success: true,
           });
+          onStepProgress?.({
+            type: "code_step_done",
+            targetFile: step.targetFile,
+            codeLength: 0,
+          });
           continue;
         }
 
@@ -68,7 +88,16 @@ export class CodeExecutorAgent {
           existingContent = readFileSync(fullPath, "utf-8");
         }
 
-        const generatedCode = await this.generateCodeForStep(step, existingContent, prd, adr, onToken);
+        const generatedCode = await this.generateCodeForStep(
+          step,
+          existingContent,
+          prd,
+          adr,
+          (token) => {
+            onToken?.(token);
+            onStepProgress?.({ type: "code_token", token, targetFile: step.targetFile });
+          }
+        );
 
         if (!generatedCode || generatedCode.trim().length === 0) {
           throw new Error(`LLM generated empty content for ${step.targetFile}`);
@@ -88,6 +117,12 @@ export class CodeExecutorAgent {
           filePath: step.targetFile,
           codeLength: generatedCode.length,
           success: true,
+        });
+
+        onStepProgress?.({
+          type: "code_step_done",
+          targetFile: step.targetFile,
+          codeLength: generatedCode.length,
         });
       } catch (err: any) {
         const errMsg = `Failed step ${step.order} (${step.targetFile}): ${err.message}`;

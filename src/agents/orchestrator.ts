@@ -105,6 +105,9 @@ export class LeadOrchestrator {
         adr,
         (token) => {
           onProgress?.({ type: "code_token", token });
+        },
+        (event) => {
+          onProgress?.(event);
         }
       );
 
