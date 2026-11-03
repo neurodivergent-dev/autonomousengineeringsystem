@@ -169,7 +169,44 @@ const server = Bun.serve({
       return json({ report });
     }
 
-    // 7. Orchestrator Plan & Workflow
+    // 7. Orchestrator Plan & Real-Time SSE Stream
+    if (url.pathname === "/api/orchestrate/stream") {
+      const prompt = url.searchParams.get("prompt") || "";
+      const candidateFiles = (url.searchParams.get("files") || "").split(",").filter(Boolean);
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          const send = (event: any) => {
+            try {
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`));
+            } catch {
+              // Ignore if client closed connection
+            }
+          };
+
+          try {
+            const orchestrator = new LeadOrchestrator(targetRepo, systemRoot);
+            await orchestrator.executeWorkflow(prompt, candidateFiles, false, (event) => {
+              send(event);
+            });
+            controller.close();
+          } catch (err: any) {
+            send({ type: "error", message: err.message });
+            try { controller.close(); } catch {}
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          ...corsHeaders,
+        },
+      });
+    }
+
     if (url.pathname === "/api/orchestrate/plan" && req.method === "POST") {
       const body = (await req.json()) as any;
       const orchestrator = new LeadOrchestrator(targetRepo, systemRoot);

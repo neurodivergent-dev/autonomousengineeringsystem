@@ -385,3 +385,106 @@ body, html, #root {
   outline: none;
   border-color: var(--accent);
 }
+
+/* ── Live Agent Timeline & Visual Stepper ── */
+.timeline-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+.timeline-step.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.timeline-step.completed {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.step-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+
+.step-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.step-badge.blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.step-badge.purple { background: rgba(192, 132, 252, 0.15); color: #c084fc; }
+.step-badge.amber { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.step-badge.emerald { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+
+.step-details {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 8px;
+}
+
+.task-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 11px;
+}
+
+.file-link-pill {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.file-link-pill:hover {
+  background: rgba(56, 189, 248, 0.25);
+  text-decoration: underline;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}

@@ -13,8 +13,10 @@ import {
   ChevronRight,
   ChevronDown,
   X,
-  RotateCcw,
   Sparkles,
+  Layers,
+  FileText,
+  Clock,
 } from "lucide-react";
 import "./App.css";
 
@@ -31,6 +33,18 @@ interface OpenFile {
   path: string;
   content: string;
   isDirty?: boolean;
+}
+
+interface ActiveWorkflow {
+  prompt: string;
+  currentPhase: number;
+  phaseMessage: string;
+  status: "idle" | "running" | "completed" | "error";
+  prd?: any;
+  adr?: any;
+  plan?: any;
+  gates: any[];
+  error?: string;
 }
 
 export function App() {
@@ -63,6 +77,7 @@ export function App() {
     },
   ]);
   const [isWorking, setIsWorking] = useState(false);
+  const [activeWorkflow, setActiveWorkflow] = useState<ActiveWorkflow | null>(null);
 
   // Fetch initial workspace
   useEffect(() => {
@@ -121,14 +136,16 @@ export function App() {
     // 2. Set the active theme
     monaco.editor.setTheme("metaframe-cyber");
 
-    // 3. Disable missing node_modules false-positives
+    // 3. Disable missing node_modules false-positives & syntax validation squiggles
     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
-      noSyntaxValidation: false,
+      noSyntaxValidation: true,
+      diagnosticCodesToIgnore: [2307, 2304, 2552, 2686, 7016, 8010],
     });
     monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
-      noSyntaxValidation: false,
+      noSyntaxValidation: true,
+      diagnosticCodesToIgnore: [2307, 2304, 2552, 2686, 7016, 8010],
     });
 
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -268,7 +285,7 @@ export function App() {
     setGateResults((prev) => ({ ...prev, ...map }));
   };
 
-  // Handle Copilot Plan Execution
+  // Handle Copilot Plan Execution with Real-Time SSE Stream
   const handleCopilotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!copilotPrompt.trim() || isWorking) return;
@@ -278,34 +295,91 @@ export function App() {
     setChatMessages((prev) => [...prev, { role: "user", content: userPrompt }]);
     setIsWorking(true);
 
+    const initialWorkflow: ActiveWorkflow = {
+      prompt: userPrompt,
+      currentPhase: 1,
+      phaseMessage: "Navigating AST Topology & Mapping Dependency Edges...",
+      status: "running",
+      gates: [],
+    };
+    setActiveWorkflow(initialWorkflow);
+
     try {
-      const res = await fetch(`${API_BASE}/orchestrate/plan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: userPrompt,
-          candidateFiles: activeFilePath ? [activeFilePath] : [],
-        }),
-      });
-      const data = await res.json();
-      if (data.result) {
-        const r = data.result;
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `**${r.prd.title}** (${r.prd.id})\n\n**ADR:** ${r.adr.id} (Risk: ${r.adr.blastRadiusRisk})\n\n**Plan Steps (${r.plan.steps.length}):**\n` +
-              r.plan.steps.map((s: any, idx: number) => `${idx + 1}. \`${s.filePath}\` - ${s.description}`).join("\n"),
-            plan: r.plan,
-          },
-        ]);
-        if (r.verificationReport) {
-          updateGateStatus(r.verificationReport.gates);
+      const streamUrl = `${API_BASE}/orchestrate/stream?prompt=${encodeURIComponent(
+        userPrompt
+      )}&files=${encodeURIComponent(activeFilePath || "")}`;
+
+      const eventSource = new EventSource(streamUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === "phase") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentPhase: data.phase,
+                    phaseMessage: data.message,
+                  }
+                : null
+            );
+          } else if (data.type === "prd_complete") {
+            setActiveWorkflow((prev) => (prev ? { ...prev, prd: data.prd } : null));
+          } else if (data.type === "adr_complete") {
+            setActiveWorkflow((prev) => (prev ? { ...prev, adr: data.adr } : null));
+          } else if (data.type === "plan_complete") {
+            setActiveWorkflow((prev) => (prev ? { ...prev, plan: data.plan } : null));
+          } else if (data.type === "gate_result") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    gates: [...prev.gates, data.gate],
+                  }
+                : null
+            );
+            if (data.gate) {
+              updateGateStatus([data.gate]);
+            }
+          } else if (data.type === "finish") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: "completed",
+                    phaseMessage: "Workflow Completed Successfully!",
+                  }
+                : null
+            );
+            eventSource.close();
+            setIsWorking(false);
+          } else if (data.type === "error") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: "error",
+                    error: data.message,
+                  }
+                : null
+            );
+            eventSource.close();
+            setIsWorking(false);
+          }
+        } catch (parseErr) {
+          console.error("Error parsing SSE stream event:", parseErr);
         }
-      }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("EventSource stream error:", err);
+        eventSource.close();
+        setIsWorking(false);
+      };
     } catch (err: any) {
-      setChatMessages((prev) => [...prev, { role: "assistant", content: `Error executing workflow: ${err.message}` }]);
-    } finally {
+      console.error("Failed to start SSE stream:", err);
       setIsWorking(false);
     }
   };
@@ -476,6 +550,7 @@ export function App() {
                   scrollBeyondLastLine: false,
                   smoothScrolling: true,
                   automaticLayout: true,
+                  renderValidationDecorations: "off",
                 }}
               />
             ) : (
@@ -527,15 +602,201 @@ export function App() {
             {chatMessages.map((msg, idx) => (
               <div key={idx} className={`agent-bubble ${msg.role}`}>
                 <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--accent)", marginBottom: 4 }}>
-                  {msg.role === "user" ? "YOU" : "METAFRAME AGENTS (Orion · Daedalus · Vulcan)"}
+                  {msg.role === "user" ? "YOU" : "METAFRAME AGENTS"}
                 </div>
                 <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
               </div>
             ))}
-            {isWorking && (
-              <div className="agent-bubble system" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <RotateCcw size={14} className="spin" />
-                <span>Generating PRD, evaluating blast radius & formulating plan...</span>
+
+            {/* Live Visual Workflow Execution Stepper */}
+            {activeWorkflow && (
+              <div className="timeline-stepper">
+                {/* Stepper Header Status */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--accent)" }}>
+                    LIVE AGENT ORCHESTRATION
+                  </span>
+                  <span className={`step-badge ${activeWorkflow.status === "completed" ? "emerald" : activeWorkflow.status === "error" ? "amber" : "purple"}`}>
+                    {activeWorkflow.status.toUpperCase()}
+                  </span>
+                </div>
+
+                {/* Step 1: AST Topology & Route Navigation */}
+                <div className={`timeline-step ${activeWorkflow.currentPhase === 1 ? "active" : activeWorkflow.currentPhase > 1 ? "completed" : ""}`}>
+                  <div className="step-header">
+                    <div className="step-title">
+                      {activeWorkflow.currentPhase > 1 ? (
+                        <CheckCircle size={14} color="#10b981" />
+                      ) : (
+                        <span className="pulse-dot" />
+                      )}
+                      <span>1. AST Topology & Navigation</span>
+                    </div>
+                    <span className="step-badge blue">AST Grounding</span>
+                  </div>
+                  <div className="step-details">
+                    Navigating AST graph & identifying affected modules for target prompt.
+                  </div>
+                </div>
+
+                {/* Step 2: Orion - PRD Product Architecture */}
+                <div className={`timeline-step ${activeWorkflow.currentPhase === 2 ? "active" : activeWorkflow.prd ? "completed" : ""}`}>
+                  <div className="step-header">
+                    <div className="step-title">
+                      {activeWorkflow.prd ? (
+                        <CheckCircle size={14} color="#10b981" />
+                      ) : activeWorkflow.currentPhase === 2 ? (
+                        <span className="pulse-dot" />
+                      ) : (
+                        <FileText size={14} color="var(--text-dim)" />
+                      )}
+                      <span>2. Orion · Product Specification</span>
+                    </div>
+                    {activeWorkflow.prd && <span className="step-badge purple">{activeWorkflow.prd.id}</span>}
+                  </div>
+                  {activeWorkflow.prd ? (
+                    <div className="step-details">
+                      <div style={{ fontWeight: 600, color: "var(--text-main)", marginBottom: 4 }}>
+                        {activeWorkflow.prd.title}
+                      </div>
+                      <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                        User Stories: {activeWorkflow.prd.userStories?.length || 0} · Requirements: {activeWorkflow.prd.requirements?.length || 0}
+                      </div>
+                    </div>
+                  ) : activeWorkflow.currentPhase === 2 ? (
+                    <div className="step-details">
+                      {activeWorkflow.phaseMessage || "Generating structured PRD with user stories & requirements..."}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Step 3: Daedalus - Solutions Architecture & ADR */}
+                <div className={`timeline-step ${activeWorkflow.currentPhase === 3 ? "active" : activeWorkflow.adr ? "completed" : ""}`}>
+                  <div className="step-header">
+                    <div className="step-title">
+                      {activeWorkflow.adr ? (
+                        <CheckCircle size={14} color="#10b981" />
+                      ) : activeWorkflow.currentPhase === 3 ? (
+                        <span className="pulse-dot" />
+                      ) : (
+                        <Layers size={14} color="var(--text-dim)" />
+                      )}
+                      <span>3. Daedalus · Architectural Decision</span>
+                    </div>
+                    {activeWorkflow.adr && (
+                      <span className={`step-badge ${activeWorkflow.adr.blastRadiusRisk === "HIGH" ? "amber" : "emerald"}`}>
+                        Risk: {activeWorkflow.adr.blastRadiusRisk}
+                      </span>
+                    )}
+                  </div>
+                  {activeWorkflow.adr ? (
+                    <div className="step-details">
+                      <div style={{ fontWeight: 600, color: "var(--text-main)", marginBottom: 4 }}>
+                        {activeWorkflow.adr.title} ({activeWorkflow.adr.id})
+                      </div>
+                      <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                        Affected Components: {activeWorkflow.adr.affectedComponents?.length || 0} · Strategy: {activeWorkflow.adr.strategy || "AST-Guided"}
+                      </div>
+                    </div>
+                  ) : activeWorkflow.currentPhase === 3 ? (
+                    <div className="step-details">
+                      {activeWorkflow.phaseMessage || "Calculating AST blast radius & selecting architecture pattern..."}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Step 4: Vulcan - Implementation Task Plan */}
+                <div className={`timeline-step ${activeWorkflow.currentPhase === 4 ? "active" : activeWorkflow.plan ? "completed" : ""}`}>
+                  <div className="step-header">
+                    <div className="step-title">
+                      {activeWorkflow.plan ? (
+                        <CheckCircle size={14} color="#10b981" />
+                      ) : activeWorkflow.currentPhase === 4 ? (
+                        <span className="pulse-dot" />
+                      ) : (
+                        <Clock size={14} color="var(--text-dim)" />
+                      )}
+                      <span>4. Vulcan · Atomic Execution Plan</span>
+                    </div>
+                    {activeWorkflow.plan && (
+                      <span className="step-badge amber">{activeWorkflow.plan.steps.length} Steps</span>
+                    )}
+                  </div>
+                  {activeWorkflow.plan ? (
+                    <div className="step-details">
+                      <div style={{ fontWeight: 600, color: "var(--text-main)", marginBottom: 6 }}>
+                        {activeWorkflow.plan.id} · Tasks Grounded:
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {activeWorkflow.plan.steps.map((st: any, i: number) => (
+                          <div key={i} className="task-step-item">
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ color: "var(--accent)", fontWeight: 700 }}>#{st.order || i + 1}</span>
+                              <span
+                                className="file-link-pill"
+                                title="Click to open file in editor"
+                                onClick={() => handleOpenFile(st.filePath)}
+                              >
+                                <FileCode size={11} />
+                                <span>{st.filePath.split("/").pop()}</span>
+                              </span>
+                              <span style={{ fontSize: "10px", color: "#38bdf8", background: "rgba(56, 189, 248, 0.1)", padding: "1px 5px", borderRadius: 3 }}>
+                                {st.type || "modify"}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: "11px", color: "var(--text-main)", marginTop: 2 }}>
+                              {st.description}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : activeWorkflow.currentPhase === 4 ? (
+                    <div className="step-details">
+                      {activeWorkflow.phaseMessage || "Generating surgical, atomic file modifications..."}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Step 5: Aegis - Deterministic 6-Gate Verification */}
+                <div className={`timeline-step ${activeWorkflow.currentPhase === 6 || activeWorkflow.gates.length > 0 ? "active" : ""}`}>
+                  <div className="step-header">
+                    <div className="step-title">
+                      {activeWorkflow.gates.length >= 6 ? (
+                        <CheckCircle size={14} color="#10b981" />
+                      ) : activeWorkflow.currentPhase === 6 ? (
+                        <span className="pulse-dot" />
+                      ) : (
+                        <Shield size={14} color="var(--text-dim)" />
+                      )}
+                      <span>5. Aegis · Deterministic 6-Gate Quality</span>
+                    </div>
+                    <span className="step-badge emerald">
+                      {activeWorkflow.gates.filter((g) => g.passed).length}/{activeWorkflow.gates.length || 6} Gates
+                    </span>
+                  </div>
+                  {activeWorkflow.gates.length > 0 && (
+                    <div className="step-details" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {activeWorkflow.gates.map((g, idx) => (
+                        <div
+                          key={idx}
+                          className={`gate-chip ${g.passed ? "pass" : "fail"}`}
+                          style={{ fontSize: "10px", padding: "2px 6px" }}
+                        >
+                          {g.passed ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
+                          <span>{g.gateName} ({g.durationMs}ms)</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Error Banner if workflow failed */}
+                {activeWorkflow.error && (
+                  <div style={{ color: "#ef4444", fontSize: "11px", padding: "8px", background: "rgba(239, 68, 68, 0.1)", borderRadius: "6px" }}>
+                    ⚠ Error: {activeWorkflow.error}
+                  </div>
+                )}
               </div>
             )}
           </div>
