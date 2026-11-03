@@ -412,17 +412,25 @@ export function App() {
               };
             });
           } else if (data.type === "topology_complete") {
+            const parsedRoutes = Array.isArray(data.routes)
+              ? data.routes
+              : typeof data.routes === "string"
+              ? data.routes
+                  .split("\n")
+                  .map((s: string) => s.trim())
+                  .filter((s: string) => s && !s.includes("not found"))
+              : [];
             setActiveWorkflow((prev) =>
               prev
                 ? {
                     ...prev,
-                    topologyRoutes: data.routes,
+                    topologyRoutes: parsedRoutes,
                     logs: [
                       ...prev.logs,
                       {
                         time: now,
-                        agent: "System",
-                        text: `AST Topology mapped: ${data.routes?.length || 0} active routes/modules verified.`,
+                        agent: "AST",
+                        text: `AST Topology mapped: ${parsedRoutes.length} active routes/modules verified.`,
                       },
                     ],
                   }
@@ -930,7 +938,7 @@ export function App() {
                         <div style={{ color: "var(--text-muted)" }}>
                           Mapped modules, components, and dependency hierarchy for active workspace.
                         </div>
-                        {activeWorkflow.topologyRoutes && activeWorkflow.topologyRoutes.length > 0 && (
+                        {Array.isArray(activeWorkflow.topologyRoutes) && activeWorkflow.topologyRoutes.length > 0 && (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
                             {activeWorkflow.topologyRoutes.map((r, i) => (
                               <span key={i} className="meta-chip" style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8" }}>
@@ -976,7 +984,7 @@ export function App() {
                           )}
 
                           {/* User Stories */}
-                          {activeWorkflow.prd.userStories && activeWorkflow.prd.userStories.length > 0 && (
+                          {Array.isArray(activeWorkflow.prd.userStories) && activeWorkflow.prd.userStories.length > 0 && (
                             <div className="inspector-section">
                               <div className="inspector-title">User Stories ({activeWorkflow.prd.userStories.length})</div>
                               {activeWorkflow.prd.userStories.map((us: any, idx: number) => (
@@ -1001,7 +1009,7 @@ export function App() {
                           )}
 
                           {/* Acceptance Criteria */}
-                          {activeWorkflow.prd.acceptanceCriteria && activeWorkflow.prd.acceptanceCriteria.length > 0 && (
+                          {Array.isArray(activeWorkflow.prd.acceptanceCriteria) && activeWorkflow.prd.acceptanceCriteria.length > 0 && (
                             <div className="inspector-section">
                               <div className="inspector-title">Acceptance Criteria</div>
                               {activeWorkflow.prd.acceptanceCriteria.map((ac: string, idx: number) => (
@@ -1014,7 +1022,7 @@ export function App() {
                           )}
 
                           {/* Functional Requirements */}
-                          {activeWorkflow.prd.functionalRequirements && activeWorkflow.prd.functionalRequirements.length > 0 && (
+                          {Array.isArray(activeWorkflow.prd.functionalRequirements) && activeWorkflow.prd.functionalRequirements.length > 0 && (
                             <div className="inspector-section">
                               <div className="inspector-title">Functional Requirements</div>
                               <ul style={{ paddingLeft: 16, margin: 0, color: "var(--text-muted)" }}>
@@ -1093,7 +1101,7 @@ export function App() {
                               </p>
                             </div>
                           )}
-                          {activeWorkflow.adr.impactedModules && activeWorkflow.adr.impactedModules.length > 0 && (
+                          {Array.isArray(activeWorkflow.adr.impactedModules) && activeWorkflow.adr.impactedModules.length > 0 && (
                             <div className="inspector-section">
                               <div className="inspector-title">Impacted Modules & Components</div>
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -1108,13 +1116,13 @@ export function App() {
                           {activeWorkflow.adr.consequences && (
                             <div className="inspector-section">
                               <div className="inspector-title">Trade-offs & Consequences</div>
-                              {activeWorkflow.adr.consequences.positive?.map((p: string, idx: number) => (
+                              {Array.isArray(activeWorkflow.adr.consequences.positive) && activeWorkflow.adr.consequences.positive.map((p: string, idx: number) => (
                                 <div key={idx} style={{ color: "#34d399", display: "flex", gap: 6, fontSize: "11px" }}>
                                   <span>✔</span>
                                   <span>{p}</span>
                                 </div>
                               ))}
-                              {activeWorkflow.adr.consequences.risks?.map((r: string, idx: number) => (
+                              {Array.isArray(activeWorkflow.adr.consequences.risks) && activeWorkflow.adr.consequences.risks.map((r: string, idx: number) => (
                                 <div key={idx} style={{ color: "#f59e0b", display: "flex", gap: 6, fontSize: "11px" }}>
                                   <span>⚠</span>
                                   <span>{r}</span>
@@ -1160,7 +1168,7 @@ export function App() {
                       <span>4. Vulcan · Atomic Execution Plan</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {activeWorkflow.plan && (
+                      {activeWorkflow.plan && Array.isArray(activeWorkflow.plan.steps) && (
                         <span className="step-badge amber">{activeWorkflow.plan.steps.length} Steps</span>
                       )}
                       {expandedSteps.has(4) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -1168,7 +1176,7 @@ export function App() {
                   </div>
                   {expandedSteps.has(4) && (
                     <div className="step-expand-body">
-                      {activeWorkflow.plan ? (
+                      {activeWorkflow.plan && Array.isArray(activeWorkflow.plan.steps) ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {activeWorkflow.plan.steps.map((st: any, i: number) => {
                             const file = st.targetFile || st.filePath || "";
@@ -1247,7 +1255,7 @@ export function App() {
                         <span>5. Gemma 4 · Live Code Generation</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        {activeWorkflow.execution && (
+                        {activeWorkflow.execution && Array.isArray(activeWorkflow.execution.executedSteps) && (
                           <span className="step-badge emerald">
                             {activeWorkflow.execution.executedSteps.length} Files Written
                           </span>
@@ -1257,7 +1265,7 @@ export function App() {
                     </div>
                     {expandedSteps.has(5) && (
                       <div className="step-expand-body">
-                        {activeWorkflow.execution ? (
+                        {activeWorkflow.execution && Array.isArray(activeWorkflow.execution.executedSteps) ? (
                           <div>
                             <div style={{ color: "#34d399", fontWeight: 600, marginBottom: 4 }}>
                               ✔ Successfully written to workspace disk:
