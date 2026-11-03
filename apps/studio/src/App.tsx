@@ -43,6 +43,8 @@ interface ActiveWorkflow {
   prd?: any;
   adr?: any;
   plan?: any;
+  execution?: any;
+  selfHeal?: { active: boolean; message?: string; failingGates?: string[] };
   gates: any[];
   error?: string;
 }
@@ -78,6 +80,7 @@ export function App() {
   ]);
   const [isWorking, setIsWorking] = useState(false);
   const [activeWorkflow, setActiveWorkflow] = useState<ActiveWorkflow | null>(null);
+  const [autoCodeWrite, setAutoCodeWrite] = useState(true);
 
   // Fetch initial workspace
   useEffect(() => {
@@ -307,7 +310,7 @@ export function App() {
     try {
       const streamUrl = `${API_BASE}/orchestrate/stream?prompt=${encodeURIComponent(
         userPrompt
-      )}&files=${encodeURIComponent(activeFilePath || "")}`;
+      )}&files=${encodeURIComponent(activeFilePath || "")}&execute=${autoCodeWrite}`;
 
       const eventSource = new EventSource(streamUrl);
 
@@ -331,6 +334,52 @@ export function App() {
             setActiveWorkflow((prev) => (prev ? { ...prev, adr: data.adr } : null));
           } else if (data.type === "plan_complete") {
             setActiveWorkflow((prev) => (prev ? { ...prev, plan: data.plan } : null));
+          } else if (data.type === "code_complete") {
+            setActiveWorkflow((prev) => (prev ? { ...prev, execution: data.execution } : null));
+            // Refresh file tree & reload open files!
+            fetch(`${API_BASE}/workspace`)
+              .then((res) => res.json())
+              .then((ws) => setFileTree(ws.tree))
+              .catch(() => {});
+            // Reload active file if modified
+            if (activeFilePath) {
+              fetch(`${API_BASE}/file?path=${encodeURIComponent(activeFilePath)}`)
+                .then((r) => r.json())
+                .then((d) => {
+                  if (d.content) {
+                    setEditorContent(d.content);
+                    setOpenFiles((prev) =>
+                      prev.map((f) => (f.path === activeFilePath ? { ...f, content: d.content, isDirty: false } : f))
+                    );
+                  }
+                })
+                .catch(() => {});
+            }
+          } else if (data.type === "self_heal_start") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    selfHeal: {
+                      active: true,
+                      message: data.message,
+                      failingGates: data.failingGates,
+                    },
+                  }
+                : null
+            );
+          } else if (data.type === "self_heal_success") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    selfHeal: {
+                      active: false,
+                      message: data.message,
+                    },
+                  }
+                : null
+            );
           } else if (data.type === "gate_result") {
             setActiveWorkflow((prev) =>
               prev
@@ -758,7 +807,71 @@ export function App() {
                   ) : null}
                 </div>
 
-                {/* Step 5: Aegis - Deterministic 6-Gate Verification */}
+                {/* Step 5: Autonomous Code Generation & Disk Write */}
+                {autoCodeWrite && (
+                  <div className={`timeline-step ${activeWorkflow.currentPhase === 5 ? "active" : activeWorkflow.execution ? "completed" : ""}`}>
+                    <div className="step-header">
+                      <div className="step-title">
+                        {activeWorkflow.execution?.overallSuccess ? (
+                          <CheckCircle size={14} color="#10b981" />
+                        ) : activeWorkflow.currentPhase === 5 ? (
+                          <span className="pulse-dot" />
+                        ) : (
+                          <Cpu size={14} color="var(--text-dim)" />
+                        )}
+                        <span>5. Gemma 4 · Live Code Generation</span>
+                      </div>
+                      {activeWorkflow.execution && (
+                        <span className="step-badge emerald">
+                          {activeWorkflow.execution.executedSteps.length} Files Written
+                        </span>
+                      )}
+                    </div>
+                    {activeWorkflow.execution ? (
+                      <div className="step-details">
+                        <div style={{ color: "#34d399", fontWeight: 600, marginBottom: 4 }}>
+                          ✔ Successfully written to workspace disk:
+                        </div>
+                        {activeWorkflow.execution.executedSteps.map((st: any, idx: number) => (
+                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, margin: "2px 0" }}>
+                            <span
+                              className="file-link-pill"
+                              onClick={() => handleOpenFile(st.filePath)}
+                            >
+                              <FileCode size={11} />
+                              <span>{st.filePath}</span>
+                            </span>
+                            <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+                              ({st.codeLength} bytes)
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : activeWorkflow.currentPhase === 5 ? (
+                      <div className="step-details">
+                        {activeWorkflow.phaseMessage || "Gemma 4 is generating full code and writing directly to disk..."}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Self-Healing Loop Status */}
+                {activeWorkflow.selfHeal && (
+                  <div className="timeline-step active" style={{ borderColor: "#f59e0b" }}>
+                    <div className="step-header">
+                      <div className="step-title" style={{ color: "#f59e0b" }}>
+                        <Flame size={14} color="#f59e0b" />
+                        <span>Self-Healing Closed Loop</span>
+                      </div>
+                      <span className="step-badge amber">Surgical Patch</span>
+                    </div>
+                    <div className="step-details">
+                      {activeWorkflow.selfHeal.message}
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 6: Aegis - Deterministic 6-Gate Verification */}
                 <div className={`timeline-step ${activeWorkflow.currentPhase === 6 || activeWorkflow.gates.length > 0 ? "active" : ""}`}>
                   <div className="step-header">
                     <div className="step-title">
@@ -769,7 +882,7 @@ export function App() {
                       ) : (
                         <Shield size={14} color="var(--text-dim)" />
                       )}
-                      <span>5. Aegis · Deterministic 6-Gate Quality</span>
+                      <span>6. Aegis · Deterministic 6-Gate Quality</span>
                     </div>
                     <span className="step-badge emerald">
                       {activeWorkflow.gates.filter((g) => g.passed).length}/{activeWorkflow.gates.length || 6} Gates
@@ -802,9 +915,23 @@ export function App() {
           </div>
 
           <form className="copilot-input-container" onSubmit={handleCopilotSubmit}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "11px", color: autoCodeWrite ? "#34d399" : "var(--text-muted)" }}>
+                <input
+                  type="checkbox"
+                  checked={autoCodeWrite}
+                  onChange={(e) => setAutoCodeWrite(e.target.checked)}
+                  style={{ accentColor: "#8b5cf6" }}
+                />
+                <span style={{ fontWeight: 600 }}>Auto-Write Code to Disk (Gemma 4 GPU)</span>
+              </label>
+              <span style={{ fontSize: "10px", color: autoCodeWrite ? "#38bdf8" : "var(--text-dim)" }}>
+                {autoCodeWrite ? "⚡ Auto-Modify Active" : "📋 Plan Only"}
+              </span>
+            </div>
             <textarea
               className="copilot-textarea"
-              placeholder="Ask MetaFrame to plan a feature or refactor with AST grounding..."
+              placeholder="Ask MetaFrame to write code, build a component, or refactor..."
               value={copilotPrompt}
               onChange={(e) => setCopilotPrompt(e.target.value)}
               onKeyDown={(e) => {

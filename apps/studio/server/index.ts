@@ -5,7 +5,17 @@ import { ASTIndexer } from "../../../src/intelligence/indexer";
 import { GateRunner } from "../../../src/gates/gate-runner";
 import { LeadOrchestrator } from "../../../src/agents/orchestrator";
 
-let targetRepo = resolve(process.env.TARGET_REPO || "C:/Users/Melih/Documents/Projects/mindbook-pro");
+function parseTargetArg(): string {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === "-t" || args[i] === "--target") && args[i + 1]) {
+      return resolve(args[i + 1]);
+    }
+  }
+  return resolve(process.env.TARGET_REPO || "C:/Users/Melih/Documents/Projects/landing-test");
+}
+
+let targetRepo = parseTargetArg();
 const systemRoot = resolve(__dirname, "../../..");
 
 const corsHeaders = {
@@ -173,6 +183,7 @@ const server = Bun.serve({
     if (url.pathname === "/api/orchestrate/stream") {
       const prompt = url.searchParams.get("prompt") || "";
       const candidateFiles = (url.searchParams.get("files") || "").split(",").filter(Boolean);
+      const executeCode = url.searchParams.get("execute") !== "false";
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -186,7 +197,7 @@ const server = Bun.serve({
 
           try {
             const orchestrator = new LeadOrchestrator(targetRepo, systemRoot);
-            await orchestrator.executeWorkflow(prompt, candidateFiles, false, (event) => {
+            await orchestrator.executeWorkflow(prompt, candidateFiles, executeCode, (event) => {
               send(event);
             });
             controller.close();
