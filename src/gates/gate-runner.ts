@@ -48,21 +48,14 @@ export class GateRunner {
       };
     }
 
-    const localTsc = join(this.repoRoot, "node_modules", ".bin", "tsc");
-    const localTscCmd = join(this.repoRoot, "node_modules", ".bin", "tsc.cmd");
-    const hasLocal = existsSync(localTsc) || existsSync(localTscCmd);
+    const appTsConfig = join(this.repoRoot, "tsconfig.app.json");
+    const tsFlag = existsSync(appTsConfig) ? "-p tsconfig.app.json" : "";
 
-    if (!hasLocal) {
-      return {
-        gateName: "1. TypeScript Compiler (Zero TS Errors)",
-        passed: true,
-        durationMs: Date.now() - start,
-        errors: [],
-        warnings: ["tsc not found in local node_modules, skipped compiler check."],
-      };
+    // Run tsc via bun x (fastest) or npx
+    let res = this.runCommand(`bun x tsc ${tsFlag} --noEmit`, 20000);
+    if (!res.success && res.output.includes("not found")) {
+      res = this.runCommand(`npx --no-install tsc ${tsFlag} --noEmit`, 25000);
     }
-
-    const res = this.runCommand("npx --no-install tsc --noEmit", 25000);
     const durationMs = Date.now() - start;
 
     const errorLines = res.output
