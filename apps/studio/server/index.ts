@@ -82,6 +82,7 @@ function getFileTree(dir: string, baseDir: string): FileNode[] {
 
 const server = Bun.serve({
   port: 5180,
+  idleTimeout: 255, // Set max idleTimeout (255s in Bun) to prevent SSE disconnects during LLM inference
   async fetch(req: Request) {
     if (req.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
@@ -195,13 +196,20 @@ const server = Bun.serve({
             }
           };
 
+          // Keep-alive heartbeat every 2.5s so Bun/browser never drop the SSE stream during GPU inference
+          const heartbeat = setInterval(() => {
+            send({ type: "heartbeat", timestamp: Date.now() });
+          }, 2500);
+
           try {
             const orchestrator = new LeadOrchestrator(targetRepo, systemRoot);
             await orchestrator.executeWorkflow(prompt, candidateFiles, executeCode, (event) => {
               send(event);
             });
+            clearInterval(heartbeat);
             controller.close();
           } catch (err: any) {
+            clearInterval(heartbeat);
             send({ type: "error", message: err.message });
             try { controller.close(); } catch {}
           }

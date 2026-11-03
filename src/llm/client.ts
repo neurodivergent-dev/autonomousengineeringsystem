@@ -71,7 +71,7 @@ export class SharedLLMClient {
           stream: false,
           options: {
             temperature: this.config.temperature,
-            num_predict: 8192,
+            num_predict: 3072,
             num_ctx: 16384,
           },
         }),
@@ -112,7 +112,7 @@ export class SharedLLMClient {
           stream: true,
           options: {
             temperature: this.config.temperature,
-            num_predict: 8192,
+            num_predict: 3072,
             num_ctx: 16384,
           },
         }),
