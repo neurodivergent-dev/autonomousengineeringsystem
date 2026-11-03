@@ -11,6 +11,10 @@
     "city": "bun run tools/serve-city.ts",
     "gates": "node repo-intelligence-layer/scripts/blast-radius.js full",
     "i18n": "bun run i18next-local-inference/i18n-dashboard.tsx",
-    "cli:mini": "bun run mini-meta-cli/index.ts"
+    "cli:mini": "bun run mini-meta-cli/index.ts",
+    "mcp": "bun run src/mcp/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
   }
 }
