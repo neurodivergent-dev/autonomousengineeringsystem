@@ -5,3 +5,6 @@ dist/
 apps/studio/dist/
 apps/studio/node_modules/
 apps/studio/src-tauri/target/
+.env
+.env.*
+*.env

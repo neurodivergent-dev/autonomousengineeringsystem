@@ -80,6 +80,13 @@ function getFileTree(dir: string, baseDir: string): FileNode[] {
   });
 }
 
+if (!process.env.METAFRAME_PROVIDER) {
+  process.env.METAFRAME_PROVIDER = process.env.GROQ_API_KEY ? "groq" : "ollama";
+}
+if (!process.env.METAFRAME_MODEL) {
+  process.env.METAFRAME_MODEL = process.env.GROQ_API_KEY ? "openai/gpt-oss-120b" : "gemma4:12b";
+}
+
 const server = Bun.serve({
   port: 5180,
   idleTimeout: 255, // Set max idleTimeout (255s in Bun) to prevent SSE disconnects during LLM inference
@@ -96,6 +103,8 @@ const server = Bun.serve({
       return json({
         targetRepo,
         systemRoot,
+        provider: process.env.METAFRAME_PROVIDER,
+        model: process.env.METAFRAME_MODEL,
         hasGraph: bridge.hasKnowledgeGraph(),
       });
     }

@@ -4,7 +4,7 @@
  */
 
 export interface LLMConfig {
-  provider: "ollama" | "openai" | "custom";
+  provider: "groq" | "ollama" | "openai" | "custom";
   model: string;
   baseUrl?: string;
   apiKey?: string;
@@ -20,11 +20,22 @@ export class SharedLLMClient {
   private config: LLMConfig;
 
   constructor(config?: Partial<LLMConfig>) {
+    const groqKey = process.env.GROQ_API_KEY || "";
+    const provider = process.env.METAFRAME_PROVIDER || (groqKey ? "groq" : "ollama");
+
     this.config = {
-      provider: (process.env.METAFRAME_PROVIDER as any) || config?.provider || "ollama",
-      model: process.env.METAFRAME_MODEL || config?.model || "gemma4:12b",
-      baseUrl: process.env.OLLAMA_HOST || config?.baseUrl || "http://localhost:11434",
-      apiKey: process.env.LLM_API_KEY || config?.apiKey,
+      provider: (provider as any) || config?.provider || "groq",
+      model:
+        process.env.METAFRAME_MODEL ||
+        config?.model ||
+        (provider === "groq" ? "openai/gpt-oss-120b" : "gemma4:12b"),
+      baseUrl:
+        process.env.METAFRAME_BASE_URL ||
+        config?.baseUrl ||
+        (provider === "groq"
+          ? "https://api.groq.com/openai/v1"
+          : process.env.OLLAMA_HOST || "http://localhost:11434"),
+      apiKey: process.env.LLM_API_KEY || groqKey || config?.apiKey,
       temperature: config?.temperature ?? 0.2,
     };
   }
@@ -53,7 +64,7 @@ export class SharedLLMClient {
     if (this.config.provider === "ollama") {
       return this.callOllamaStream(messages, onToken);
     }
-    return this.chat(messages);
+    return this.callOpenAICompatibleStream(messages, onToken);
   }
 
   /**
@@ -190,6 +201,70 @@ export class SharedLLMClient {
     } catch (err: any) {
       console.warn(`[SharedLLMClient] API error: ${err.message}`);
       return "";
+    }
+  }
+
+  /**
+   * Calls OpenAI/Groq compatible chat completions with real-time SSE token streaming
+   */
+  private async callOpenAICompatibleStream(
+    messages: ChatMessage[],
+    onToken?: (chunk: string) => void
+  ): Promise<string> {
+    const baseUrl = this.config.baseUrl || "https://api.groq.com/openai/v1";
+    const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}),
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages,
+          stream: true,
+          temperature: this.config.temperature,
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Groq/OpenAI Stream API error [${res.status}]: ${await res.text()}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === "data: [DONE]") continue;
+          if (trimmed.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(trimmed.slice(6));
+              const token = data.choices?.[0]?.delta?.content || "";
+              if (token) {
+                fullContent += token;
+                if (onToken) onToken(token);
+              }
+            } catch {}
+          }
+        }
+      }
+
+      return fullContent;
+    } catch (err: any) {
+      console.warn(`[SharedLLMClient] Groq/OpenAI stream fallback: ${err.message}`);
+      return this.callOpenAICompatible(messages);
     }
   }
 

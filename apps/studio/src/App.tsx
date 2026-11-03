@@ -1343,7 +1343,7 @@ export function App() {
                         ) : (
                           <Cpu size={14} color="var(--text-dim)" />
                         )}
-                        <span>5. Gemma 4 · Live Code Generation</span>
+                        <span>5. Groq LPU · Live Code Generation (gpt-oss-120b)</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         {activeWorkflow.execution && Array.isArray(activeWorkflow.execution.executedSteps) && (
@@ -1386,7 +1386,7 @@ export function App() {
                               <span>
                                 {activeWorkflow.currentCodeStep
                                   ? `Live Code Synthesis: ${activeWorkflow.currentCodeStep.targetFile} [${activeWorkflow.currentCodeStep.index}/${activeWorkflow.currentCodeStep.total}]`
-                                  : "Gemma 4 GPU synthesizing code..."}
+                                  : "Groq Cloud (500+ tok/s) synthesizing code..."}
                               </span>
                             </div>
 
@@ -1531,7 +1531,7 @@ export function App() {
                   onChange={(e) => setAutoCodeWrite(e.target.checked)}
                   style={{ accentColor: "#8b5cf6" }}
                 />
-                <span style={{ fontWeight: 600 }}>Auto-Write Code to Disk (Gemma 4 GPU)</span>
+                <span style={{ fontWeight: 600 }}>Auto-Write Code to Disk (Groq Cloud · gpt-oss-120b)</span>
               </label>
               <span style={{ fontSize: "10px", color: autoCodeWrite ? "#38bdf8" : "var(--text-dim)" }}>
                 {autoCodeWrite ? "⚡ Auto-Modify Active" : "📋 Plan Only"}

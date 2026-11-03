@@ -111,7 +111,7 @@ export class LeadOrchestrator {
         type: "phase",
         phase: 5,
         name: "CodeExecution",
-        message: `Gemma 12B: Canlı Kod Üretimi Başlatıldı (${this.llm.modelName} GPU)...`,
+        message: `Groq LPU: Canlı Kod Üretimi Başlatıldı (${this.llm.modelName} ~500 tok/s)...`,
       });
 
       execution = await this.codeExecutor.executePlan(
@@ -158,11 +158,11 @@ export class LeadOrchestrator {
     if (!report.overallPassed && primaryTarget && executeCode) {
       const failingGates = report.gates.filter((g) => !g.passed && g.errors.length > 0);
       if (failingGates.length > 0) {
-        console.log(`\n\x1b[33m[Self-Healing Loop]\x1b[0m ⚠ ${failingGates.length} gate failure(s) detected. Engaging Gemma 4 for targeted surgical fix...`);
+        console.log(`\n\x1b[33m[Self-Healing Loop]\x1b[0m ⚠ ${failingGates.length} gate failure(s) detected. Engaging ${this.llm.modelName} on Groq for targeted surgical fix...`);
         onProgress?.({
           type: "self_heal_start",
           failingGates: failingGates.map((g) => g.gateName),
-          message: "Kapı ihlali tespit edildi! Gemma 4 cerrahi yama uyguluyor...",
+          message: `Kapı ihlali tespit edildi! ${this.llm.modelName} cerrahi yama uyguluyor...`,
         });
         onProgress?.({
           type: "agent_activity",
