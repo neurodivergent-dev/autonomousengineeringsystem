@@ -777,27 +777,31 @@ export function App() {
                         {activeWorkflow.plan.id} · Tasks Grounded:
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {activeWorkflow.plan.steps.map((st: any, i: number) => (
-                          <div key={i} className="task-step-item">
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                              <span style={{ color: "var(--accent)", fontWeight: 700 }}>#{st.order || i + 1}</span>
-                              <span
-                                className="file-link-pill"
-                                title="Click to open file in editor"
-                                onClick={() => handleOpenFile(st.filePath)}
-                              >
-                                <FileCode size={11} />
-                                <span>{st.filePath.split("/").pop()}</span>
-                              </span>
-                              <span style={{ fontSize: "10px", color: "#38bdf8", background: "rgba(56, 189, 248, 0.1)", padding: "1px 5px", borderRadius: 3 }}>
-                                {st.type || "modify"}
-                              </span>
+                        {activeWorkflow.plan.steps.map((st: any, i: number) => {
+                          const file = st.targetFile || st.filePath || "";
+                          const action = st.actionType || st.type || "MODIFY";
+                          return (
+                            <div key={i} className="task-step-item">
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                <span style={{ color: "var(--accent)", fontWeight: 700 }}>#{st.order || i + 1}</span>
+                                <span
+                                  className="file-link-pill"
+                                  title="Click to open file in editor"
+                                  onClick={() => file && handleOpenFile(file)}
+                                >
+                                  <FileCode size={11} />
+                                  <span>{file ? file.split(/[\\/]/).pop() : "file"}</span>
+                                </span>
+                                <span style={{ fontSize: "10px", color: "#38bdf8", background: "rgba(56, 189, 248, 0.1)", padding: "1px 5px", borderRadius: 3 }}>
+                                  {action}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: "11px", color: "var(--text-main)", marginTop: 2 }}>
+                                {st.description}
+                              </div>
                             </div>
-                            <div style={{ fontSize: "11px", color: "var(--text-main)", marginTop: 2 }}>
-                              {st.description}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : activeWorkflow.currentPhase === 4 ? (
@@ -832,20 +836,23 @@ export function App() {
                         <div style={{ color: "#34d399", fontWeight: 600, marginBottom: 4 }}>
                           ✔ Successfully written to workspace disk:
                         </div>
-                        {activeWorkflow.execution.executedSteps.map((st: any, idx: number) => (
-                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, margin: "2px 0" }}>
-                            <span
-                              className="file-link-pill"
-                              onClick={() => handleOpenFile(st.filePath)}
-                            >
-                              <FileCode size={11} />
-                              <span>{st.filePath}</span>
-                            </span>
-                            <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
-                              ({st.codeLength} bytes)
-                            </span>
-                          </div>
-                        ))}
+                        {activeWorkflow.execution.executedSteps.map((st: any, idx: number) => {
+                          const file = st.filePath || st.targetFile || st.step?.targetFile || "";
+                          return (
+                            <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, margin: "2px 0" }}>
+                              <span
+                                className="file-link-pill"
+                                onClick={() => file && handleOpenFile(file)}
+                              >
+                                <FileCode size={11} />
+                                <span>{file ? file.split(/[\\/]/).pop() : "file"}</span>
+                              </span>
+                              <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+                                ({st.codeLength || 0} bytes)
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : activeWorkflow.currentPhase === 5 ? (
                       <div className="step-details">
