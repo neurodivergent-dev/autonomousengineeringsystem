@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "fs";
-import { join, resolve } from "path";
+import { existsSync, readFileSync, readdirSync } from "fs";
+import { join, resolve, relative } from "path";
 import { execSync } from "child_process";
 import { ASTIndexer, type IndexResult } from "./indexer";
 import type { ASTFileCard } from "../types";
@@ -200,5 +200,33 @@ export class ASTBridge {
     } catch (e: any) {
       return e.message || "Failed to query supabase map";
     }
+  }
+
+  /**
+   * Returns a clean list of existing source files (relative paths) in the repository.
+   */
+  public getSourceFiles(): string[] {
+    const srcDir = join(this.repoRoot, "src");
+    if (!existsSync(srcDir)) return [];
+
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      try {
+        const entries = readdirSync(dir, { withFileTypes: true });
+        for (const ent of entries) {
+          const full = join(dir, ent.name);
+          if (ent.isDirectory()) {
+            if (ent.name !== "node_modules" && ent.name !== ".git" && ent.name !== "dist") {
+              walk(full);
+            }
+          } else if (/\.(tsx?|jsx?|css)$/.test(ent.name)) {
+            files.push(relative(this.repoRoot, full).replace(/\\/g, "/"));
+          }
+        }
+      } catch {}
+    };
+
+    walk(srcDir);
+    return files.sort();
   }
 }

@@ -20,16 +20,28 @@ export class ImplementationPlannerAgent {
     const timestamp = new Date().toISOString();
     const planId = `PLAN-${Date.now().toString().slice(-4)}`;
 
+    // Query existing source files for AST grounding
+    const existingFiles = this.astBridge.getSourceFiles();
     // Query caller/identity cards for candidate files
     const fileCards = candidateFiles.slice(0, 5).map((f) => this.astBridge.getFileCard(f));
 
     const systemPrompt = `You are the Implementation Planner Agent in the MetaFrame Autonomous Engineering System.
 Your job is to convert an approved PRD and ADR into an atomic, ordered, file-by-file implementation plan.
 
-RULES:
-1. Each step MUST target a DISTINCT file (e.g. index.html, styles.css, main.js).
-2. If building a self-contained single-file web application, create exactly 1 comprehensive CREATE step that writes the full standalone file.
-3. Target files: ${candidateFiles.length > 0 ? candidateFiles.join(", ") : "determine appropriate target file(s)"}
+CRITICAL RULES FOR ATOMIC IMPLEMENTATION:
+1. REUSE EXISTING FILES (MODIFY OVER CREATE):
+   Existing Source Files in Repository:
+   ${existingFiles.length > 0 ? existingFiles.join("\n   ") : "No existing source files."}
+   - NEVER create a file that duplicates or overlaps with an existing file! (e.g. NEVER create src/components/layout/Navbar.tsx if src/components/Navbar.tsx exists).
+   - If an existing component can be modified to fulfill the requirement (e.g. adding a theme toggle button or a sign-in modal trigger to Navbar), use actionType: "MODIFY" on that exact file!
+2. ZERO OVER-ENGINEERING (NO AUXILIARY HOOKS/CONTEXTS/TOKENS):
+   - Do NOT create separate files for simple hooks (e.g. usePersistentToggle.ts), isolated context providers (ThemeContext.tsx), or separate token files (tokens.ts, variables.css) unless explicitly demanded by the user.
+   - Implement state cleanly using standard inline React hooks (useState) inside the component.
+3. STANDALONE NEW COMPONENTS:
+   - Only use actionType: "CREATE" when introducing a genuinely new component that does NOT exist in the codebase (e.g. src/components/Pricing.tsx).
+   - If creating a new component, also add a step with actionType: "MODIFY" targeting the parent (e.g. src/App.tsx) to import and render it.
+4. Each step MUST target a DISTINCT file (e.g. src/components/Navbar.tsx).
+5. Target files: ${candidateFiles.length > 0 ? candidateFiles.join(", ") : "determine appropriate target file(s) from existing source files or genuine new components"}
 
 PRD ID: ${prd.id} (${prd.title})
 ADR ID: ${adr.id} (${adr.title})
