@@ -11,7 +11,11 @@ export class SolutionsArchitectAgent {
     this.astBridge = astBridge;
   }
 
-  public async createADR(prd: PRD, candidateFiles: string[] = []): Promise<ADR> {
+  public async createADR(
+    prd: PRD,
+    candidateFiles: string[] = [],
+    onToken?: (chunk: string) => void
+  ): Promise<ADR> {
     const timestamp = new Date().toISOString();
     const adrId = `ADR-${Date.now().toString().slice(-4)}`;
 
@@ -55,10 +59,13 @@ Return ONLY a valid JSON object matching this schema:
   "createdAt": "${timestamp}"
 }`;
 
-    const rawResponse = await this.llm.chat([
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Evaluate architecture and produce ADR for PRD: ${prd.id}` },
-    ]);
+    const rawResponse = await this.llm.chatStream(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Evaluate architecture and produce ADR for PRD: ${prd.id}` },
+      ],
+      onToken
+    );
 
     const fallback: ADR = {
       id: adrId,

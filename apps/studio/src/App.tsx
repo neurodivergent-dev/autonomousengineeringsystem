@@ -17,6 +17,7 @@ import {
   Layers,
   FileText,
   Clock,
+  Activity,
 } from "lucide-react";
 import "./App.css";
 
@@ -35,11 +36,18 @@ interface OpenFile {
   isDirty?: boolean;
 }
 
+interface ActivityLog {
+  time: string;
+  agent: "System" | "Orion" | "Daedalus" | "Vulcan" | "Gemma" | "Aegis" | "AST" | "Healer";
+  text: string;
+}
+
 interface ActiveWorkflow {
   prompt: string;
   currentPhase: number;
   phaseMessage: string;
   status: "idle" | "running" | "completed" | "error";
+  topologyRoutes?: string[];
   prd?: any;
   adr?: any;
   plan?: any;
@@ -50,9 +58,11 @@ interface ActiveWorkflow {
     total: number;
   };
   streamingCode?: string;
+  agentTokens?: { [agent: string]: string };
   tokenCount?: number;
   selfHeal?: { active: boolean; message?: string; failingGates?: string[] };
   gates: any[];
+  logs: ActivityLog[];
   error?: string;
 }
 
@@ -63,6 +73,16 @@ export function App() {
   const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
   const [activeFilePath, setActiveFilePath] = useState<string>("");
   const [editorContent, setEditorContent] = useState<string>("");
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1, 2, 3, 4, 5, 6]));
+
+  const toggleStepExpand = (stepNum: number) => {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepNum)) next.delete(stepNum);
+      else next.add(stepNum);
+      return next;
+    });
+  };
 
   // Aegis 6-Gate Status
   const [gateResults, setGateResults] = useState<{ [key: string]: boolean }>({
@@ -311,6 +331,13 @@ export function App() {
       phaseMessage: "Navigating AST Topology & Mapping Dependency Edges...",
       status: "running",
       gates: [],
+      logs: [
+        {
+          time: new Date().toTimeString().slice(0, 8),
+          agent: "System",
+          text: `Workflow initialized for "${userPrompt}"`,
+        },
+      ],
     };
     setActiveWorkflow(initialWorkflow);
 
@@ -324,23 +351,134 @@ export function App() {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          const now = new Date().toTimeString().slice(0, 8);
 
-          if (data.type === "phase") {
+          if (data.type === "start") {
+            setActiveWorkflow((prev) =>
+              prev ? { ...prev, logs: [...prev.logs, { time: now, agent: "System", text: `Pipeline engaging for target feature.` }] } : null
+            );
+          } else if (data.type === "phase") {
+            const agentName =
+              data.phase === 1
+                ? "AST"
+                : data.phase === 2
+                ? "Orion"
+                : data.phase === 3
+                ? "Daedalus"
+                : data.phase === 4
+                ? "Vulcan"
+                : data.phase === 5
+                ? "Gemma"
+                : "Aegis";
+            setExpandedSteps((prev) => new Set([...prev, data.phase]));
             setActiveWorkflow((prev) =>
               prev
                 ? {
                     ...prev,
                     currentPhase: data.phase,
                     phaseMessage: data.message,
+                    logs: [
+                      ...prev.logs,
+                      { time: now, agent: agentName as any, text: data.message },
+                    ],
+                  }
+                : null
+            );
+          } else if (data.type === "agent_activity") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: data.agent,
+                        text: data.text,
+                      },
+                    ],
+                  }
+                : null
+            );
+          } else if (data.type === "agent_token") {
+            setActiveWorkflow((prev) => {
+              if (!prev) return null;
+              const currentTokens = { ...(prev.agentTokens || {}) };
+              currentTokens[data.agent] = (currentTokens[data.agent] || "") + data.token;
+              return {
+                ...prev,
+                agentTokens: currentTokens,
+                tokenCount: (prev.tokenCount || 0) + 1,
+              };
+            });
+          } else if (data.type === "topology_complete") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    topologyRoutes: data.routes,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "System",
+                        text: `AST Topology mapped: ${data.routes?.length || 0} active routes/modules verified.`,
+                      },
+                    ],
                   }
                 : null
             );
           } else if (data.type === "prd_complete") {
-            setActiveWorkflow((prev) => (prev ? { ...prev, prd: data.prd } : null));
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    prd: data.prd,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Orion",
+                        text: `Drafted ${data.prd.id}: "${data.prd.title}" (${data.prd.userStories?.length || 0} user stories, ${data.prd.functionalRequirements?.length || 0} requirements).`,
+                      },
+                    ],
+                  }
+                : null
+            );
           } else if (data.type === "adr_complete") {
-            setActiveWorkflow((prev) => (prev ? { ...prev, adr: data.adr } : null));
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    adr: data.adr,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Daedalus",
+                        text: `ADR formulated: ${data.adr.id} (Blast Radius Risk: ${data.adr.blastRadiusRisk}, Strategy: ${data.adr.decision?.slice(0, 50)}...).`,
+                      },
+                    ],
+                  }
+                : null
+            );
           } else if (data.type === "plan_complete") {
-            setActiveWorkflow((prev) => (prev ? { ...prev, plan: data.plan } : null));
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    plan: data.plan,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Vulcan",
+                        text: `Plan created: ${data.plan.id} (${data.plan.steps.length} atomic task steps planned).`,
+                      },
+                    ],
+                  }
+                : null
+            );
           } else if (data.type === "code_step_start") {
             setActiveWorkflow((prev) =>
               prev
@@ -352,6 +490,14 @@ export function App() {
                       total: data.total,
                     },
                     streamingCode: "",
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Gemma",
+                        text: `Synthesizing [${data.index}/${data.total}]: ${data.targetFile}...`,
+                      },
+                    ],
                   }
                 : null
             );
@@ -365,14 +511,28 @@ export function App() {
                   }
                 : null
             );
+          } else if (data.type === "code_step_done") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Gemma",
+                        text: `Written to disk: ${data.targetFile} (${data.codeLength} bytes).`,
+                      },
+                    ],
+                  }
+                : null
+            );
           } else if (data.type === "code_complete") {
             setActiveWorkflow((prev) => (prev ? { ...prev, execution: data.execution } : null));
-            // Refresh file tree & reload open files!
             fetch(`${API_BASE}/workspace`)
               .then((res) => res.json())
               .then((ws) => setFileTree(ws.tree))
               .catch(() => {});
-            // Reload active file if modified
             if (activeFilePath) {
               fetch(`${API_BASE}/file?path=${encodeURIComponent(activeFilePath)}`)
                 .then((r) => r.json())
@@ -396,6 +556,14 @@ export function App() {
                       message: data.message,
                       failingGates: data.failingGates,
                     },
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Aegis",
+                        text: `Gate failure detected! Engaging Gemma for surgical patch on: ${data.failingGates?.join(", ")}.`,
+                      },
+                    ],
                   }
                 : null
             );
@@ -408,6 +576,14 @@ export function App() {
                       active: false,
                       message: data.message,
                     },
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Gemma",
+                        text: `Surgical patch verified clean! Code self-healed successfully.`,
+                      },
+                    ],
                   }
                 : null
             );
@@ -417,6 +593,14 @@ export function App() {
                 ? {
                     ...prev,
                     gates: [...prev.gates, data.gate],
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Aegis",
+                        text: `${data.gate.gateName}: ${data.gate.passed ? "✔ PASS" : "✖ FAIL"} (${data.gate.durationMs}ms)`,
+                      },
+                    ],
                   }
                 : null
             );
@@ -430,6 +614,14 @@ export function App() {
                     ...prev,
                     status: "completed",
                     phaseMessage: "Workflow Completed Successfully!",
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "System",
+                        text: "Autonomous engineering cycle complete! All artifacts verified.",
+                      },
+                    ],
                   }
                 : null
             );
@@ -442,6 +634,14 @@ export function App() {
                     ...prev,
                     status: "error",
                     error: data.message,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "System",
+                        text: `Error: ${data.message}`,
+                      },
+                    ],
                   }
                 : null
             );
@@ -520,7 +720,7 @@ export function App() {
           <span className="badge-tag">STUDIO</span>
           <div className="workspace-pill" title={targetRepo}>
             <Folder size={12} />
-            <span>{targetRepo.split(/[\\/]/).pop()}</span>
+            <span>{(targetRepo || "").split(/[\\/]/).pop() || "workspace"}</span>
           </div>
         </div>
 
@@ -600,7 +800,7 @@ export function App() {
                   fetchBlastRadius(tab.path);
                 }}
               >
-                <span>{tab.path.split("/").pop()}</span>
+                <span>{(tab?.path || "").split(/[\\/]/).pop() || "file"}</span>
                 {tab.isDirty && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#f59e0b" }} />}
                 <span className="tab-close" onClick={(e) => handleCloseTab(e, tab.path)}>
                   <X size={12} />
@@ -703,7 +903,7 @@ export function App() {
 
                 {/* Step 1: AST Topology & Route Navigation */}
                 <div className={`timeline-step ${activeWorkflow.currentPhase === 1 ? "active" : activeWorkflow.currentPhase > 1 ? "completed" : ""}`}>
-                  <div className="step-header">
+                  <div className="step-header accordion-toggle" onClick={() => toggleStepExpand(1)}>
                     <div className="step-title">
                       {activeWorkflow.currentPhase > 1 ? (
                         <CheckCircle size={14} color="#10b981" />
@@ -712,16 +912,41 @@ export function App() {
                       )}
                       <span>1. AST Topology & Navigation</span>
                     </div>
-                    <span className="step-badge blue">AST Grounding</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className="step-badge blue">AST Grounding</span>
+                      {expandedSteps.has(1) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </div>
                   </div>
-                  <div className="step-details">
-                    Navigating AST graph & identifying affected modules for target prompt.
-                  </div>
+                  {expandedSteps.has(1) && (
+                    <div className="step-expand-body">
+                      <div className="inspector-section">
+                        <div className="inspector-title">Target Workspace</div>
+                        <div style={{ color: "var(--text-main)", fontSize: "10px", wordBreak: "break-all" }}>
+                          {targetRepo}
+                        </div>
+                      </div>
+                      <div className="inspector-section">
+                        <div className="inspector-title">AST Domain Graph</div>
+                        <div style={{ color: "var(--text-muted)" }}>
+                          Mapped modules, components, and dependency hierarchy for active workspace.
+                        </div>
+                        {activeWorkflow.topologyRoutes && activeWorkflow.topologyRoutes.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                            {activeWorkflow.topologyRoutes.map((r, i) => (
+                              <span key={i} className="meta-chip" style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8" }}>
+                                {r}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Step 2: Orion - PRD Product Architecture */}
                 <div className={`timeline-step ${activeWorkflow.currentPhase === 2 ? "active" : activeWorkflow.prd ? "completed" : ""}`}>
-                  <div className="step-header">
+                  <div className="step-header accordion-toggle" onClick={() => toggleStepExpand(2)}>
                     <div className="step-title">
                       {activeWorkflow.prd ? (
                         <CheckCircle size={14} color="#10b981" />
@@ -732,27 +957,100 @@ export function App() {
                       )}
                       <span>2. Orion · Product Specification</span>
                     </div>
-                    {activeWorkflow.prd && <span className="step-badge purple">{activeWorkflow.prd.id}</span>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {activeWorkflow.prd && <span className="step-badge purple">{activeWorkflow.prd.id}</span>}
+                      {expandedSteps.has(2) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </div>
                   </div>
-                  {activeWorkflow.prd ? (
-                    <div className="step-details">
-                      <div style={{ fontWeight: 600, color: "var(--text-main)", marginBottom: 4 }}>
-                        {activeWorkflow.prd.title}
-                      </div>
-                      <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                        User Stories: {activeWorkflow.prd.userStories?.length || 0} · Requirements: {activeWorkflow.prd.requirements?.length || 0}
-                      </div>
+                  {expandedSteps.has(2) && (
+                    <div className="step-expand-body">
+                      {activeWorkflow.prd ? (
+                        <>
+                          <div style={{ fontWeight: 700, color: "var(--text-main)", fontSize: "12px" }}>
+                            {activeWorkflow.prd.title}
+                          </div>
+                          {activeWorkflow.prd.overview && (
+                            <p style={{ color: "var(--text-muted)", fontSize: "11px", margin: 0 }}>
+                              {activeWorkflow.prd.overview}
+                            </p>
+                          )}
+
+                          {/* User Stories */}
+                          {activeWorkflow.prd.userStories && activeWorkflow.prd.userStories.length > 0 && (
+                            <div className="inspector-section">
+                              <div className="inspector-title">User Stories ({activeWorkflow.prd.userStories.length})</div>
+                              {activeWorkflow.prd.userStories.map((us: any, idx: number) => (
+                                <div key={idx} className="user-story-card">
+                                  {typeof us === "string" ? (
+                                    us
+                                  ) : (
+                                    <div>
+                                      <span style={{ color: "#c084fc", fontWeight: 700 }}>Story #{idx + 1}</span>
+                                      {us.persona && <span style={{ color: "var(--text-dim)" }}> ({us.persona})</span>}
+                                      <div style={{ marginTop: 2 }}>
+                                        <strong>Want:</strong> {us.want}
+                                      </div>
+                                      <div style={{ color: "var(--text-muted)", marginTop: 1 }}>
+                                        <strong>Benefit:</strong> {us.soThat}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Acceptance Criteria */}
+                          {activeWorkflow.prd.acceptanceCriteria && activeWorkflow.prd.acceptanceCriteria.length > 0 && (
+                            <div className="inspector-section">
+                              <div className="inspector-title">Acceptance Criteria</div>
+                              {activeWorkflow.prd.acceptanceCriteria.map((ac: string, idx: number) => (
+                                <div key={idx} className="criteria-item">
+                                  <CheckCircle size={12} color="#10b981" style={{ flexShrink: 0, marginTop: 2 }} />
+                                  <span>{ac}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Functional Requirements */}
+                          {activeWorkflow.prd.functionalRequirements && activeWorkflow.prd.functionalRequirements.length > 0 && (
+                            <div className="inspector-section">
+                              <div className="inspector-title">Functional Requirements</div>
+                              <ul style={{ paddingLeft: 16, margin: 0, color: "var(--text-muted)" }}>
+                                {activeWorkflow.prd.functionalRequirements.map((req: string, idx: number) => (
+                                  <li key={idx} style={{ margin: "2px 0" }}>{req}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      ) : activeWorkflow.agentTokens?.["Orion"] ? (
+                        <div className="streaming-code-terminal">
+                          <div className="terminal-header">
+                            <div className="terminal-title">
+                              <Sparkles size={12} color="#c084fc" />
+                              <span>Orion Spec Stream ({activeWorkflow.agentTokens["Orion"].length} chars)</span>
+                            </div>
+                            <span className="live-indicator"><span className="pulse-dot" /> STREAMING</span>
+                          </div>
+                          <pre className="terminal-body" style={{ maxHeight: 180, fontSize: "11px" }}>
+                            {activeWorkflow.agentTokens["Orion"]}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+                          <span className="pulse-dot" />
+                          <span>{activeWorkflow.phaseMessage || "Orion is drafting structured PRD, personas, and criteria..."}</span>
+                        </div>
+                      )}
                     </div>
-                  ) : activeWorkflow.currentPhase === 2 ? (
-                    <div className="step-details">
-                      {activeWorkflow.phaseMessage || "Generating structured PRD with user stories & requirements..."}
-                    </div>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Step 3: Daedalus - Solutions Architecture & ADR */}
                 <div className={`timeline-step ${activeWorkflow.currentPhase === 3 ? "active" : activeWorkflow.adr ? "completed" : ""}`}>
-                  <div className="step-header">
+                  <div className="step-header accordion-toggle" onClick={() => toggleStepExpand(3)}>
                     <div className="step-title">
                       {activeWorkflow.adr ? (
                         <CheckCircle size={14} color="#10b981" />
@@ -763,31 +1061,94 @@ export function App() {
                       )}
                       <span>3. Daedalus · Architectural Decision</span>
                     </div>
-                    {activeWorkflow.adr && (
-                      <span className={`step-badge ${activeWorkflow.adr.blastRadiusRisk === "HIGH" ? "amber" : "emerald"}`}>
-                        Risk: {activeWorkflow.adr.blastRadiusRisk}
-                      </span>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {activeWorkflow.adr && (
+                        <span className={`step-badge ${activeWorkflow.adr.blastRadiusRisk === "HIGH" ? "amber" : "emerald"}`}>
+                          Risk: {activeWorkflow.adr.blastRadiusRisk}
+                        </span>
+                      )}
+                      {expandedSteps.has(3) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </div>
                   </div>
-                  {activeWorkflow.adr ? (
-                    <div className="step-details">
-                      <div style={{ fontWeight: 600, color: "var(--text-main)", marginBottom: 4 }}>
-                        {activeWorkflow.adr.title} ({activeWorkflow.adr.id})
-                      </div>
-                      <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                        Affected Components: {activeWorkflow.adr.affectedComponents?.length || 0} · Strategy: {activeWorkflow.adr.strategy || "AST-Guided"}
-                      </div>
+                  {expandedSteps.has(3) && (
+                    <div className="step-expand-body">
+                      {activeWorkflow.adr ? (
+                        <>
+                          <div style={{ fontWeight: 700, color: "var(--text-main)", fontSize: "12px" }}>
+                            {activeWorkflow.adr.title} ({activeWorkflow.adr.id})
+                          </div>
+                          {activeWorkflow.adr.decision && (
+                            <div className="inspector-section">
+                              <div className="inspector-title">Architecture Decision</div>
+                              <p style={{ color: "var(--text-main)", margin: 0, background: "rgba(244, 114, 182, 0.06)", padding: "6px 8px", borderRadius: 4, border: "1px solid rgba(244, 114, 182, 0.15)" }}>
+                                {activeWorkflow.adr.decision}
+                              </p>
+                            </div>
+                          )}
+                          {activeWorkflow.adr.context && (
+                            <div className="inspector-section">
+                              <div className="inspector-title">Context & Justification</div>
+                              <p style={{ color: "var(--text-muted)", margin: 0 }}>
+                                {activeWorkflow.adr.context}
+                              </p>
+                            </div>
+                          )}
+                          {activeWorkflow.adr.impactedModules && activeWorkflow.adr.impactedModules.length > 0 && (
+                            <div className="inspector-section">
+                              <div className="inspector-title">Impacted Modules & Components</div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                {activeWorkflow.adr.impactedModules.map((m: string, idx: number) => (
+                                  <span key={idx} className="file-link-pill" onClick={() => handleOpenFile(m)}>
+                                    {m}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {activeWorkflow.adr.consequences && (
+                            <div className="inspector-section">
+                              <div className="inspector-title">Trade-offs & Consequences</div>
+                              {activeWorkflow.adr.consequences.positive?.map((p: string, idx: number) => (
+                                <div key={idx} style={{ color: "#34d399", display: "flex", gap: 6, fontSize: "11px" }}>
+                                  <span>✔</span>
+                                  <span>{p}</span>
+                                </div>
+                              ))}
+                              {activeWorkflow.adr.consequences.risks?.map((r: string, idx: number) => (
+                                <div key={idx} style={{ color: "#f59e0b", display: "flex", gap: 6, fontSize: "11px" }}>
+                                  <span>⚠</span>
+                                  <span>{r}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : activeWorkflow.agentTokens?.["Daedalus"] ? (
+                        <div className="streaming-code-terminal">
+                          <div className="terminal-header">
+                            <div className="terminal-title">
+                              <Layers size={12} color="#f472b6" />
+                              <span>Daedalus ADR Stream ({activeWorkflow.agentTokens["Daedalus"].length} chars)</span>
+                            </div>
+                            <span className="live-indicator"><span className="pulse-dot" /> STREAMING</span>
+                          </div>
+                          <pre className="terminal-body" style={{ maxHeight: 180, fontSize: "11px" }}>
+                            {activeWorkflow.agentTokens["Daedalus"]}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+                          <span className="pulse-dot" />
+                          <span>{activeWorkflow.phaseMessage || "Calculating AST blast radius & selecting architecture pattern..."}</span>
+                        </div>
+                      )}
                     </div>
-                  ) : activeWorkflow.currentPhase === 3 ? (
-                    <div className="step-details">
-                      {activeWorkflow.phaseMessage || "Calculating AST blast radius & selecting architecture pattern..."}
-                    </div>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Step 4: Vulcan - Implementation Task Plan */}
                 <div className={`timeline-step ${activeWorkflow.currentPhase === 4 ? "active" : activeWorkflow.plan ? "completed" : ""}`}>
-                  <div className="step-header">
+                  <div className="step-header accordion-toggle" onClick={() => toggleStepExpand(4)}>
                     <div className="step-title">
                       {activeWorkflow.plan ? (
                         <CheckCircle size={14} color="#10b981" />
@@ -798,54 +1159,83 @@ export function App() {
                       )}
                       <span>4. Vulcan · Atomic Execution Plan</span>
                     </div>
-                    {activeWorkflow.plan && (
-                      <span className="step-badge amber">{activeWorkflow.plan.steps.length} Steps</span>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {activeWorkflow.plan && (
+                        <span className="step-badge amber">{activeWorkflow.plan.steps.length} Steps</span>
+                      )}
+                      {expandedSteps.has(4) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </div>
                   </div>
-                  {activeWorkflow.plan ? (
-                    <div className="step-details">
-                      <div style={{ fontWeight: 600, color: "var(--text-main)", marginBottom: 6 }}>
-                        {activeWorkflow.plan.id} · Tasks Grounded:
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {activeWorkflow.plan.steps.map((st: any, i: number) => {
-                          const file = st.targetFile || st.filePath || "";
-                          const action = st.actionType || st.type || "MODIFY";
-                          return (
-                            <div key={i} className="task-step-item">
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                <span style={{ color: "var(--accent)", fontWeight: 700 }}>#{st.order || i + 1}</span>
-                                <span
-                                  className="file-link-pill"
-                                  title="Click to open file in editor"
-                                  onClick={() => file && handleOpenFile(file)}
-                                >
-                                  <FileCode size={11} />
-                                  <span>{file ? file.split(/[\\/]/).pop() : "file"}</span>
-                                </span>
-                                <span style={{ fontSize: "10px", color: "#38bdf8", background: "rgba(56, 189, 248, 0.1)", padding: "1px 5px", borderRadius: 3 }}>
-                                  {action}
-                                </span>
+                  {expandedSteps.has(4) && (
+                    <div className="step-expand-body">
+                      {activeWorkflow.plan ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {activeWorkflow.plan.steps.map((st: any, i: number) => {
+                            const file = st.targetFile || st.filePath || "";
+                            const action = st.actionType || st.type || "MODIFY";
+                            return (
+                              <div key={i} className="task-step-item" style={{ flexDirection: "column", background: "rgba(255, 255, 255, 0.02)", padding: 8, borderRadius: 6, border: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", width: "100%" }}>
+                                  <span style={{ color: "var(--accent)", fontWeight: 700 }}>Task #{st.order || i + 1}</span>
+                                  <span
+                                    className="file-link-pill"
+                                    title="Click to open file in editor"
+                                    onClick={() => file && handleOpenFile(file)}
+                                  >
+                                    <FileCode size={11} />
+                                    <span>{file ? file.split(/[\\/]/).pop() : "file"}</span>
+                                  </span>
+                                  <span style={{
+                                    fontSize: "10px",
+                                    color: action === "CREATE" ? "#34d399" : action === "DELETE" ? "#ef4444" : "#38bdf8",
+                                    background: action === "CREATE" ? "rgba(52, 211, 153, 0.1)" : "rgba(56, 189, 248, 0.1)",
+                                    padding: "1px 5px",
+                                    borderRadius: 3,
+                                    fontWeight: 700,
+                                  }}>
+                                    {action}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: "11px", color: "var(--text-main)", marginTop: 4 }}>
+                                  {st.description}
+                                </div>
+                                {st.testCriteria && (
+                                  <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: 4, display: "flex", gap: 4 }}>
+                                    <span style={{ color: "#fbbf24", fontWeight: 700 }}>Verification Criteria:</span>
+                                    <span>{st.testCriteria}</span>
+                                  </div>
+                                )}
                               </div>
-                              <div style={{ fontSize: "11px", color: "var(--text-main)", marginTop: 2 }}>
-                                {st.description}
-                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : activeWorkflow.agentTokens?.["Vulcan"] ? (
+                        <div className="streaming-code-terminal">
+                          <div className="terminal-header">
+                            <div className="terminal-title">
+                              <FileCode size={12} color="#fbbf24" />
+                              <span>Vulcan Task Plan Stream ({activeWorkflow.agentTokens["Vulcan"].length} chars)</span>
                             </div>
-                          );
-                        })}
-                      </div>
+                            <span className="live-indicator"><span className="pulse-dot" /> STREAMING</span>
+                          </div>
+                          <pre className="terminal-body" style={{ maxHeight: 180, fontSize: "11px" }}>
+                            {activeWorkflow.agentTokens["Vulcan"]}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+                          <span className="pulse-dot" />
+                          <span>{activeWorkflow.phaseMessage || "Generating surgical, atomic file modifications..."}</span>
+                        </div>
+                      )}
                     </div>
-                  ) : activeWorkflow.currentPhase === 4 ? (
-                    <div className="step-details">
-                      {activeWorkflow.phaseMessage || "Generating surgical, atomic file modifications..."}
-                    </div>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Step 5: Autonomous Code Generation & Disk Write */}
                 {autoCodeWrite && (
                   <div className={`timeline-step ${activeWorkflow.currentPhase === 5 ? "active" : activeWorkflow.execution ? "completed" : ""}`}>
-                    <div className="step-header">
+                    <div className="step-header accordion-toggle" onClick={() => toggleStepExpand(5)}>
                       <div className="step-title">
                         {activeWorkflow.execution?.overallSuccess ? (
                           <CheckCircle size={14} color="#10b981" />
@@ -856,68 +1246,79 @@ export function App() {
                         )}
                         <span>5. Gemma 4 · Live Code Generation</span>
                       </div>
-                      {activeWorkflow.execution && (
-                        <span className="step-badge emerald">
-                          {activeWorkflow.execution.executedSteps.length} Files Written
-                        </span>
-                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {activeWorkflow.execution && (
+                          <span className="step-badge emerald">
+                            {activeWorkflow.execution.executedSteps.length} Files Written
+                          </span>
+                        )}
+                        {expandedSteps.has(5) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      </div>
                     </div>
-                    {activeWorkflow.execution ? (
-                      <div className="step-details">
-                        <div style={{ color: "#34d399", fontWeight: 600, marginBottom: 4 }}>
-                          ✔ Successfully written to workspace disk:
-                        </div>
-                        {activeWorkflow.execution.executedSteps.map((st: any, idx: number) => {
-                          const file = st.filePath || st.targetFile || st.step?.targetFile || "";
-                          return (
-                            <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, margin: "2px 0" }}>
-                              <span
-                                className="file-link-pill"
-                                onClick={() => file && handleOpenFile(file)}
-                              >
-                                <FileCode size={11} />
-                                <span>{file ? file.split(/[\\/]/).pop() : "file"}</span>
-                              </span>
-                              <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
-                                ({st.codeLength || 0} bytes)
+                    {expandedSteps.has(5) && (
+                      <div className="step-expand-body">
+                        {activeWorkflow.execution ? (
+                          <div>
+                            <div style={{ color: "#34d399", fontWeight: 600, marginBottom: 4 }}>
+                              ✔ Successfully written to workspace disk:
+                            </div>
+                            {activeWorkflow.execution.executedSteps.map((st: any, idx: number) => {
+                              const file = st.filePath || st.targetFile || st.step?.targetFile || "";
+                              return (
+                                <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, margin: "2px 0" }}>
+                                  <span
+                                    className="file-link-pill"
+                                    onClick={() => file && handleOpenFile(file)}
+                                  >
+                                    <FileCode size={11} />
+                                    <span>{file ? file.split(/[\\/]/).pop() : "file"}</span>
+                                  </span>
+                                  <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+                                    ({st.codeLength || 0} bytes)
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : activeWorkflow.currentPhase === 5 ? (
+                          <div>
+                            <div style={{ fontSize: "11px", color: "#38bdf8", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                              <span className="pulse-dot green" />
+                              <span>
+                                {activeWorkflow.currentCodeStep
+                                  ? `Live Code Synthesis: ${activeWorkflow.currentCodeStep.targetFile} [${activeWorkflow.currentCodeStep.index}/${activeWorkflow.currentCodeStep.total}]`
+                                  : "Gemma 4 GPU synthesizing code..."}
                               </span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : activeWorkflow.currentPhase === 5 ? (
-                      <div className="step-details">
-                        <div style={{ fontSize: "11px", color: "#38bdf8", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                          <span className="pulse-dot green" />
-                          <span>
-                            {activeWorkflow.currentCodeStep
-                              ? `Live Code Synthesis: ${activeWorkflow.currentCodeStep.targetFile} [${activeWorkflow.currentCodeStep.index}/${activeWorkflow.currentCodeStep.total}]`
-                              : "Gemma 4 GPU synthesizing code..."}
-                          </span>
-                        </div>
 
-                        {/* Live Monospaced Terminal with real-time autoscroll */}
-                        <div className="streaming-code-terminal">
-                          <div className="terminal-header">
-                            <span style={{ color: "#94a3b8" }}>
-                              {activeWorkflow.currentCodeStep?.targetFile || "source_stream.tsx"}
-                            </span>
-                            <span style={{ color: "#38bdf8", fontWeight: 700 }}>
-                              {activeWorkflow.tokenCount || 0} tokens
-                            </span>
+                            {/* Live Monospaced Terminal with real-time autoscroll */}
+                            <div className="streaming-code-terminal">
+                              <div className="terminal-header">
+                                <span style={{ color: "#94a3b8" }}>
+                                  {activeWorkflow.currentCodeStep?.targetFile || "source_stream.tsx"}
+                                </span>
+                                <span style={{ color: "#38bdf8", fontWeight: 700 }}>
+                                  {activeWorkflow.tokenCount || 0} tokens
+                                </span>
+                              </div>
+                              <div
+                                className="terminal-body"
+                                ref={(el) => {
+                                  if (el) el.scrollTop = el.scrollHeight;
+                                }}
+                              >
+                                {activeWorkflow.streamingCode || "// Establishing GPU token stream...\n// Preparing syntax AST..."}
+                                <span className="terminal-cursor">▋</span>
+                              </div>
+                            </div>
                           </div>
-                          <div
-                            className="terminal-body"
-                            ref={(el) => {
-                              if (el) el.scrollTop = el.scrollHeight;
-                            }}
-                          >
-                            {activeWorkflow.streamingCode || "// Establishing GPU token stream...\n// Preparing syntax AST..."}
-                            <span className="terminal-cursor">▋</span>
+                        ) : (
+                          <div style={{ color: "var(--text-muted)" }}>
+                            Awaiting Vulcan plan approval to begin code synthesis.
                           </div>
-                        </div>
+                        )}
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 )}
 
@@ -939,7 +1340,7 @@ export function App() {
 
                 {/* Step 6: Aegis - Deterministic 6-Gate Verification */}
                 <div className={`timeline-step ${activeWorkflow.currentPhase === 6 || activeWorkflow.gates.length > 0 ? "active" : ""}`}>
-                  <div className="step-header">
+                  <div className="step-header accordion-toggle" onClick={() => toggleStepExpand(6)}>
                     <div className="step-title">
                       {activeWorkflow.gates.length >= 6 ? (
                         <CheckCircle size={14} color="#10b981" />
@@ -950,24 +1351,66 @@ export function App() {
                       )}
                       <span>6. Aegis · Deterministic 6-Gate Quality</span>
                     </div>
-                    <span className="step-badge emerald">
-                      {activeWorkflow.gates.filter((g) => g.passed).length}/{activeWorkflow.gates.length || 6} Gates
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className="step-badge emerald">
+                        {activeWorkflow.gates.filter((g) => g.passed).length}/{activeWorkflow.gates.length || 6} Gates
+                      </span>
+                      {expandedSteps.has(6) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    </div>
                   </div>
-                  {activeWorkflow.gates.length > 0 && (
-                    <div className="step-details" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {activeWorkflow.gates.map((g, idx) => (
-                        <div
-                          key={idx}
-                          className={`gate-chip ${g.passed ? "pass" : "fail"}`}
-                          style={{ fontSize: "10px", padding: "2px 6px" }}
-                        >
-                          {g.passed ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
-                          <span>{g.gateName} ({g.durationMs}ms)</span>
+                  {expandedSteps.has(6) && activeWorkflow.gates.length > 0 && (
+                    <div className="step-expand-body">
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {activeWorkflow.gates.map((g, idx) => (
+                          <div
+                            key={idx}
+                            className={`gate-chip ${g.passed ? "pass" : "fail"}`}
+                            style={{ fontSize: "10px", padding: "3px 8px" }}
+                          >
+                            {g.passed ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
+                            <span>{g.gateName} ({g.durationMs}ms)</span>
+                          </div>
+                        ))}
+                      </div>
+                      {activeWorkflow.gates.some((g) => !g.passed && g.errors?.length > 0) && (
+                        <div className="inspector-section" style={{ marginTop: 4 }}>
+                          <div className="inspector-title" style={{ color: "#ef4444" }}>Gate Feedback & Violations</div>
+                          {activeWorkflow.gates.filter((g) => !g.passed).map((g, i) => (
+                            <div key={i} style={{ background: "rgba(239, 68, 68, 0.08)", padding: 6, borderRadius: 4, border: "1px solid rgba(239, 68, 68, 0.2)" }}>
+                              <strong style={{ color: "#ef4444" }}>{g.gateName}:</strong>
+                              <ul style={{ margin: "2px 0 0 16px", color: "var(--text-muted)" }}>
+                                {g.errors.map((err: string, ei: number) => (
+                                  <li key={ei}>{err}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
+                </div>
+
+                {/* ── Multi-Agent Live Activity Feed & Telemetry ── */}
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "10px", fontWeight: 700, color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      <Activity size={12} color="var(--accent)" />
+                      <span>Multi-Agent Live Activity Telemetry</span>
+                    </div>
+                    <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+                      {activeWorkflow.logs?.length || 0} events
+                    </span>
+                  </div>
+                  <div className="activity-feed">
+                    {activeWorkflow.logs?.map((log, idx) => (
+                      <div key={idx} className="activity-log-line">
+                        <span className="log-time">[{log.time}]</span>
+                        <span className={`log-agent ${log.agent}`}>[{log.agent}]</span>
+                        <span className="log-text">{log.text}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Error Banner if workflow failed */}

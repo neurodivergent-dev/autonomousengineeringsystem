@@ -525,6 +525,126 @@ body, html, #root {
   50% { opacity: 0; }
 }
 
+/* ── Agent Accordion & Deep Inspector ── */
+.accordion-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.accordion-toggle:hover .step-title {
+  color: var(--accent);
+}
+
+.step-expand-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.2s ease;
+}
+
+.inspector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.inspector-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.user-story-card {
+  background: rgba(192, 132, 252, 0.06);
+  border: 1px solid rgba(192, 132, 252, 0.15);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text-main);
+}
+
+.criteria-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ── Live Agent Telemetry & Activity Feed ── */
+.activity-feed {
+  margin-top: 12px;
+  background: #07080c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.activity-log-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.log-time {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.log-agent {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.log-agent.AST { color: #22d3ee; }
+.log-agent.Orion { color: #c084fc; }
+.log-agent.Daedalus { color: #f472b6; }
+.log-agent.Vulcan { color: #fbbf24; }
+.log-agent.Gemma { color: #38bdf8; }
+.log-agent.Aegis { color: #34d399; }
+.log-agent.Healer { color: #f43f5e; }
+.log-agent.System { color: var(--text-dim); }
+
+.log-text {
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes pulse {
   0% { transform: scale(0.9); opacity: 0.7; }
   50% { transform: scale(1.2); opacity: 1; }

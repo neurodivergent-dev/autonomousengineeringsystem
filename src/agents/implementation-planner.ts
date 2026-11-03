@@ -11,7 +11,12 @@ export class ImplementationPlannerAgent {
     this.astBridge = astBridge;
   }
 
-  public async createPlan(prd: PRD, adr: ADR, candidateFiles: string[] = []): Promise<ImplementationPlan> {
+  public async createPlan(
+    prd: PRD,
+    adr: ADR,
+    candidateFiles: string[] = [],
+    onToken?: (chunk: string) => void
+  ): Promise<ImplementationPlan> {
     const timestamp = new Date().toISOString();
     const planId = `PLAN-${Date.now().toString().slice(-4)}`;
 
@@ -60,10 +65,13 @@ Return ONLY a valid JSON object matching this schema:
   "createdAt": "${timestamp}"
 }`;
 
-    const rawResponse = await this.llm.chat([
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Generate step-by-step implementation plan for ADR ${adr.id}` },
-    ]);
+    const rawResponse = await this.llm.chatStream(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate step-by-step implementation plan for ADR ${adr.id}` },
+      ],
+      onToken
+    );
 
     const fallback: ImplementationPlan = {
       id: planId,

@@ -8,7 +8,11 @@ export class ProductDiscoveryAgent {
     this.llm = llm;
   }
 
-  public async createPRD(featurePrompt: string, domainContext: string = ""): Promise<PRD> {
+  public async createPRD(
+    featurePrompt: string,
+    domainContext: string = "",
+    onToken?: (chunk: string) => void
+  ): Promise<PRD> {
     const timestamp = new Date().toISOString();
     const prdId = `PRD-${Date.now().toString().slice(-4)}`;
 
@@ -35,10 +39,13 @@ Return ONLY a valid JSON object matching this schema:
   "createdAt": "${timestamp}"
 }`;
 
-    const rawResponse = await this.llm.chat([
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Feature request:\n${featurePrompt}` },
-    ]);
+    const rawResponse = await this.llm.chatStream(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Feature request:\n${featurePrompt}` },
+      ],
+      onToken
+    );
 
     const fallback: PRD = {
       id: prdId,

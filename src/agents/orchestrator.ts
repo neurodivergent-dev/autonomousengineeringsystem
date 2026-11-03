@@ -61,30 +61,45 @@ export class LeadOrchestrator {
     // 1. Gather AST Domain & Navigation context
     console.log(`\x1b[34m[1/${executeCode ? 5 : 4}] Querying AST Codebase Topology...\x1b[0m`);
     onProgress?.({ type: "phase", phase: 1, name: "Topology", message: "AST Kod Ağacı ve Etki Alanı Haritası Çıkarılıyor..." });
+    onProgress?.({ type: "agent_activity", agent: "AST", text: "AST kod ağacı taranıyor; yönlendirmeler ve modül ilişkileri haritalanıyor..." });
     const routesSummary = this.astBridge.getRoutes();
+    onProgress?.({ type: "agent_activity", agent: "AST", text: "AST haritası hazırlandı; mevcut rota ve sembol bağlantıları çözüldü." });
+    onProgress?.({ type: "topology_complete", routes: routesSummary });
 
     // 2. Product Discovery
     console.log(`\x1b[34m[2/${executeCode ? 5 : 4}] Product Discovery Agent: Generating PRD...\x1b[0m`);
     onProgress?.({ type: "phase", phase: 2, name: "PRD", message: "Orion: Ürün Gereksinim Dokümanı (PRD) Yazılıyor..." });
-    const prd = await this.discoveryAgent.createPRD(featurePrompt, routesSummary);
+    onProgress?.({ type: "agent_activity", agent: "Orion", text: "Kullanıcı talebi analiz ediliyor; kullanıcı hikayeleri ve kabul kriterleri oluşturuluyor..." });
+    const prd = await this.discoveryAgent.createPRD(featurePrompt, routesSummary, (token) => {
+      onProgress?.({ type: "agent_token", agent: "Orion", phase: 2, token });
+    });
     this.store.savePRD(prd);
     console.log(`\x1b[32m  ✔ Generated ${prd.id}: "${prd.title}"\x1b[0m`);
+    onProgress?.({ type: "agent_activity", agent: "Orion", text: `✔ PRD onaylandı: "${prd.title}" (${prd.userStories?.length || 0} kullanıcı hikayesi, ${prd.functionalRequirements?.length || 0} gereksinim)` });
     onProgress?.({ type: "prd_complete", prd });
 
     // 3. Solutions Architecture
     console.log(`\x1b[34m[3/${executeCode ? 5 : 4}] Solutions Architect Agent: Formulating ADR with Blast Radius...\x1b[0m`);
     onProgress?.({ type: "phase", phase: 3, name: "ADR", message: "Daedalus: AST Blast Radius Etki Analizi ve Mimari Karar (ADR) Alınıyor..." });
-    const adr = await this.architectAgent.createADR(prd, candidateFiles);
+    onProgress?.({ type: "agent_activity", agent: "Daedalus", text: "AST etki alanı (blast radius) ve modül bağımlılıkları inceleniyor..." });
+    const adr = await this.architectAgent.createADR(prd, candidateFiles, (token) => {
+      onProgress?.({ type: "agent_token", agent: "Daedalus", phase: 3, token });
+    });
     this.store.saveADR(adr);
     console.log(`\x1b[32m  ✔ Generated ${adr.id}: "${adr.title}" (Risk: ${adr.blastRadiusRisk})\x1b[0m`);
+    onProgress?.({ type: "agent_activity", agent: "Daedalus", text: `✔ Mimari karar kabul edildi: "${adr.title}" [Risk: ${adr.blastRadiusRisk}]` });
     onProgress?.({ type: "adr_complete", adr });
 
     // 4. Implementation Planning
     console.log(`\x1b[34m[4/${executeCode ? 5 : 4}] Implementation Planner Agent: Producing atomic task plan...\x1b[0m`);
     onProgress?.({ type: "phase", phase: 4, name: "Plan", message: "Vulcan: Atomik Dosya ve Kod Uygulama Planı Hazırlanıyor..." });
-    const plan = await this.plannerAgent.createPlan(prd, adr, candidateFiles);
+    onProgress?.({ type: "agent_activity", agent: "Vulcan", text: "Mimari karara göre adım adım dosya bazlı uygulama planı ve test kriterleri çıkarılıyor..." });
+    const plan = await this.plannerAgent.createPlan(prd, adr, candidateFiles, (token) => {
+      onProgress?.({ type: "agent_token", agent: "Vulcan", phase: 4, token });
+    });
     this.store.savePlan(plan);
     console.log(`\x1b[32m  ✔ Generated ${plan.id} (${plan.steps.length} steps planned)\x1b[0m`);
+    onProgress?.({ type: "agent_activity", agent: "Vulcan", text: `✔ Uygulama Planı hazır: ${plan.steps?.length || 0} atomik görev yapılandırıldı.` });
     onProgress?.({ type: "plan_complete", plan });
 
     let execution: PlanExecutionSummary | undefined;
@@ -123,12 +138,18 @@ export class LeadOrchestrator {
     // 6. Run Verification Gates
     console.log(`\n\x1b[33m[Verification] Running Deterministic 6-Gate Safety Chain...\x1b[0m`);
     onProgress?.({ type: "phase", phase: 6, name: "Gates", message: "Aegis: 6 Deterministik Kalite ve Güvenlik Kapısı Koşuyor..." });
+    onProgress?.({ type: "agent_activity", agent: "Aegis", text: "6 aşamalı deterministik kalite kapısı doğrulaması başlatıldı..." });
     const primaryTarget = candidateFiles[0] || (execution?.executedSteps[0]?.filePath) || undefined;
     let report = this.gateRunner.runAllGates(primaryTarget);
 
     report.gates.forEach((g) => {
       const statusIcon = g.passed ? "\x1b[32m✔ PASS\x1b[0m" : "\x1b[31m✖ FAIL\x1b[0m";
       console.log(`  ${statusIcon} ${g.gateName} (${g.durationMs}ms)`);
+      onProgress?.({
+        type: "agent_activity",
+        agent: "Aegis",
+        text: `Kapı [${g.gateName}]: ${g.passed ? "✔ GEÇTİ" : `✖ İHLAL (${g.errors.length} hata)`} (${g.durationMs}ms)`,
+      });
       onProgress?.({ type: "gate_result", gate: g });
     });
 
@@ -143,24 +164,50 @@ export class LeadOrchestrator {
           failingGates: failingGates.map((g) => g.gateName),
           message: "Kapı ihlali tespit edildi! Gemma 4 cerrahi yama uyguluyor...",
         });
+        onProgress?.({
+          type: "agent_activity",
+          agent: "Healer",
+          text: `Cerrahi onarım başlatıldı: ${failingGates.map((g) => g.gateName).join(", ")} kurallarına göre kod yamalanıyor...`,
+        });
 
         const healResult = await this.codeHealer.healFile(primaryTarget, failingGates);
         if (healResult.healed) {
           selfHealed = true;
           console.log(`\x1b[33m[Self-Healing Loop]\x1b[0m Re-running 6-Gate safety chain on patched code...`);
+          onProgress?.({
+            type: "agent_activity",
+            agent: "Healer",
+            text: "Cerrahi yama uygulandı; kalite kapıları yeniden doğrulanıyor...",
+          });
           const retestReport = this.gateRunner.runAllGates(primaryTarget);
           retestReport.gates.forEach((g) => {
             const statusIcon = g.passed ? "\x1b[32m✔ PASS\x1b[0m" : "\x1b[31m✖ FAIL\x1b[0m";
             console.log(`  ${statusIcon} ${g.gateName} (${g.durationMs}ms)`);
+            onProgress?.({
+              type: "agent_activity",
+              agent: "Aegis",
+              text: `Yeniden Doğrulama [${g.gateName}]: ${g.passed ? "✔ GEÇTİ" : "✖ BAŞARISIZ"}`,
+            });
             onProgress?.({ type: "gate_result", gate: g, isRetest: true });
           });
           if (retestReport.overallPassed) {
             console.log(`\x1b[32m✔ [Self-Healing Loop] All gates verified clean! Code self-healed successfully.\x1b[0m`);
+            onProgress?.({
+              type: "agent_activity",
+              agent: "Healer",
+              text: "✔ Kod cerrahi olarak başarıyla iyileştirildi; tüm kapılar yeşil!",
+            });
             onProgress?.({ type: "self_heal_success", message: "Cerrahi yama başarıyla doğrulandı, tüm kapılar temiz!" });
             report = retestReport;
           }
         }
       }
+    } else if (report.overallPassed) {
+      onProgress?.({
+        type: "agent_activity",
+        agent: "Aegis",
+        text: "✔ Tüm kalite kapıları ilk denemede 0 hata ile eksiksiz onaylandı!",
+      });
     }
 
     console.log(
