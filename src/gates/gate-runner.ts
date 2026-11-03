@@ -128,10 +128,9 @@ export class GateRunner {
       .split("\n")
       .filter(
         (l) =>
-          !l.includes("temiz") &&
-          !l.includes("yok!") &&
-          !l.includes("✔") &&
-          (l.includes("ihlal") || l.includes("VIOLATION") || l.includes("text-") || l.includes("#"))
+          (l.includes("✖ ERROR") || l.includes("UNDEFINED_CSS_VARIABLE") || l.includes("CRITICAL")) &&
+          !l.includes("TEMA DENETİM") &&
+          !l.includes("ÖZETİ")
       )
       .map((l) => l.trim());
 

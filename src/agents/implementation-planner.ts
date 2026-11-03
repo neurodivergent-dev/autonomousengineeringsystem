@@ -93,14 +93,20 @@ Return ONLY a valid JSON object matching this schema:
       onToken
     );
 
+    const fallbackTargetFiles = candidateFiles.length > 0
+      ? candidateFiles
+      : (adr.impactedModules && adr.impactedModules.length > 0
+          ? adr.impactedModules
+          : ["src/components/Navbar.tsx", "src/App.tsx", "src/index.css"]);
+
     const fallback: ImplementationPlan = {
       id: planId,
       adrRef: adr.id,
       prdRef: prd.id,
       title: `Plan: ${prd.title}`,
       status: "APPROVED",
-      targetFiles: candidateFiles.length > 0 ? candidateFiles : ["src/index.ts"],
-      steps: candidateFiles.map((file, i) => ({
+      targetFiles: fallbackTargetFiles,
+      steps: fallbackTargetFiles.map((file, i) => ({
         order: i + 1,
         description: `Implement required changes in ${file}`,
         targetFile: file,

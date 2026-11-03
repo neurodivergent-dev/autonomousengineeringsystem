@@ -71,7 +71,8 @@ export class SharedLLMClient {
    * Calls Ollama API (/api/chat)
    */
   private async callOllama(messages: ChatMessage[]): Promise<string> {
-    const url = `${this.config.baseUrl.replace(/\/$/, "")}/api/chat`;
+    const baseUrl = this.config.baseUrl || "http://localhost:11434";
+    const url = `${baseUrl.replace(/\/$/, "")}/api/chat`;
     try {
       const res = await fetch(url, {
         method: "POST",
@@ -111,7 +112,8 @@ export class SharedLLMClient {
     messages: ChatMessage[],
     onToken?: (chunk: string) => void
   ): Promise<string> {
-    const url = `${this.config.baseUrl.replace(/\/$/, "")}/api/chat`;
+    const baseUrl = this.config.baseUrl || "http://localhost:11434";
+    const url = `${baseUrl.replace(/\/$/, "")}/api/chat`;
     try {
       const res = await fetch(url, {
         method: "POST",
@@ -174,7 +176,7 @@ export class SharedLLMClient {
   /**
    * Calls standard OpenAI-compatible completions endpoint
    */
-  private async callOpenAICompatible(messages: ChatMessage[]): Promise<string> {
+  private async callOpenAICompatible(messages: ChatMessage[], retryCount: number = 0): Promise<string> {
     const baseUrl = this.config.baseUrl || "https://api.openai.com/v1";
     const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
 
@@ -191,6 +193,15 @@ export class SharedLLMClient {
           temperature: this.config.temperature,
         }),
       });
+
+      if (res.status === 429 && retryCount < 3) {
+        const errorText = await res.text();
+        const waitMatch = errorText.match(/try again in ([\d.]+)s/i);
+        const waitSec = waitMatch ? Math.ceil(parseFloat(waitMatch[1])) + 1 : (retryCount + 1) * 3;
+        console.warn(`[SharedLLMClient] ⚠ Groq Rate Limit (429) hit. Auto-waiting ${waitSec}s before retry (${retryCount + 1}/3)...`);
+        await new Promise((r) => setTimeout(r, waitSec * 1000));
+        return this.callOpenAICompatible(messages, retryCount + 1);
+      }
 
       if (!res.ok) {
         throw new Error(`LLM API error [${res.status}]: ${await res.text()}`);
@@ -209,7 +220,8 @@ export class SharedLLMClient {
    */
   private async callOpenAICompatibleStream(
     messages: ChatMessage[],
-    onToken?: (chunk: string) => void
+    onToken?: (chunk: string) => void,
+    retryCount: number = 0
   ): Promise<string> {
     const baseUrl = this.config.baseUrl || "https://api.groq.com/openai/v1";
     const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
@@ -228,6 +240,15 @@ export class SharedLLMClient {
           temperature: this.config.temperature,
         }),
       });
+
+      if (res.status === 429 && retryCount < 3) {
+        const errorText = await res.text();
+        const waitMatch = errorText.match(/try again in ([\d.]+)s/i);
+        const waitSec = waitMatch ? Math.ceil(parseFloat(waitMatch[1])) + 1 : (retryCount + 1) * 3;
+        console.warn(`[SharedLLMClient] ⚠ Groq Rate Limit (429) hit on stream. Auto-waiting ${waitSec}s before retry (${retryCount + 1}/3)...`);
+        await new Promise((r) => setTimeout(r, waitSec * 1000));
+        return this.callOpenAICompatibleStream(messages, onToken, retryCount + 1);
+      }
 
       if (!res.ok || !res.body) {
         throw new Error(`Groq/OpenAI Stream API error [${res.status}]: ${await res.text()}`);
