@@ -18,6 +18,23 @@ function parseTargetArg(): string {
 let targetRepo = parseTargetArg();
 const systemRoot = resolve(__dirname, "../../..");
 
+// Explicitly load .env from system root if present
+const envFile = join(systemRoot, ".env");
+if (existsSync(envFile)) {
+  const envContent = readFileSync(envFile, "utf-8");
+  for (const line of envContent.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
+      const idx = trimmed.indexOf("=");
+      const key = trimmed.slice(0, idx).trim();
+      const val = trimmed.slice(idx + 1).trim();
+      if (!process.env[key]) {
+        process.env[key] = val;
+      }
+    }
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
