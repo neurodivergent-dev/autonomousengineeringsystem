@@ -3,13 +3,14 @@
 
 [![Runtime: Bun](https://img.shields.io/badge/Runtime-Bun%201.3+-F472B6?style=flat-square&logo=bun)](https://bun.sh)
 [![Language: TypeScript](https://img.shields.io/badge/Language-TypeScript%205.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Desktop: Tauri v2](https://img.shields.io/badge/Desktop-Tauri%20v2%20%2B%20Rust-FFC131?style=flat-square&logo=tauri)](https://tauri.app)
 [![Protocol: MCP](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol-orange?style=flat-square)](https://modelcontextprotocol.io)
 [![Local LLM: Ollama](https://img.shields.io/badge/Local--First-Ollama-000000?style=flat-square&logo=ollama)](https://ollama.com)
 [![Architecture: AST-Driven](https://img.shields.io/badge/Architecture-AST%20Grounded-10B981?style=flat-square)](https://github.com)
 [![Guardrails: 6--Gate](https://img.shields.io/badge/Safety-6--Gate%20Closed--Loop-8B5CF6?style=flat-square)](https://github.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-> **MetaFrame is not just another LLM code generator.** It is a deterministic, compiler-grounded software engineering platform that enforces architectural discipline through **TypeScript AST knowledge graphs, transitive blast-radius calculation, a 6-gate safety validation chain, and a native Model Context Protocol (MCP) server**.
+> **MetaFrame is not just another LLM code generator.** It is a deterministic, compiler-grounded software engineering platform that enforces architectural discipline through **TypeScript AST knowledge graphs, transitive blast-radius calculation, a 6-gate safety validation chain, a native Model Context Protocol (MCP) server, and the MetaFrame Studio AI IDE**.
 
 ---
 
@@ -183,16 +184,31 @@ bun src/cli.ts trace -t "C:\path\to\your\project"
 
 MetaFrame includes its own dedicated, ultra-lightweight desktop AI IDE (`apps/studio`) built with **Tauri v2 + React 19 + Monaco Editor** and styled with the **MetaFrame Cyber** OLED dark theme:
 
-* **VS Code Engine:** Embedded `@monaco-editor/react` with zero false-positive diagnostics, custom token highlighting, and `Ctrl+S` auto-testing.
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ [CPU] METAFRAME STUDIO · [mindbook-pro]  │ TS: ✔ │ Blast: ✔ │ Theme: ✖ │ Emoji: ✖ │...│
+├────────────────────┬───────────────────────────────────────────┬───────────────────────┤
+│ 📁 Explorer        │  [AIContentGenerator.tsx ×]               │  🤖 Multi-Agent Chat  │
+│  ├─ app/           │  1 import { isUserProCached } ...         │  ┌─────────────────┐  │
+│  ├─ components/    │  2 import React, { useState } ...         │  │ Orion: PRD      │  │
+│  └─ utils/         │  3 ...                                    │  │ Daedalus: ADR   │  │
+├────────────────────┤                                           │  │ Vulcan: Plan    │  │
+│ 🔥 Blast Radar     │                                           │  └─────────────────┘  │
+│  Risk: MEDIUM      │                                           │  [ Execute Plan ]     │
+│  • 3 Dependents    │                                           │                       │
+└────────────────────┴───────────────────────────────────────────┴───────────────────────┘
+```
+
+* **VS Code Engine:** Embedded `@monaco-editor/react` with zero false-positive diagnostics, custom `metaframe-cyber` token highlighting, and `Ctrl+S` auto-testing.
 * **Live Aegis 6-Gate HUD:** Real-time indicator pills displaying compiler status, theme token audit, and emoji guard.
 * **Blast Radius Radar:** Automatic risk calculation and affected screens list for the currently active tab.
 * **Agent Copilot Drawer:** Interactive chat with Orion, Daedalus, and Vulcan for atomic planning and code generation.
 
 ```bash
-# Start the MetaFrame Studio Backend:
+# Start the MetaFrame Studio Backend (Port 5180):
 bun run studio
 
-# Start the MetaFrame Studio Desktop UI:
+# Start the MetaFrame Studio Desktop UI (Port 5173):
 bun run studio:ui
 ```
 
