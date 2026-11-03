@@ -33,11 +33,11 @@ export class LeadOrchestrator {
   private codeExecutor: CodeExecutorAgent;
   private codeHealer: CodeHealerAgent;
 
-  constructor(repoRoot: string = process.cwd()) {
+  constructor(repoRoot: string = process.cwd(), systemRoot?: string) {
     this.llm = new SharedLLMClient();
-    this.astBridge = new ASTBridge(repoRoot);
+    this.astBridge = new ASTBridge(repoRoot, systemRoot);
     this.store = new KnowledgeStore(repoRoot);
-    this.gateRunner = new GateRunner(repoRoot);
+    this.gateRunner = new GateRunner(repoRoot, systemRoot);
 
     this.discoveryAgent = new ProductDiscoveryAgent(this.llm);
     this.architectAgent = new SolutionsArchitectAgent(this.llm, this.astBridge);

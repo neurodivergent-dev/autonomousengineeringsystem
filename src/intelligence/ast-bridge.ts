@@ -1,18 +1,40 @@
 import { existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { execSync } from "child_process";
+import { ASTIndexer, type IndexResult } from "./indexer";
 import type { ASTFileCard } from "../types";
 
 export class ASTBridge {
   private repoRoot: string;
+  private systemRoot: string;
   private graphPath: string;
   private scriptsDir: string;
   private cachedGraph: any = null;
 
-  constructor(repoRoot: string = process.cwd()) {
-    this.repoRoot = repoRoot;
-    this.graphPath = join(repoRoot, "ai-reports", "knowledge_graph.json");
-    this.scriptsDir = join(repoRoot, "repo-intelligence-layer", "scripts");
+  constructor(repoRoot: string = process.cwd(), systemRoot?: string) {
+    this.repoRoot = resolve(repoRoot);
+    this.systemRoot = systemRoot ? resolve(systemRoot) : resolve(__dirname, "../..");
+    this.graphPath = join(this.repoRoot, "ai-reports", "knowledge_graph.json");
+    this.scriptsDir = join(this.systemRoot, "repo-intelligence-layer", "scripts");
+  }
+
+  /**
+   * Generates or refreshes the AST Knowledge Graph for the target repo.
+   */
+  public indexGraph(options?: { onProgress?: (file: string, current: number, total: number) => void }): IndexResult {
+    const indexer = new ASTIndexer(this.repoRoot);
+    const result = indexer.generate(options);
+    this.cachedGraph = null; // Invalidate memory cache
+    return result;
+  }
+
+  /**
+   * Ensures the knowledge graph exists, generating it if absent.
+   */
+  public ensureKnowledgeGraph(): void {
+    if (!this.hasKnowledgeGraph()) {
+      this.indexGraph();
+    }
   }
 
   /**
@@ -49,7 +71,12 @@ export class ASTBridge {
     }
     try {
       const cmd = `node "${scriptPath}" ${subcommand} "${arg}"`;
-      return execSync(cmd, { cwd: this.repoRoot, encoding: "utf-8", timeout: 15000 }).trim();
+      return execSync(cmd, {
+        cwd: this.repoRoot,
+        encoding: "utf-8",
+        timeout: 15000,
+        env: { ...process.env, TARGET_REPO: this.repoRoot },
+      }).trim();
     } catch (err: any) {
       return (err.stdout || err.stderr || err.message || "").toString().trim();
     }
@@ -114,10 +141,24 @@ export class ASTBridge {
     const affectedFiles: string[] = [];
     let risk: "LOW" | "MEDIUM" | "HIGH" = "LOW";
 
+    let inFileList = false;
     for (const l of lines) {
-      if (l.includes("HIGH RISK") || l.includes("YUKSEK")) risk = "HIGH";
-      else if (l.includes("MEDIUM RISK") || l.includes("ORTA")) risk = "MEDIUM";
-      if (l.startsWith("-") || l.startsWith("•") || l.startsWith("->")) {
+      if (l.includes("HIGH RISK") || l.includes("YUKSEK") || l.includes("Risk: HIGH")) risk = "HIGH";
+      else if (l.includes("MEDIUM RISK") || l.includes("ORTA") || l.includes("Risk: MEDIUM")) risk = "MEDIUM";
+
+      if (l.startsWith("Sebep:")) {
+        inFileList = true;
+        continue;
+      }
+
+      if (inFileList) {
+        if (/\.(tsx?|jsx?)/.test(l)) {
+          const cleanFile = l.split(/\s+/)[0];
+          if (cleanFile && !affectedFiles.includes(cleanFile)) {
+            affectedFiles.push(cleanFile);
+          }
+        }
+      } else if (l.startsWith("-") || l.startsWith("•") || l.startsWith("->")) {
         affectedFiles.push(l.replace(/^[-•>]\s*/, "").trim());
       }
     }
@@ -132,7 +173,12 @@ export class ASTBridge {
     const scriptPath = join(this.scriptsDir, "route-navigator.js");
     if (!existsSync(scriptPath)) return "route-navigator.js not found";
     try {
-      return execSync(`node "${scriptPath}" tree`, { cwd: this.repoRoot, encoding: "utf-8", timeout: 15000 }).trim();
+      return execSync(`node "${scriptPath}" tree`, {
+        cwd: this.repoRoot,
+        encoding: "utf-8",
+        timeout: 15000,
+        env: { ...process.env, TARGET_REPO: this.repoRoot },
+      }).trim();
     } catch (e: any) {
       return e.message || "Failed to query routes";
     }
@@ -145,7 +191,12 @@ export class ASTBridge {
     const scriptPath = join(this.scriptsDir, "supabase-mapper.js");
     if (!existsSync(scriptPath)) return "supabase-mapper.js not found";
     try {
-      return execSync(`node "${scriptPath}" map`, { cwd: this.repoRoot, encoding: "utf-8", timeout: 15000 }).trim();
+      return execSync(`node "${scriptPath}" map`, {
+        cwd: this.repoRoot,
+        encoding: "utf-8",
+        timeout: 15000,
+        env: { ...process.env, TARGET_REPO: this.repoRoot },
+      }).trim();
     } catch (e: any) {
       return e.message || "Failed to query supabase map";
     }

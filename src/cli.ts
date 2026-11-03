@@ -1,24 +1,46 @@
 #!/usr/bin/env bun
+import { resolve, join } from "path";
+import { existsSync } from "fs";
 import { LeadOrchestrator } from "./agents/orchestrator";
 import { GateRunner } from "./gates/gate-runner";
 import { ASTBridge } from "./intelligence/ast-bridge";
 import { KnowledgeStore } from "./knowledge/store";
 
-const args = process.argv.slice(2);
-const command = args[0] || "help";
+let rawArgs = process.argv.slice(2);
+
+// Extract --target or -t
+let targetRepo = process.cwd();
+const targetIdx = rawArgs.findIndex((a) => a === "--target" || a === "-t");
+if (targetIdx !== -1 && rawArgs[targetIdx + 1]) {
+  targetRepo = resolve(rawArgs[targetIdx + 1]);
+  rawArgs.splice(targetIdx, 2);
+} else if (process.env.TARGET_REPO) {
+  targetRepo = resolve(process.env.TARGET_REPO);
+}
+
+if (!existsSync(targetRepo)) {
+  console.error(`\x1b[31mError: Target directory does not exist: ${targetRepo}\x1b[0m`);
+  process.exit(1);
+}
+
+const systemRoot = resolve(__dirname, "..");
+const command = rawArgs[0] || "help";
+const args = rawArgs;
 
 console.log(`
 \x1b[35m╭─────────────────────────────────────────────────────────────╮
 │          MetaFrame Autonomous Engineering System            │
 │  AST-Grounded Multi-Agent Orchestrator & Deterministic Gates│
 ╰─────────────────────────────────────────────────────────────╯\x1b[0m
+\x1b[90mTarget Workspace:\x1b[0m \x1b[36m${targetRepo}\x1b[0m
+\x1b[90mEngine Root:\x1b[0m      \x1b[90m${systemRoot}\x1b[0m
 `);
 
 async function main() {
-  const orchestrator = new LeadOrchestrator();
-  const gateRunner = new GateRunner();
-  const astBridge = new ASTBridge();
-  const store = new KnowledgeStore();
+  const orchestrator = new LeadOrchestrator(targetRepo, systemRoot);
+  const gateRunner = new GateRunner(targetRepo, systemRoot);
+  const astBridge = new ASTBridge(targetRepo, systemRoot);
+  const store = new KnowledgeStore(targetRepo);
 
   switch (command) {
     case "plan": {
@@ -35,7 +57,7 @@ async function main() {
 
       const prompt = promptArgs.join(" ").trim();
       if (!prompt) {
-        console.error('\x1b[31mError: Please specify a feature prompt. Example: bun run metaframe plan "Add dark mode toggle"\x1b[0m');
+        console.error('\x1b[31mError: Please specify a feature prompt. Example: bun run src/cli.ts plan "Add dark mode toggle" -t <path>\x1b[0m');
         process.exit(1);
       }
       const result = await orchestrator.executeWorkflow(prompt, candidateFiles, shouldExecute);
@@ -64,7 +86,7 @@ async function main() {
 
       const prompt = promptArgs.join(" ").trim();
       if (!prompt) {
-        console.error('\x1b[31mError: Please specify a feature prompt. Example: bun run src/cli.ts build "Create cyber matrix dashboard in apps/dashboard/index.html"\x1b[0m');
+        console.error('\x1b[31mError: Please specify a feature prompt. Example: bun run src/cli.ts build "Create cyber matrix dashboard" -t <path>\x1b[0m');
         process.exit(1);
       }
       console.log(`\x1b[36m[MetaFrame Autonomous Build Mode]\x1b[0m Generating plan & writing code directly to disk...`);
@@ -85,12 +107,15 @@ async function main() {
 
     case "verify": {
       const targetPath = args[1];
-      console.log(`Running 6-Gate Closed-Loop Verification ${targetPath ? `for: ${targetPath}` : "full project"}...`);
+      console.log(`Running 6-Gate Closed-Loop Verification ${targetPath ? `for: ${targetPath}` : "full project"} in ${targetRepo}...`);
       const report = gateRunner.runAllGates(targetPath);
 
       report.gates.forEach((g) => {
         const icon = g.passed ? "\x1b[32m✔ PASS\x1b[0m" : "\x1b[31m✖ FAIL\x1b[0m";
         console.log(`  ${icon} ${g.gateName} (${g.durationMs}ms)`);
+        if (g.warnings.length > 0) {
+          g.warnings.forEach((w) => console.log(`      \x1b[33m⚠ ${w}\x1b[0m`));
+        }
         if (g.errors.length > 0) {
           g.errors.slice(0, 5).forEach((e) => console.log(`      \x1b[31m${e}\x1b[0m`));
         }
@@ -103,7 +128,7 @@ async function main() {
       const trace = store.getTraceability();
       console.log(`\x1b[36mTraceability Matrix (Last updated: ${trace.updatedAt})\x1b[0m\n`);
       if (trace.entries.length === 0) {
-        console.log("No traceability entries recorded yet. Run `metaframe plan <prompt>` to generate one.");
+        console.log("No traceability entries recorded yet. Run `plan` to generate one.");
         return;
       }
       console.table(
@@ -121,7 +146,7 @@ async function main() {
     case "query": {
       const term = args[1] || "";
       if (!term) {
-        console.log("Usage: bun run metaframe query <term>");
+        console.log("Usage: bun run src/cli.ts query <term> [-t <repo>]");
         return;
       }
       console.log(astBridge.queryTool("query", term));
@@ -131,7 +156,7 @@ async function main() {
     case "impact": {
       const file = args[1] || "";
       if (!file) {
-        console.log("Usage: bun run metaframe impact <file_path>");
+        console.log("Usage: bun run src/cli.ts impact <file_path> [-t <repo>]");
         return;
       }
       const impact = astBridge.getImpact(file);
@@ -142,17 +167,56 @@ async function main() {
       break;
     }
 
+    case "index": {
+      console.log(`\x1b[36m[AST Knowledge Graph Indexing for: ${targetRepo}]\x1b[0m`);
+      const res = astBridge.indexGraph();
+      console.log(`\n\x1b[32m✔ Knowledge Graph generated successfully in ${res.durationMs}ms!\x1b[0m`);
+      console.log(`  • Indexed Files (Nodes): \x1b[1m${res.nodeCount}\x1b[0m`);
+      console.log(`  • Dependency Edges:      \x1b[1m${res.edgeCount}\x1b[0m`);
+      console.log(`  • Target File:           \x1b[36m${res.outputPath}\x1b[0m`);
+      break;
+    }
+
+    case "analyze": {
+      console.log(`\x1b[36m[AST Topology Analysis for: ${targetRepo}]\x1b[0m`);
+      const hasGraph = astBridge.hasKnowledgeGraph();
+      console.log(`Knowledge Graph: ${hasGraph ? "\x1b[32mFound\x1b[0m" : "\x1b[33mNot pre-computed. Run 'bun run src/cli.ts index -t <repo>' to build!\x1b[0m"}`);
+
+      console.log(`\n\x1b[34m[Route Map]\x1b[0m`);
+      const routes = astBridge.getRoutes();
+      console.log(routes.split("\n").slice(0, 15).join("\n"));
+
+      console.log(`\n\x1b[34m[Supabase / Data Map]\x1b[0m`);
+      const supa = astBridge.getSupabaseOverview();
+      console.log(supa.split("\n").slice(0, 15).join("\n"));
+
+      console.log(`\n\x1b[34m[6-Gate Health Check]\x1b[0m`);
+      const report = gateRunner.runAllGates();
+      report.gates.forEach((g) => {
+        const icon = g.passed ? "\x1b[32m✔ PASS\x1b[0m" : "\x1b[31m✖ FAIL\x1b[0m";
+        console.log(`  ${icon} ${g.gateName} (${g.durationMs}ms)`);
+      });
+      break;
+    }
+
     case "help":
     default: {
       console.log(`
 \x1b[1mKullanım:\x1b[0m
-  bun run src/cli.ts build "<istek>"    Tam otonom kod üretimi: PRD -> ADR -> Plan -> Yerel LLM Kod Yazımı -> 6 Kapı
-  bun run src/cli.ts plan "<istek>"     Planlama akışını başlat (PRD -> ADR -> Plan -> Kapılar)
-  bun run src/cli.ts verify [dosya]     6 kapılı deterministik güvenlik zincirini çalıştır
-  bun run src/cli.ts trace              PRD -> ADR -> Plan -> Kod izlenebilirlik tablosunu göster
-  bun run src/cli.ts query <kelime>     AST kod tabanı semantik araması yap
-  bun run src/cli.ts impact <dosya>     Bir dosyanın etki alanını (blast radius) hesapla
-  bun run src/cli.ts help               Bu yardım mesajını göster
+  bun run src/cli.ts index [-t <repo>]            Hedef repo için AST Knowledge Graph üretir (ai-reports/knowledge_graph.json)
+  bun run src/cli.ts verify [dosya] [-t <repo>]   6 kapılı deterministik güvenlik zincirini çalıştır
+  bun run src/cli.ts plan "<istek>" [-t <repo>]   Planlama akışını başlat (PRD -> ADR -> Plan -> Kapılar)
+  bun run src/cli.ts build "<istek>" [-t <repo>]  Tam otonom kod üretimi (PRD -> ADR -> Plan -> Kod Yazımı -> Kapılar)
+  bun run src/cli.ts analyze [-t <repo>]          Hedef kod tabanının topolojisini ve kapılarını analiz et
+  bun run src/cli.ts trace [-t <repo>]            PRD -> ADR -> Plan -> Kod izlenebilirlik tablosunu göster
+  bun run src/cli.ts query <kelime> [-t <repo>]   AST kod tabanı semantik araması yap
+  bun run src/cli.ts impact <dosya> [-t <repo>]   Bir dosyanın etki alanını (blast radius) hesapla
+  bun run src/cli.ts help                         Bu yardım mesajını göster
+
+\x1b[1mSeçenekler:\x1b[0m
+  -t, --target <path>   Hedef depo yolu (varsayılan: geçerli dizin)
+  --files <f1,f2>       İlgili aday dosyalar
+  --execute             Plan komutunda kod üretimini de tetikle
 `);
       break;
     }

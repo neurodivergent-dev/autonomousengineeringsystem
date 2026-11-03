@@ -1,15 +1,17 @@
 import { execSync } from "child_process";
-import { join } from "path";
+import { join, resolve } from "path";
 import { existsSync } from "fs";
 import type { GateResult, VerificationReport } from "../types";
 
 export class GateRunner {
   private repoRoot: string;
+  private systemRoot: string;
   private scriptsDir: string;
 
-  constructor(repoRoot: string = process.cwd()) {
-    this.repoRoot = repoRoot;
-    this.scriptsDir = join(repoRoot, "repo-intelligence-layer", "scripts");
+  constructor(repoRoot: string = process.cwd(), systemRoot?: string) {
+    this.repoRoot = resolve(repoRoot);
+    this.systemRoot = systemRoot ? resolve(systemRoot) : resolve(__dirname, "../..");
+    this.scriptsDir = join(this.systemRoot, "repo-intelligence-layer", "scripts");
   }
 
   /**
@@ -17,7 +19,12 @@ export class GateRunner {
    */
   private runCommand(cmd: string, timeout: number = 30000): { success: boolean; output: string } {
     try {
-      const output = execSync(cmd, { cwd: this.repoRoot, encoding: "utf-8", timeout }).trim();
+      const output = execSync(cmd, {
+        cwd: this.repoRoot,
+        encoding: "utf-8",
+        timeout,
+        env: { ...process.env, TARGET_REPO: this.repoRoot },
+      }).trim();
       return { success: true, output };
     } catch (err: any) {
       const output = (err.stdout || "") + "\n" + (err.stderr || "") + "\n" + (err.message || "");
@@ -30,6 +37,17 @@ export class GateRunner {
    */
   public verifyTypeScript(): GateResult {
     const start = Date.now();
+    const tsConfigPath = join(this.repoRoot, "tsconfig.json");
+    if (!existsSync(tsConfigPath)) {
+      return {
+        gateName: "1. TypeScript Compiler (Zero TS Errors)",
+        passed: true,
+        durationMs: Date.now() - start,
+        errors: [],
+        warnings: ["tsconfig.json not found in target repo, skipped compiler check."],
+      };
+    }
+
     const localTsc = join(this.repoRoot, "node_modules", ".bin", "tsc");
     const localTscCmd = join(this.repoRoot, "node_modules", ".bin", "tsc.cmd");
     const hasLocal = existsSync(localTsc) || existsSync(localTscCmd);
@@ -44,7 +62,7 @@ export class GateRunner {
       };
     }
 
-    const res = this.runCommand("npx --no-install tsc --noEmit", 15000);
+    const res = this.runCommand("npx --no-install tsc --noEmit", 25000);
     const durationMs = Date.now() - start;
 
     const errorLines = res.output
