@@ -170,7 +170,13 @@ STRICT INSTRUCTIONS:
 3. If code blocks are used, wrap only in \`\`\`${fileExt} and \`\`\`.
 4. Do NOT include any conversational preamble, explanations, or sign-offs.
 5. Adhere to TypeScript/JavaScript/HTML/CSS best practices. Avoid unused variables or broken imports.
-6. If modifying an existing file, provide the complete, updated file content.`;
+6. If modifying an existing file, provide the complete, updated file content.
+
+MANDATORY MODERN UI/UX DESIGN STANDARDS (FOR JSX/TSX/CSS):
+- VERCEL / LINEAR / RAYCAST TIER AESTHETICS: Use deep obsidian dark surfaces (#090A0F, #111420), glassmorphic backdrops (rgba(18, 21, 31, 0.75), backdropFilter: "blur(12px)"), and refined borders (1px solid rgba(255, 255, 255, 0.08) or rgba(168, 85, 247, 0.2)).
+- VIBRANT ACCENTS & GRADIENTS: Use sleek gradients (e.g. "linear-gradient(135deg, #a855f7 0%, #38bdf8 100%)") for key action buttons, badges, and gradient text highlights.
+- NEVER CAUSE INVISIBLE TEXT OR UNRESOLVED TOKENS: If using WebkitBackgroundClip: "text" with WebkitTextFillColor: "transparent", ALWAYS ensure a valid gradient is provided. Never write undefined CSS variables without fallbacks (e.g., use var(--primary-600, #8b5cf6)).
+- HIGH-DENSITY POLISHED CARDS: Cards must have 20-28px padding, icon glow badges, subtle box shadows (boxShadow: "0 8px 30px rgba(0,0,0,0.3)"), and smooth hover transitions.`;
 
     const userPrompt = `
 Task: ${step.actionType} ${step.targetFile}
