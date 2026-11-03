@@ -12,7 +12,9 @@
     "gates": "node repo-intelligence-layer/scripts/blast-radius.js full",
     "i18n": "bun run i18next-local-inference/i18n-dashboard.tsx",
     "cli:mini": "bun run mini-meta-cli/index.ts",
-    "mcp": "bun run src/mcp/server.ts"
+    "mcp": "bun run src/mcp/server.ts",
+    "studio": "bun run apps/studio/server/index.ts",
+    "studio:ui": "bun --cwd apps/studio run dev"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2"

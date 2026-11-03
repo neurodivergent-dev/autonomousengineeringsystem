@@ -179,6 +179,25 @@ bun src/cli.ts trace -t "C:\path\to\your\project"
 
 ---
 
+## 🖥️ MetaFrame Studio (Standalone AI IDE)
+
+MetaFrame includes its own dedicated, ultra-lightweight desktop AI IDE (`apps/studio`) built with **Tauri v2 + React 19 + Monaco Editor** and styled with the **MetaFrame Cyber** OLED dark theme:
+
+* **VS Code Engine:** Embedded `@monaco-editor/react` with zero false-positive diagnostics, custom token highlighting, and `Ctrl+S` auto-testing.
+* **Live Aegis 6-Gate HUD:** Real-time indicator pills displaying compiler status, theme token audit, and emoji guard.
+* **Blast Radius Radar:** Automatic risk calculation and affected screens list for the currently active tab.
+* **Agent Copilot Drawer:** Interactive chat with Orion, Daedalus, and Vulcan for atomic planning and code generation.
+
+```bash
+# Start the MetaFrame Studio Backend:
+bun run studio
+
+# Start the MetaFrame Studio Desktop UI:
+bun run studio:ui
+```
+
+---
+
 ## 🔌 Antigravity & IDE Integration (Model Context Protocol)
 
 MetaFrame includes a native **Stdio MCP Server** (`@modelcontextprotocol/sdk`) that allows Antigravity, Cursor, and Claude Desktop to leverage MetaFrame tools directly.

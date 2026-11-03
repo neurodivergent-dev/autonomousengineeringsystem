@@ -1,3 +1,7 @@
 node_modules/
 *.tsbuildinfo
 .metaframe/
+dist/
+apps/studio/dist/
+apps/studio/node_modules/
+apps/studio/src-tauri/target/
