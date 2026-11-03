@@ -9,6 +9,8 @@ export interface ExecutionResult {
   codeLength: number;
   success: boolean;
   error?: string;
+  originalCode?: string;
+  generatedCode?: string;
 }
 
 export interface PlanExecutionSummary {
@@ -22,7 +24,7 @@ export interface PlanExecutionSummary {
 export type CodeStepCallback = (event:
   | { type: "code_step_start"; step: PlanStep; index: number; total: number; targetFile: string }
   | { type: "code_token"; token: string; targetFile: string }
-  | { type: "code_step_done"; targetFile: string; codeLength: number }
+  | { type: "code_step_done"; targetFile: string; codeLength: number; originalCode?: string; generatedCode?: string }
 ) => void;
 
 export class CodeExecutorAgent {
@@ -48,6 +50,7 @@ export class CodeExecutorAgent {
 
     const results: ExecutionResult[] = [];
     const errors: string[] = [];
+    const executedMemory: Array<{ targetFile: string; actionType: string; summary: string }> = [];
 
     for (const step of plan.steps) {
       console.log(`\n\x1b[34m[Step ${step.order}/${plan.steps.length}]\x1b[0m ${step.actionType} -> \x1b[36m${step.targetFile}\x1b[0m`);
@@ -65,7 +68,9 @@ export class CodeExecutorAgent {
         const fullPath = join(this.repoRoot, step.targetFile);
 
         if (step.actionType === "DELETE") {
+          let originalCode = "";
           if (existsSync(fullPath)) {
+            originalCode = readFileSync(fullPath, "utf-8");
             unlinkSync(fullPath);
             console.log(`  \x1b[33m✔ Deleted file: ${step.targetFile}\x1b[0m`);
           }
@@ -74,11 +79,20 @@ export class CodeExecutorAgent {
             filePath: step.targetFile,
             codeLength: 0,
             success: true,
+            originalCode,
+            generatedCode: "",
           });
           onStepProgress?.({
             type: "code_step_done",
             targetFile: step.targetFile,
             codeLength: 0,
+            originalCode,
+            generatedCode: "",
+          });
+          executedMemory.push({
+            targetFile: step.targetFile,
+            actionType: step.actionType,
+            summary: step.description,
           });
           continue;
         }
@@ -96,7 +110,8 @@ export class CodeExecutorAgent {
           (token) => {
             onToken?.(token);
             onStepProgress?.({ type: "code_token", token, targetFile: step.targetFile });
-          }
+          },
+          executedMemory
         );
 
         if (!generatedCode || generatedCode.trim().length === 0) {
@@ -117,12 +132,22 @@ export class CodeExecutorAgent {
           filePath: step.targetFile,
           codeLength: generatedCode.length,
           success: true,
+          originalCode: existingContent,
+          generatedCode,
         });
 
         onStepProgress?.({
           type: "code_step_done",
           targetFile: step.targetFile,
           codeLength: generatedCode.length,
+          originalCode: existingContent,
+          generatedCode,
+        });
+
+        executedMemory.push({
+          targetFile: step.targetFile,
+          actionType: step.actionType,
+          summary: step.description,
         });
       } catch (err: any) {
         const errMsg = `Failed step ${step.order} (${step.targetFile}): ${err.message}`;
@@ -156,7 +181,8 @@ export class CodeExecutorAgent {
     existingContent: string,
     prd?: PRD,
     adr?: ADR,
-    onToken?: (token: string) => void
+    onToken?: (token: string) => void,
+    executedMemory?: Array<{ targetFile: string; actionType: string; summary: string }>
   ): Promise<string> {
     const fileExt = step.targetFile.split(".").pop() || "ts";
 
@@ -171,6 +197,7 @@ STRICT INSTRUCTIONS:
 4. Do NOT include any conversational preamble, explanations, or sign-offs.
 5. Adhere to TypeScript/JavaScript/HTML/CSS best practices. Avoid unused variables or broken imports.
 6. If modifying an existing file, provide the complete, updated file content.
+7. CRITICAL: Never replace existing functionality with placeholders. Ensure all existing imports, components, and props continue to function.
 
 MANDATORY MODERN UI/UX DESIGN STANDARDS (FOR JSX/TSX/CSS):
 - VERCEL / LINEAR / RAYCAST TIER AESTHETICS: Use deep obsidian dark surfaces (#090A0F, #111420), glassmorphic backdrops (rgba(18, 21, 31, 0.75), backdropFilter: "blur(12px)"), and refined borders (1px solid rgba(255, 255, 255, 0.08) or rgba(168, 85, 247, 0.2)).
@@ -183,6 +210,10 @@ Task: ${step.actionType} ${step.targetFile}
 Description: ${step.description}
 ${step.targetSymbols?.length ? `Target Symbols / Exports: ${step.targetSymbols.join(", ")}` : ""}
 ${step.testCriteria ? `Test Criteria: ${step.testCriteria}` : ""}
+
+${executedMemory && executedMemory.length > 0 ? `PREVIOUSLY EXECUTED STEPS IN THIS PLAN:
+${executedMemory.map((m) => `- ${m.targetFile} (${m.actionType}): ${m.summary}`).join("\n")}
+Ensure your code for "${step.targetFile}" aligns perfectly with these files, their exports, and CSS tokens!` : ""}
 
 ${prd ? `Context (PRD ${prd.id}):
 Title: ${prd.title}

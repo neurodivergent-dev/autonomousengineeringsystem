@@ -33,6 +33,12 @@ export class SolutionsArchitectAgent {
     // Query existing source files for grounding
     const existingFiles = this.astBridge.getSourceFiles();
 
+    // Query relevant source files with actual code content
+    const relevantFiles = this.astBridge.findRelevantSourceFiles(
+      `${prd.title} ${prd.overview} ${(prd.functionalRequirements || []).join(" ")}`,
+      candidateFiles
+    );
+
     const systemPrompt = `You are the Solutions Architect Agent in the MetaFrame Autonomous Engineering System.
 Your responsibility is to formulate an Architecture Decision Record (ADR) based on an approved PRD and AST codebase intelligence.
 You rigorously analyze trade-offs, stability, and blast radius.
@@ -43,9 +49,14 @@ CRITICAL ARCHITECTURAL DIRECTIVES:
    ${existingFiles.length > 0 ? existingFiles.join("\n   ") : "No existing source files."}
    - NEVER architect duplicate components (e.g. creating src/components/layout/Navbar.tsx when src/components/Navbar.tsx exists).
    - If a requested feature enhances an existing part of the app (Navbar, Hero, Features, Modal), explicitly decide to MODIFY the existing component!
+
 2. ZERO OVER-ENGINEERING (KISS - KEEP IT SIMPLE):
-   - Do NOT architect auxiliary layers like custom persistent hooks (e.g. usePersistentToggle), isolated context providers, or separate CSS token files unless the user explicitly requested global state or design tokens.
-   - Keep architectural changes lean, elegant, and directly integrated into existing components.
+   - Do NOT architect auxiliary layers like custom persistent hooks (e.g. usePersistentToggle), isolated context providers (e.g. ThemeContext.tsx), or separate token files unless explicitly demanded by the user.
+   - If a component already manages or can manage the state directly (e.g. document.documentElement.dataset.theme or local state), do NOT create external state abstractions.
+
+3. INSPECT ACTUAL CODE BEFORE DECIDING:
+${relevantFiles.length > 0 ? relevantFiles.map((f) => `--- File: ${f.path} ---\n${f.content}`).join("\n\n") : "No relevant code files found."}
+   - Review the actual code above carefully. Check what is already implemented and where the real breakdown is (e.g. check if the button already exists in Navbar, whether index.css defines required CSS variables, or if App.tsx uses hardcoded inline styles that block theming). Target only the files that need fixing!
 
 PRD ID: ${prd.id}
 PRD Title: ${prd.title}

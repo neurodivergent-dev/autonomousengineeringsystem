@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Editor from "@monaco-editor/react";
+import Editor, { DiffEditor } from "@monaco-editor/react";
 import {
   Folder,
   FileCode,
@@ -85,6 +85,9 @@ export function App() {
     return "";
   });
   const [editorContent, setEditorContent] = useState<string>("");
+  const [editorMode, setEditorMode] = useState<"code" | "diff">("code");
+  const [diffOriginal, setDiffOriginal] = useState<string>("");
+  const [diffModified, setDiffModified] = useState<string>("");
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1, 2, 3, 4, 5, 6]));
 
   const toggleStepExpand = (stepNum: number) => {
@@ -271,6 +274,7 @@ export function App() {
 
   // Open file in editor
   const handleOpenFile = async (relPath: string) => {
+    setEditorMode("code");
     const existing = openFiles.find((f) => f.path === relPath);
     if (existing) {
       setActiveFilePath(existing.path);
@@ -291,6 +295,20 @@ export function App() {
       }
     } catch (e) {
       console.error("Open file error:", e);
+    }
+  };
+
+  // Open file in diff editor
+  const handleOpenDiff = (relPath: string, originalCode: string, generatedCode: string) => {
+    setActiveFilePath(relPath);
+    setDiffOriginal(originalCode);
+    setDiffModified(generatedCode);
+    setEditorContent(generatedCode);
+    setEditorMode("diff");
+    fetchBlastRadius(relPath);
+    const existing = openFiles.find((f) => f.path === relPath);
+    if (!existing) {
+      setOpenFiles((prev) => [...prev, { path: relPath, content: generatedCode }]);
     }
   };
 
@@ -895,32 +913,88 @@ export function App() {
                 </span>
               </div>
             ))}
+            {activeFilePath && (
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, paddingRight: 8 }}>
+                <button
+                  onClick={() => setEditorMode("code")}
+                  style={{
+                    background: editorMode === "code" ? "var(--accent)" : "rgba(255, 255, 255, 0.05)",
+                    color: editorMode === "code" ? "#000" : "var(--text-muted)",
+                    border: "none",
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Code
+                </button>
+                <button
+                  onClick={() => setEditorMode("diff")}
+                  style={{
+                    background: editorMode === "diff" ? "var(--accent)" : "rgba(255, 255, 255, 0.05)",
+                    color: editorMode === "diff" ? "#000" : "var(--text-muted)",
+                    border: "none",
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Diff Inspector
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="editor-wrapper">
             {activeFilePath ? (
-              <Editor
-                height="100%"
-                theme="metaframe-cyber"
-                path={activeFilePath}
-                value={editorContent}
-                beforeMount={handleEditorWillMount}
-                onChange={(val) => {
-                  setEditorContent(val || "");
-                  setOpenFiles((prev) =>
-                    prev.map((f) => (f.path === activeFilePath ? { ...f, content: val || "", isDirty: true } : f))
-                  );
-                }}
-                options={{
-                  fontFamily: "'JetBrains Mono', Consolas, monospace",
-                  fontSize: 13,
-                  minimap: { enabled: true },
-                  scrollBeyondLastLine: false,
-                  smoothScrolling: true,
-                  automaticLayout: true,
-                  renderValidationDecorations: "off",
-                }}
-              />
+              editorMode === "diff" ? (
+                <DiffEditor
+                  height="100%"
+                  theme="metaframe-cyber"
+                  original={diffOriginal}
+                  modified={diffModified || editorContent}
+                  beforeMount={handleEditorWillMount}
+                  options={{
+                    fontFamily: "'JetBrains Mono', Consolas, monospace",
+                    fontSize: 13,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    smoothScrolling: true,
+                    automaticLayout: true,
+                    readOnly: true,
+                    renderSideBySide: true,
+                  }}
+                />
+              ) : (
+                <Editor
+                  height="100%"
+                  theme="metaframe-cyber"
+                  path={activeFilePath}
+                  value={editorContent}
+                  beforeMount={handleEditorWillMount}
+                  onChange={(val) => {
+                    setEditorContent(val || "");
+                    setOpenFiles((prev) =>
+                      prev.map((f) => (f.path === activeFilePath ? { ...f, content: val || "", isDirty: true } : f))
+                    );
+                  }}
+                  options={{
+                    fontFamily: "'JetBrains Mono', Consolas, monospace",
+                    fontSize: 13,
+                    minimap: { enabled: true },
+                    scrollBeyondLastLine: false,
+                    smoothScrolling: true,
+                    automaticLayout: true,
+                    renderValidationDecorations: "off",
+                  }}
+                />
+              )
             ) : (
               <div
                 style={{
@@ -1363,18 +1437,58 @@ export function App() {
                             </div>
                             {activeWorkflow.execution.executedSteps.map((st: any, idx: number) => {
                               const file = st.filePath || st.targetFile || st.step?.targetFile || "";
+                              const hasOriginal = st.originalCode !== undefined && st.originalCode !== null;
                               return (
-                                <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, margin: "2px 0" }}>
+                                <div
+                                  key={idx}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 6,
+                                    margin: "4px 0",
+                                    background: "rgba(255, 255, 255, 0.02)",
+                                    padding: "4px 8px",
+                                    borderRadius: 6,
+                                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                                  }}
+                                >
                                   <span
                                     className="file-link-pill"
-                                    onClick={() => file && handleOpenFile(file)}
+                                    onClick={() => {
+                                      if (file) {
+                                        handleOpenFile(file);
+                                        setEditorMode("code");
+                                      }
+                                    }}
+                                    title="Open file in standard editor"
                                   >
                                     <FileCode size={11} />
                                     <span>{file ? file.split(/[\\/]/).pop() : "file"}</span>
                                   </span>
-                                  <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
-                                    ({st.codeLength || 0} bytes)
-                                  </span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    {hasOriginal && (
+                                      <button
+                                        onClick={() => handleOpenDiff(file, st.originalCode || "", st.generatedCode || "")}
+                                        style={{
+                                          background: "rgba(56, 189, 248, 0.15)",
+                                          border: "1px solid rgba(56, 189, 248, 0.3)",
+                                          color: "#38bdf8",
+                                          fontSize: "10px",
+                                          fontWeight: 700,
+                                          padding: "2px 6px",
+                                          borderRadius: "4px",
+                                          cursor: "pointer",
+                                        }}
+                                        title="Inspect Before vs After Diff"
+                                      >
+                                        Diff View
+                                      </button>
+                                    )}
+                                    <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+                                      {st.codeLength || 0} bytes
+                                    </span>
+                                  </div>
                                 </div>
                               );
                             })}

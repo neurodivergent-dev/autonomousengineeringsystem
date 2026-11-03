@@ -229,4 +229,75 @@ export class ASTBridge {
     walk(srcDir);
     return files.sort();
   }
+
+  /**
+   * Reads file content relative to repoRoot
+   */
+  public getFileContent(filePath: string, maxChars: number = 3000): string | null {
+    const fullPath = join(this.repoRoot, filePath);
+    if (!existsSync(fullPath)) return null;
+    try {
+      const content = readFileSync(fullPath, "utf-8");
+      return content.length > maxChars ? content.slice(0, maxChars) + "\n...[truncated]" : content;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Finds existing source files relevant to a given user prompt or feature request
+   * and returns their relative paths alongside actual content snippets.
+   */
+  public findRelevantSourceFiles(
+    prompt: string,
+    candidateFiles: string[] = [],
+    maxFiles: number = 4
+  ): Array<{ path: string; content: string }> {
+    const allFiles = this.getSourceFiles();
+    if (allFiles.length === 0) return [];
+
+    const explicitTargets = new Set(candidateFiles.map((f) => f.replace(/\\/g, "/")));
+    const promptLower = prompt.toLowerCase();
+    const keywords = promptLower
+      .split(/[^a-zA-Z0-9_\-]+/)
+      .filter((w) => w.length >= 3 && !["and", "the", "for", "with", "this", "that", "yap", "amk", "kod", "icin"].includes(w));
+
+    const scored: Array<{ path: string; score: number; content: string }> = [];
+
+    for (const file of allFiles) {
+      let score = 0;
+      if (explicitTargets.has(file)) score += 100;
+
+      const fileLower = file.toLowerCase();
+      for (const kw of keywords) {
+        if (fileLower.includes(kw)) score += 20;
+      }
+
+      // High value architectural entrypoints
+      if (file.endsWith("App.tsx") || file.endsWith("index.css") || file.endsWith("main.tsx")) {
+        score += 5;
+      }
+
+      // Keyword semantic boost for theme / toggle
+      if (
+        (promptLower.includes("theme") || promptLower.includes("dark") || promptLower.includes("light") || promptLower.includes("toggle")) &&
+        (fileLower.includes("navbar") || fileLower.includes("theme") || fileLower.includes("index.css") || fileLower.includes("app.tsx"))
+      ) {
+        score += 30;
+      }
+
+      const content = this.getFileContent(file, 2500);
+      if (content) {
+        for (const kw of keywords) {
+          if (content.toLowerCase().includes(kw)) score += 5;
+        }
+        if (score > 0) {
+          scored.push({ path: file, score, content });
+        }
+      }
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, maxFiles).map((s) => ({ path: s.path, content: s.content }));
+  }
 }

@@ -22,6 +22,11 @@ export class ImplementationPlannerAgent {
 
     // Query existing source files for AST grounding
     const existingFiles = this.astBridge.getSourceFiles();
+    // Query relevant source files with actual code content
+    const relevantFiles = this.astBridge.findRelevantSourceFiles(
+      `${prd.title} ${adr.decision}`,
+      candidateFiles
+    );
     // Query caller/identity cards for candidate files
     const fileCards = candidateFiles.slice(0, 5).map((f) => this.astBridge.getFileCard(f));
 
@@ -37,11 +42,14 @@ CRITICAL RULES FOR ATOMIC IMPLEMENTATION:
 2. ZERO OVER-ENGINEERING (NO AUXILIARY HOOKS/CONTEXTS/TOKENS):
    - Do NOT create separate files for simple hooks (e.g. usePersistentToggle.ts), isolated context providers (ThemeContext.tsx), or separate token files (tokens.ts, variables.css) unless explicitly demanded by the user.
    - Implement state cleanly using standard inline React hooks (useState) inside the component.
-3. STANDALONE NEW COMPONENTS:
+3. GROUNDING IN ACTUAL CODE:
+${relevantFiles.length > 0 ? relevantFiles.map((f) => `--- File: ${f.path} ---\n${f.content}`).join("\n\n") : "No existing relevant code found."}
+   - Inspect the actual code above before planning! If a theme toggle or UI adjustment is requested, plan modifications to existing files: src/index.css (add required light/dark CSS variables), src/App.tsx (use CSS variables instead of hardcoded dark background), and src/components/Navbar.tsx. Do NOT plan unused abstractions!
+4. STANDALONE NEW COMPONENTS:
    - Only use actionType: "CREATE" when introducing a genuinely new component that does NOT exist in the codebase (e.g. src/components/Pricing.tsx).
    - If creating a new component, also add a step with actionType: "MODIFY" targeting the parent (e.g. src/App.tsx) to import and render it.
-4. Each step MUST target a DISTINCT file (e.g. src/components/Navbar.tsx).
-5. Target files: ${candidateFiles.length > 0 ? candidateFiles.join(", ") : "determine appropriate target file(s) from existing source files or genuine new components"}
+5. Each step MUST target a DISTINCT file (e.g. src/components/Navbar.tsx).
+6. Target files: ${candidateFiles.length > 0 ? candidateFiles.join(", ") : "determine appropriate target file(s) from existing source files or genuine new components"}
 
 PRD ID: ${prd.id} (${prd.title})
 ADR ID: ${adr.id} (${adr.title})
