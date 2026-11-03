@@ -18,6 +18,7 @@ import {
   FileText,
   Clock,
   Activity,
+  RotateCcw,
 } from "lucide-react";
 import "./App.css";
 
@@ -70,8 +71,19 @@ export function App() {
   const [targetRepo, setTargetRepo] = useState("");
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["components", "app"]));
-  const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
-  const [activeFilePath, setActiveFilePath] = useState<string>("");
+  const [openFiles, setOpenFiles] = useState<OpenFile[]>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_open_files");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+  const [activeFilePath, setActiveFilePath] = useState<string>(() => {
+    try {
+      return localStorage.getItem("metaframe_active_file") || "";
+    } catch {}
+    return "";
+  });
   const [editorContent, setEditorContent] = useState<string>("");
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1, 2, 3, 4, 5, 6]));
 
@@ -99,15 +111,83 @@ export function App() {
 
   // Copilot State
   const [copilotPrompt, setCopilotPrompt] = useState("");
-  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string; plan?: any }>>([
-    {
-      role: "system",
-      content: "MetaFrame Agentic Core online. Ready to plan, verify, and ground code in AST topology.",
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string; plan?: any }>>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_chat_messages");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        role: "system",
+        content: "MetaFrame Agentic Core online. Ready to plan, verify, and ground code in AST topology.",
+      },
+    ];
+  });
   const [isWorking, setIsWorking] = useState(false);
-  const [activeWorkflow, setActiveWorkflow] = useState<ActiveWorkflow | null>(null);
+  const [activeWorkflow, setActiveWorkflow] = useState<ActiveWorkflow | null>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_active_workflow");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.status === "running") parsed.status = "completed";
+        return parsed;
+      }
+    } catch {}
+    return null;
+  });
   const [autoCodeWrite, setAutoCodeWrite] = useState(true);
+
+  // Session Reset Handler
+  const handleResetSession = () => {
+    if (confirm("Reset current workflow and session history?")) {
+      setActiveWorkflow(null);
+      localStorage.removeItem("metaframe_active_workflow");
+      setChatMessages([
+        {
+          role: "system",
+          content: "MetaFrame Agentic Core online. Ready to plan, verify, and ground code in AST topology.",
+        },
+      ]);
+      localStorage.removeItem("metaframe_chat_messages");
+    }
+  };
+
+  // Sync state to localStorage
+  useEffect(() => {
+    try {
+      if (activeWorkflow) {
+        localStorage.setItem("metaframe_active_workflow", JSON.stringify(activeWorkflow));
+      } else {
+        localStorage.removeItem("metaframe_active_workflow");
+      }
+    } catch {}
+  }, [activeWorkflow]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("metaframe_chat_messages", JSON.stringify(chatMessages));
+    } catch {}
+  }, [chatMessages]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("metaframe_open_files", JSON.stringify(openFiles));
+      localStorage.setItem("metaframe_active_file", activeFilePath);
+    } catch {}
+  }, [openFiles, activeFilePath]);
+
+  // Restore editor content if activeFilePath is present on mount
+  useEffect(() => {
+    if (activeFilePath && !editorContent) {
+      fetch(`${API_BASE}/file?path=${encodeURIComponent(activeFilePath)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.content !== undefined) setEditorContent(d.content);
+        })
+        .catch(() => {});
+      fetchBlastRadius(activeFilePath);
+    }
+  }, []);
 
   // Fetch initial workspace
   useEffect(() => {
@@ -904,9 +984,20 @@ export function App() {
                   <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--accent)" }}>
                     LIVE AGENT ORCHESTRATION
                   </span>
-                  <span className={`step-badge ${activeWorkflow.status === "completed" ? "emerald" : activeWorkflow.status === "error" ? "amber" : "purple"}`}>
-                    {activeWorkflow.status.toUpperCase()}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span className={`step-badge ${activeWorkflow.status === "completed" ? "emerald" : activeWorkflow.status === "error" ? "amber" : "purple"}`}>
+                      {activeWorkflow.status.toUpperCase()}
+                    </span>
+                    <button
+                      type="button"
+                      className="clear-session-btn"
+                      title="Clear session & reset workflow"
+                      onClick={handleResetSession}
+                    >
+                      <RotateCcw size={10} />
+                      <span>Reset</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Step 1: AST Topology & Route Navigation */}
