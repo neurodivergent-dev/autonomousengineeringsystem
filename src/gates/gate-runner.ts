@@ -63,11 +63,14 @@ export class GateRunner {
       .filter((l) => /error TS\d+/.test(l))
       .map((l) => l.trim());
 
+    const passed = res.success && errorLines.length === 0;
+    const errors = errorLines.length > 0 ? errorLines : (!res.success ? [res.output.slice(0, 300)] : []);
+
     return {
       gateName: "1. TypeScript Compiler (Zero TS Errors)",
-      passed: errorLines.length === 0,
+      passed,
       durationMs,
-      errors: errorLines,
+      errors,
       warnings: [],
     };
   }

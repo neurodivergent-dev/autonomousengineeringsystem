@@ -714,18 +714,23 @@ export function App() {
               updateGateStatus([data.gate]);
             }
           } else if (data.type === "finish") {
+            const isSuccess = data.result?.success === true;
             setActiveWorkflow((prev) =>
               prev
                 ? {
                     ...prev,
-                    status: "completed",
-                    phaseMessage: "Workflow Completed Successfully!",
+                    status: isSuccess ? "completed" : "error",
+                    phaseMessage: isSuccess
+                      ? "Workflow Completed Successfully! All 6 gates verified."
+                      : "Quality Gates FAILED! Review compiler and gate errors.",
                     logs: [
                       ...prev.logs,
                       {
                         time: now,
                         agent: "System",
-                        text: "Autonomous engineering cycle complete! All artifacts verified.",
+                        text: isSuccess
+                          ? "Autonomous engineering cycle complete! All artifacts verified."
+                          : "Workflow finished with QUALITY GATE FAILURES! Verification did not pass.",
                       },
                     ],
                   }

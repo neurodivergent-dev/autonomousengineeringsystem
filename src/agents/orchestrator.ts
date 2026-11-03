@@ -155,24 +155,44 @@ export class LeadOrchestrator {
 
     // 7. Self-Healing Closed Loop (Surgical repair if gates failed)
     let selfHealed = false;
-    if (!report.overallPassed && primaryTarget && executeCode) {
+    if (!report.overallPassed && executeCode) {
       const failingGates = report.gates.filter((g) => !g.passed && g.errors.length > 0);
       if (failingGates.length > 0) {
-        console.log(`\n\x1b[33m[Self-Healing Loop]\x1b[0m ⚠ ${failingGates.length} gate failure(s) detected. Engaging ${this.llm.modelName} on Groq for targeted surgical fix...`);
+        // Extract all specific files mentioned in compiler/gate errors
+        const failingFiles = new Set<string>();
+        for (const gate of failingGates) {
+          for (const err of gate.errors) {
+            // Match TypeScript / Linter error paths (e.g. src/components/Hero.tsx(1,27): error TS...)
+            const match = err.match(/^([a-zA-Z0-9_\-./\\]+\.(tsx?|jsx?|css))\b/);
+            if (match && match[1]) {
+              failingFiles.add(match[1].replace(/\\/g, "/"));
+            }
+          }
+        }
+        if (failingFiles.size === 0 && primaryTarget) {
+          failingFiles.add(primaryTarget);
+        }
+
+        const targetFileList = Array.from(failingFiles);
+        console.log(`\n\x1b[33m[Self-Healing Loop]\x1b[0m ⚠ ${failingGates.length} gate failure(s) detected across ${targetFileList.length} file(s): ${targetFileList.join(", ")}`);
         onProgress?.({
           type: "self_heal_start",
           failingGates: failingGates.map((g) => g.gateName),
-          message: `Kapı ihlali tespit edildi! ${this.llm.modelName} cerrahi yama uyguluyor...`,
+          message: `Kapı ihlali tespit edildi! ${targetFileList.length} dosya için ${this.llm.modelName} cerrahi yama uyguluyor...`,
         });
         onProgress?.({
           type: "agent_activity",
           agent: "Healer",
-          text: `Cerrahi onarım başlatıldı: ${failingGates.map((g) => g.gateName).join(", ")} kurallarına göre kod yamalanıyor...`,
+          text: `Cerrahi onarım başlatıldı: ${targetFileList.join(", ")} dosyaları ${failingGates.map((g) => g.gateName).join(", ")} kurallarına göre onarılıyor...`,
         });
 
-        const healResult = await this.codeHealer.healFile(primaryTarget, failingGates);
-        if (healResult.healed) {
-          selfHealed = true;
+        let anyHealed = false;
+        for (const fileToHeal of targetFileList) {
+          const healResult = await this.codeHealer.healFile(fileToHeal, failingGates);
+          if (healResult.healed) anyHealed = true;
+        }
+
+        if (anyHealed) {
           console.log(`\x1b[33m[Self-Healing Loop]\x1b[0m Re-running 6-Gate safety chain on patched code...`);
           onProgress?.({
             type: "agent_activity",
@@ -186,11 +206,13 @@ export class LeadOrchestrator {
             onProgress?.({
               type: "agent_activity",
               agent: "Aegis",
-              text: `Yeniden Doğrulama [${g.gateName}]: ${g.passed ? "✔ GEÇTİ" : "✖ BAŞARISIZ"}`,
+              text: `Yeniden Doğrulama [${g.gateName}]: ${g.passed ? "✔ GEÇTİ" : `✖ BAŞARISIZ (${g.errors.length} hata)`}`,
             });
             onProgress?.({ type: "gate_result", gate: g, isRetest: true });
           });
+          report = retestReport;
           if (retestReport.overallPassed) {
+            selfHealed = true;
             console.log(`\x1b[32m✔ [Self-Healing Loop] All gates verified clean! Code self-healed successfully.\x1b[0m`);
             onProgress?.({
               type: "agent_activity",
@@ -198,7 +220,8 @@ export class LeadOrchestrator {
               text: "✔ Kod cerrahi olarak başarıyla iyileştirildi; tüm kapılar yeşil!",
             });
             onProgress?.({ type: "self_heal_success", message: "Cerrahi yama başarıyla doğrulandı, tüm kapılar temiz!" });
-            report = retestReport;
+          } else {
+            console.warn(`\x1b[31m✖ [Self-Healing Loop] Retest failed with ${retestReport.gates.filter((g) => !g.passed).length} failing gates.\x1b[0m`);
           }
         }
       }
