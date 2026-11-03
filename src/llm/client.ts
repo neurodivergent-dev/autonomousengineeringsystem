@@ -69,8 +69,10 @@ export class SharedLLMClient {
           model: this.config.model,
           messages,
           stream: false,
+          think: false, // Disable repetitive thinking loop for instant code generation
           options: {
             temperature: this.config.temperature,
+            repeat_penalty: 1.15,
             num_predict: 3072,
             num_ctx: 16384,
           },
@@ -83,9 +85,6 @@ export class SharedLLMClient {
 
       const data = (await res.json()) as any;
       let content = data.message?.content || "";
-      if (!content.trim() && data.message?.thinking) {
-        content = data.message.thinking;
-      }
       return content;
     } catch (err: any) {
       // Graceful fallback if Ollama server is not running
@@ -110,8 +109,10 @@ export class SharedLLMClient {
           model: this.config.model,
           messages,
           stream: true,
+          think: false, // Disable repetitive thinking loop
           options: {
             temperature: this.config.temperature,
+            repeat_penalty: 1.15,
             num_predict: 3072,
             num_ctx: 16384,
           },
@@ -152,9 +153,6 @@ export class SharedLLMClient {
         }
       }
 
-      if (!fullContent.trim() && fullThinking) {
-        fullContent = fullThinking;
-      }
       return fullContent;
     } catch (err: any) {
       console.warn(`[SharedLLMClient] Stream error: ${err.message}`);
