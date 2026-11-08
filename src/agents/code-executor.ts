@@ -2,6 +2,7 @@ import { join, dirname } from "path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { SharedLLMClient } from "../llm/client";
 import type { ImplementationPlan, PlanStep, PRD, ADR } from "../types";
+import { SurgicalPatchEngine, type LineDiffSummary } from "../intelligence/surgical-patch";
 
 export interface ExecutionResult {
   step: PlanStep;
@@ -11,6 +12,7 @@ export interface ExecutionResult {
   error?: string;
   originalCode?: string;
   generatedCode?: string;
+  diffSummary?: LineDiffSummary;
 }
 
 export interface PlanExecutionSummary {
@@ -24,7 +26,7 @@ export interface PlanExecutionSummary {
 export type CodeStepCallback = (event:
   | { type: "code_step_start"; step: PlanStep; index: number; total: number; targetFile: string }
   | { type: "code_token"; token: string; targetFile: string }
-  | { type: "code_step_done"; targetFile: string; codeLength: number; originalCode?: string; generatedCode?: string }
+  | { type: "code_step_done"; targetFile: string; codeLength: number; originalCode?: string; generatedCode?: string; diffSummary?: LineDiffSummary }
 ) => void;
 
 export class CodeExecutorAgent {
@@ -108,7 +110,6 @@ export class CodeExecutorAgent {
           prd,
           adr,
           (token) => {
-            onToken?.(token);
             onStepProgress?.({ type: "code_token", token, targetFile: step.targetFile });
           },
           executedMemory
@@ -125,7 +126,8 @@ export class CodeExecutorAgent {
         }
 
         writeFileSync(fullPath, generatedCode, "utf-8");
-        console.log(`  \x1b[32m✔ Written to disk:\x1b[0m ${step.targetFile} (${generatedCode.length} bytes)`);
+        const diffSummary = SurgicalPatchEngine.calculateLineDiff(existingContent, generatedCode);
+        console.log(`  \x1b[32m✔ Written to disk:\x1b[0m ${step.targetFile} (${generatedCode.length} bytes, +${diffSummary.additions}/-${diffSummary.deletions} lines)`);
 
         results.push({
           step,
@@ -134,6 +136,7 @@ export class CodeExecutorAgent {
           success: true,
           originalCode: existingContent,
           generatedCode,
+          diffSummary,
         });
 
         onStepProgress?.({
@@ -142,6 +145,7 @@ export class CodeExecutorAgent {
           codeLength: generatedCode.length,
           originalCode: existingContent,
           generatedCode,
+          diffSummary,
         });
 
         executedMemory.push({
@@ -185,8 +189,28 @@ export class CodeExecutorAgent {
     executedMemory?: Array<{ targetFile: string; actionType: string; summary: string }>
   ): Promise<string> {
     const fileExt = step.targetFile.split(".").pop() || "ts";
+    const isExistingFile = !!(existingContent && existingContent.trim().length > 120);
 
-    const systemPrompt = `You are the Code Executor Agent in the MetaFrame Autonomous Engineering System.
+    const systemPrompt = isExistingFile
+      ? `You are the Ultra-Fast Surgical Code Patch Agent in the MetaFrame Autonomous Engineering System.
+Philosophy: ULTRA-CONCISE SURGICAL REPLACEMENT.
+DO NOT REWRITE THE ENTIRE FILE! DO NOT COPY UNCHANGED CODE!
+
+STRICT FORMAT:
+<<<<<<< SEARCH
+[exact 3-7 lines from the existing file to replace]
+=======
+[new replacement lines]
+>>>>>>> REPLACE
+
+CRITICAL RULES:
+1. BREVITY IS MANDATORY: The SEARCH block MUST contain ONLY the 3 to 7 specific lines being modified (with 1 line of context before and after).
+2. NEVER include more than 8 lines inside a SEARCH block!
+3. NEVER start from line 1 of the file unless you are specifically modifying line 1! Jump directly to the lines that change.
+4. Match exact indentation and syntax from the existing file.
+5. If modifying multiple places, use multiple small SEARCH/REPLACE blocks.
+6. Output ZERO markdown commentary, ZERO explanation. Output ONLY the search/replace block(s).`
+      : `You are the Code Executor Agent in the MetaFrame Autonomous Engineering System.
 You generate complete, working, production-grade source code for requested files.
 Your code must be clean, robust, and directly runnable without placeholders or pseudo-code.
 
@@ -196,14 +220,7 @@ STRICT INSTRUCTIONS:
 3. If code blocks are used, wrap only in \`\`\`${fileExt} and \`\`\`.
 4. Do NOT include any conversational preamble, explanations, or sign-offs.
 5. Adhere to TypeScript/JavaScript/HTML/CSS best practices. Avoid unused variables or broken imports.
-6. If modifying an existing file, provide the complete, updated file content.
-7. CRITICAL: Never replace existing functionality with placeholders. Ensure all existing imports, components, and props continue to function.
-
-MANDATORY MODERN UI/UX DESIGN STANDARDS (FOR JSX/TSX/CSS):
-- VERCEL / LINEAR / RAYCAST TIER AESTHETICS: Use deep obsidian dark surfaces (#090A0F, #111420), glassmorphic backdrops (rgba(18, 21, 31, 0.75), backdropFilter: "blur(12px)"), and refined borders (1px solid rgba(255, 255, 255, 0.08) or rgba(168, 85, 247, 0.2)).
-- VIBRANT ACCENTS & GRADIENTS: Use sleek gradients (e.g. "linear-gradient(135deg, #a855f7 0%, #38bdf8 100%)") for key action buttons, badges, and gradient text highlights.
-- NEVER CAUSE INVISIBLE TEXT OR UNRESOLVED TOKENS: If using WebkitBackgroundClip: "text" with WebkitTextFillColor: "transparent", ALWAYS ensure a valid gradient is provided. Never write undefined CSS variables without fallbacks (e.g., use var(--primary-600, #8b5cf6)).
-- HIGH-DENSITY POLISHED CARDS: Cards must have 20-28px padding, icon glow badges, subtle box shadows (boxShadow: "0 8px 30px rgba(0,0,0,0.3)"), and smooth hover transitions.`;
+6. CRITICAL: Never replace existing functionality with placeholders. Ensure all existing imports, components, and props continue to function.`;
 
     const userPrompt = `
 Task: ${step.actionType} ${step.targetFile}
@@ -225,10 +242,12 @@ Decision: ${adr.decision}` : ""}
 
 ${existingContent ? `Existing File Content:
 \`\`\`${fileExt}
-${existingContent.slice(0, 3000)}
+${existingContent.length > 35000 ? existingContent.slice(0, 35000) + "\n// ... [Remainder truncated for context window] ..." : existingContent}
 \`\`\`` : "This is a brand new file."}
 
-Generate the full, complete source code for "${step.targetFile}" now:`;
+${isExistingFile
+  ? `Provide the surgical <<<<<<< SEARCH ... ======= ... >>>>>>> REPLACE diff block(s) for "${step.targetFile}" now:`
+  : `Generate the full, complete source code for "${step.targetFile}" now:`}`;
 
     const raw = await this.llm.chatStream(
       [
@@ -237,6 +256,20 @@ Generate the full, complete source code for "${step.targetFile}" now:`;
       ],
       onToken
     );
+
+    if (isExistingFile) {
+      const hunks = SurgicalPatchEngine.parseHunks(raw);
+      if (hunks.length > 0) {
+        const patchRes = SurgicalPatchEngine.applyHunks(existingContent, hunks);
+        if (patchRes.success) {
+          console.log(`  \x1b[35m[Surgical Patch]\x1b[0m Applied ${patchRes.appliedCount}/${patchRes.totalCount} hunks cleanly to ${step.targetFile}`);
+          return patchRes.patchedContent;
+        }
+        throw new Error(`Cerrahi yama uygulanamadı: Modelin aradığı SEARCH bloğu ${step.targetFile} içinde bulunamadı (${patchRes.error}). Orijinal dosya korundu.`);
+      } else if (raw.includes("<<<<<<< SEARCH")) {
+        throw new Error(`Yarıda kesilen çıktı: Model ${step.targetFile} için SEARCH/REPLACE diff bloğunu kapatamadı veya token limitine takıldı. Orijinal dosya korundu.`);
+      }
+    }
 
     return this.cleanCodeOutput(raw);
   }

@@ -1,5 +1,158 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Editor, { DiffEditor } from "@monaco-editor/react";
+import { marked } from "marked";
+import hljs from "highlight.js";
+import "highlight.js/styles/tokyo-night-dark.min.css";
+
+export function detectComponentNameFromCode(code: string): string | null {
+  if (!code || typeof code !== "string") return null;
+  const m1 = code.match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
+  if (m1 && m1[1] && m1[1] !== "function") return m1[1];
+  const m2 = code.match(/export\s+default\s+([A-Za-z0-9_]+)\s*;?/);
+  if (m2 && m2[1] && m2[1] !== "React") return m2[1];
+  const m3 = code.match(/(?:const|function)\s+([A-Z][a-zA-Z0-9_]*)\s*(?::\s*React\.FC|:\s*FC|\s*=\s*\([^)]*\)\s*=>|\s*\()/);
+  if (m3 && m3[1]) return m3[1];
+  const m4 = code.match(/export\s+(?:const|function)\s+([A-Z][a-zA-Z0-9_]*)/);
+  if (m4 && m4[1]) return m4[1];
+  return null;
+}
+
+const renderer = new marked.Renderer();
+renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
+  const validLang = lang && hljs.getLanguage(lang) ? lang : undefined;
+  const highlighted = validLang
+    ? hljs.highlight(text, { language: validLang, ignoreIllegals: true }).value
+    : hljs.highlightAuto(text).value;
+
+  const fileMatch = text.match(/^(?:\/\/\s*|\/\*\s*)([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|css|html|json))\b/m);
+  let detectedFile = fileMatch ? fileMatch[1].replace(/\\/g, "/") : "";
+
+  // If no explicit file comment, detect from component name
+  const comp = detectComponentNameFromCode(text);
+  if (!detectedFile && comp) {
+    detectedFile = comp === "App" ? "src/App.tsx" : `src/components/${comp}.tsx`;
+  }
+
+  // Safety guard: NEVER allow subcomponents to target App.tsx
+  if ((detectedFile === "src/App.tsx" || detectedFile === "App.tsx") && comp && comp !== "App") {
+    detectedFile = `src/components/${comp}.tsx`;
+  }
+
+  // Detect lazy placeholder comments (// ... (önceki kodlar), {/* ... */}, etc.)
+  const hasPlaceholders =
+    /\{\s*\/\*\s*\.{3}.*?\*\/\s*\}|\/\/\s*\.{3}|\/\*\s*\.{3}.*?\*\//i.test(text) ||
+    /\/\/\s*.*\b(?:önceki|kalan|diğer|existing|rest of|unchanged)\b.*\b(?:kod|code|state|fonksiyon|implement)/i.test(text) ||
+    /\.\.\.\s*(?:önceki|kalan|diğer|rest of|existing)\s*(?:kodlar|kod|code)/i.test(text);
+
+  const applyBtnHtml = hasPlaceholders
+    ? `<button class="code-block-apply placeholder-warning" data-code="${encodeURIComponent(text)}" data-file="${detectedFile}" data-has-placeholders="true" title="Bu kod bloğunda yer tutucu yorumlar var (// ...). Doğrudan uygulanırsa dosyadaki diğer kodları siler!">
+        ⚠️ Yer Tutucu Var (Eksik Kod)
+      </button>`
+    : `<button class="code-block-apply" data-code="${encodeURIComponent(text)}" data-file="${detectedFile}" title="Bu kodu aktif editöre ve dosyaya uygula">
+        ⚡ Editöre Uygula
+      </button>`;
+
+  return `<div class="code-block-wrapper" data-file="${detectedFile}">
+  <div class="code-block-header">
+    <div class="code-block-header-left">
+      <span class="code-block-lang">${validLang || "code"}</span>
+      ${detectedFile ? `<span class="code-block-file">📁 ${detectedFile}</span>` : ""}
+    </div>
+    <div class="code-block-actions">
+      ${applyBtnHtml}
+      <button class="code-block-copy" data-code="${encodeURIComponent(text)}" title="Kodu kopyala">
+        📋 Kopyala
+      </button>
+    </div>
+  </div>
+  <pre><code class="hljs ${validLang || ""}">${highlighted}</code></pre>
+</div>`;
+};
+
+marked.use({
+  gfm: true,
+  breaks: true,
+  renderer,
+});
+
+interface MarkdownRendererProps {
+  content: string;
+  onApplyCode?: (code: string, targetFile?: string) => Promise<boolean | void> | boolean | void;
+}
+
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onApplyCode }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const html = useMemo(() => {
+    try {
+      return marked.parse(content) as string;
+    } catch {
+      return content;
+    }
+  }, [content]);
+
+  const handleClick = async (e: React.MouseEvent<HTMLDivElement>) => {
+    // 1. Copy Button
+    const copyBtn = (e.target as HTMLElement).closest(".code-block-copy") as HTMLButtonElement | null;
+    if (copyBtn) {
+      const raw = copyBtn.getAttribute("data-code");
+      if (raw) {
+        const code = decodeURIComponent(raw);
+        navigator.clipboard.writeText(code);
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = "✓ Kopyalandı!";
+        setTimeout(() => {
+          copyBtn.innerText = originalText;
+        }, 2000);
+      }
+      return;
+    }
+
+    // 2. Apply Code Button
+    const applyBtn = (e.target as HTMLElement).closest(".code-block-apply") as HTMLButtonElement | null;
+    if (applyBtn) {
+      if (applyBtn.getAttribute("data-has-placeholders") === "true") {
+        alert(
+          "⚠️ Tehlike Engellendi: Bu kod bloğu '// ... (önceki kodlar)' veya '{/* ... */}' gibi yer tutucu yorumlar içeriyor!\n\n" +
+          "Bu kodu doğrudan editöre uygulamak, dosyadaki diğer tüm çalışan kodların (state, buton, menü) silinmesine yol açar.\n\n" +
+          "Lütfen sohbetten şunu isteyin:\n'Kodu hiçbir yer tutucu olmadan, tüm dosyayı baştan sona eksiksiz olarak tekrar yaz.'"
+        );
+        return;
+      }
+      const rawCode = applyBtn.getAttribute("data-code");
+      const fileAttr = applyBtn.getAttribute("data-file") || undefined;
+      if (rawCode && onApplyCode) {
+        const code = decodeURIComponent(rawCode);
+        applyBtn.disabled = true;
+        applyBtn.innerText = "⏳ Uygulanıyor...";
+        try {
+          await onApplyCode(code, fileAttr);
+          applyBtn.innerText = "✔ Uygulandı!";
+          applyBtn.classList.add("applied");
+          setTimeout(() => {
+            applyBtn.innerText = "⚡ Editöre Uygula";
+            applyBtn.disabled = false;
+            applyBtn.classList.remove("applied");
+          }, 3000);
+        } catch {
+          applyBtn.innerText = "✖ Hata!";
+          setTimeout(() => {
+            applyBtn.innerText = "⚡ Editöre Uygula";
+            applyBtn.disabled = false;
+          }, 2000);
+        }
+      }
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="markdown-chat-body"
+      onClick={handleClick}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+};
 import {
   Folder,
   FileCode,
@@ -12,6 +165,7 @@ import {
   Send,
   ChevronRight,
   ChevronDown,
+  Check,
   X,
   Sparkles,
   Layers,
@@ -19,6 +173,20 @@ import {
   Clock,
   Activity,
   RotateCcw,
+  Terminal as TerminalIcon,
+  Trash2,
+  Square,
+  Maximize2,
+  Minimize2,
+  CornerDownLeft,
+  Headphones,
+  Compass,
+  Bot,
+  Bug,
+  Paperclip,
+  Plus,
+  Search,
+  Image as ImageIcon,
 } from "lucide-react";
 import "./App.css";
 
@@ -47,7 +215,7 @@ interface ActiveWorkflow {
   prompt: string;
   currentPhase: number;
   phaseMessage: string;
-  status: "idle" | "running" | "completed" | "error";
+  status: "idle" | "running" | "completed" | "error" | "interrupted";
   topologyRoutes?: string[];
   prd?: any;
   adr?: any;
@@ -61,15 +229,186 @@ interface ActiveWorkflow {
   streamingCode?: string;
   agentTokens?: { [agent: string]: string };
   tokenCount?: number;
+  stepTokenCount?: number;
   selfHeal?: { active: boolean; message?: string; failingGates?: string[] };
   gates: any[];
   logs: ActivityLog[];
   error?: string;
 }
 
+interface TerminalEntry {
+  id: string;
+  command: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  time: string;
+  cwd: string;
+}
+
+export type StudioMode = "vibe" | "engineering" | "mimar" | "autonomous" | "debugger" | "chat";
+
+interface ModeConfig {
+  id: StudioMode;
+  name: string;
+  tagline: string;
+  badge: string;
+  color: string;
+  glow: string;
+  suggestions: string[];
+}
+
+interface VibeSession {
+  prompt: string;
+  targetFile: string;
+  status: "idle" | "generating" | "applied" | "error";
+  streamingCode: string;
+  tokenCount: number;
+  durationMs?: number;
+  bytes?: number;
+  error?: string;
+  logs: { time: string; text: string }[];
+}
+
+const STUDIO_MODES: Record<StudioMode, ModeConfig> = {
+  chat: {
+    id: "chat",
+    name: "Sohbet",
+    tagline: "Proje hakkında konuş, sorular sor, mimari tartış veya kod analizi iste.",
+    badge: "CHAT 💬",
+    color: "#10b981",
+    glow: "rgba(16, 185, 129, 0.22)",
+    suggestions: [
+      "Bu projenin yapısını ve dosyalarını açıkla",
+      "Navbar bileşenini nasıl refactor edebiliriz?",
+      "Performansı artırmak için neler önerirsin?",
+      "Projedeki bağımlılıklar ve routing nasıl çalışıyor?",
+    ],
+  },
+  vibe: {
+    id: "vibe",
+    name: "Vibe Coding",
+    tagline: "Direct Code Generation: Kullanıcı ister, sistem yazar. PRD/ADR yok, anında kod.",
+    badge: "DIRECT CODE ⚡",
+    color: "#ec4899",
+    glow: "rgba(236, 72, 153, 0.22)",
+    suggestions: [
+      "Modern Glassmorphism Card",
+      "Neon Cyberpunk Hero Section",
+      "Hızlı Buton & Input Seti",
+      "Smooth Animasyonlu Liste",
+    ],
+  },
+  engineering: {
+    id: "engineering",
+    name: "Engineering",
+    tagline: "Katı derleyici disiplini, tam 6-Gate kalite zinciri ve tip güvenliği.",
+    badge: "STRICT 🛡️",
+    color: "#8b5cf6",
+    glow: "rgba(139, 92, 246, 0.22)",
+    suggestions: [
+      "TypeScript Strict Type Refactor",
+      "Run Full 6-Gate Quality Audit",
+      "Zero-Emoji & Token Cleanse",
+      "Transitive Blast Radius Safe Refactor",
+    ],
+  },
+  mimar: {
+    id: "mimar",
+    name: "Mimar Modu",
+    tagline: "PRD -> ADR -> AST Topological Blueprint & Sistem Tasarımı.",
+    badge: "ARCHITECT 🏛️",
+    color: "#f59e0b",
+    glow: "rgba(245, 158, 11, 0.22)",
+    suggestions: [
+      "Draft System PRD & User Stories",
+      "Architecture Decision Record (ADR)",
+      "AST Dependency Mapping",
+      "Database Schema & Migrations Map",
+    ],
+  },
+  autonomous: {
+    id: "autonomous",
+    name: "Autonomous Modu",
+    tagline: "Lead Orchestrator (Orion -> Daedalus -> Vulcan) & Healer Self-Correction.",
+    badge: "AUTONOMOUS 🤖",
+    color: "#06b6d4",
+    glow: "rgba(6, 182, 212, 0.22)",
+    suggestions: [
+      "Full Autonomous Feature Lifecycle",
+      "Auto-Heal Failing Gates Loop",
+      "End-to-End Screen Generator",
+      "Full Repo Intelligence Scan",
+    ],
+  },
+  debugger: {
+    id: "debugger",
+    name: "Debugger",
+    tagline: "Derin AST sorguları, hata izleme, transitive blast-radius ve PowerShell konsolu.",
+    badge: "DEBUG 🐞",
+    color: "#ef4444",
+    glow: "rgba(239, 68, 68, 0.22)",
+    suggestions: [
+      "Find Callers of Active Component",
+      "AST Blast Radius Breakdown",
+      "Check Broken Imports & Exports",
+      "Run TypeScript Compiler Diagnostics",
+    ],
+  },
+};
+
 export function App() {
+  const [studioMode, setStudioMode] = useState<StudioMode>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_studio_mode") as StudioMode;
+      if (saved && STUDIO_MODES[saved]) return saved;
+    } catch {}
+    return "engineering";
+  });
+
+  const [autoCodeWrite, setAutoCodeWrite] = useState(true);
+
+  const handleSelectMode = (mode: StudioMode) => {
+    setStudioMode(mode);
+    try {
+      localStorage.setItem("metaframe_studio_mode", mode);
+    } catch {}
+
+    if (mode === "debugger") {
+      setIsTerminalOpen(true);
+      setTerminalHistory((prev) => [
+        ...prev,
+        {
+          id: Math.random().toString(36).substring(7),
+          command: "# DEBUGGER MODU AKTİF (PowerShell & AST Diagnostic Engine)",
+          stdout: "Terminal ve AST çağrı zinciri devrede.\n'dir', 'git status', 'bun test' komutlarını çalıştırabilir veya sorgu yapabilirsiniz.\n",
+          stderr: "",
+          exitCode: 0,
+          time: new Date().toLocaleTimeString(),
+          cwd: terminalCwd || targetRepo,
+        },
+      ]);
+    } else if (mode === "vibe") {
+      setAutoCodeWrite(true);
+    } else if (mode === "mimar") {
+      setAutoCodeWrite(false);
+    }
+  };
+
   const [targetRepo, setTargetRepo] = useState("");
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
+
+  const allProjectFiles = useMemo(() => {
+    const list: string[] = [];
+    const traverse = (nodes: FileNode[]) => {
+      for (const n of nodes) {
+        if (n.isDirectory && n.children) traverse(n.children);
+        else if (!n.isDirectory) list.push(n.path);
+      }
+    };
+    traverse(fileTree);
+    return list;
+  }, [fileTree]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["components", "app"]));
   const [openFiles, setOpenFiles] = useState<OpenFile[]>(() => {
     try {
@@ -85,10 +424,246 @@ export function App() {
     return "";
   });
   const [editorContent, setEditorContent] = useState<string>("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
+  const activeFilePathRef = useRef<string>(activeFilePath);
+  activeFilePathRef.current = activeFilePath;
+  const editorContentRef = useRef<string>(editorContent);
+  editorContentRef.current = editorContent;
   const [editorMode, setEditorMode] = useState<"code" | "diff">("code");
   const [diffOriginal, setDiffOriginal] = useState<string>("");
   const [diffModified, setDiffModified] = useState<string>("");
+  const [stagedDiff, setStagedDiff] = useState<{
+    targetFile: string;
+    originalCode: string;
+    stagedCode: string;
+    additions: number;
+    deletions: number;
+  } | null>(null);
+  const [reviewMode, setReviewMode] = useState<boolean>(true);
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1, 2, 3, 4, 5, 6]));
+  const [vibeSession, setVibeSession] = useState<VibeSession | null>(null);
+
+  // Integrated Terminal State
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [terminalHeight, setTerminalHeight] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_terminal_height");
+      if (saved) return Number(saved);
+    } catch {}
+    return 240;
+  });
+
+  // Resizable Panels State
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_sidebar_width");
+      if (saved) return Number(saved);
+    } catch {}
+    return 260;
+  });
+
+  const [copilotWidth, setCopilotWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_copilot_width");
+      if (saved) return Number(saved);
+    } catch {}
+    return 360;
+  });
+
+  const [isResizing, setIsResizing] = useState<"sidebar" | "copilot" | "terminal" | null>(null);
+  const sidebarPanelRef = useRef<HTMLElement | null>(null);
+  const copilotPanelRef = useRef<HTMLElement | null>(null);
+  const terminalPanelRef = useRef<HTMLDivElement | null>(null);
+  const editorPanelRef = useRef<HTMLElement | null>(null);
+
+  // Drag handlers
+  const handleSidebarMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing("sidebar");
+    const startX = e.clientX;
+    const startW = sidebarPanelRef.current ? sidebarPanelRef.current.getBoundingClientRect().width : sidebarWidth;
+
+    const onMouseMove = (moveEv: MouseEvent) => {
+      const delta = moveEv.clientX - startX;
+      const nextW = Math.max(160, Math.min(600, Math.round(startW + delta)));
+      setSidebarWidth(nextW);
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(null);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  const handleCopilotMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing("copilot");
+    const startX = e.clientX;
+    const startW = copilotPanelRef.current ? copilotPanelRef.current.getBoundingClientRect().width : copilotWidth;
+
+    const onMouseMove = (moveEv: MouseEvent) => {
+      const delta = startX - moveEv.clientX;
+      const nextW = Math.max(260, Math.min(700, Math.round(startW + delta)));
+      setCopilotWidth(nextW);
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(null);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  const handleTerminalMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing("terminal");
+    const startY = e.clientY;
+    const startH = terminalPanelRef.current ? terminalPanelRef.current.getBoundingClientRect().height : terminalHeight;
+    const editorTotalH = editorPanelRef.current ? editorPanelRef.current.getBoundingClientRect().height : (window.innerHeight - 80);
+    const maxH = Math.max(120, Math.round(editorTotalH - 90));
+
+    const onMouseMove = (moveEv: MouseEvent) => {
+      const delta = startY - moveEv.clientY;
+      const nextH = Math.max(70, Math.min(maxH, Math.round(startH + delta)));
+      setTerminalHeight(nextH);
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(null);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("metaframe_sidebar_width", String(sidebarWidth));
+    } catch {}
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("metaframe_copilot_width", String(copilotWidth));
+    } catch {}
+  }, [copilotWidth]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("metaframe_terminal_height", String(terminalHeight));
+    } catch {}
+  }, [terminalHeight]);
+  const [terminalHistory, setTerminalHistory] = useState<TerminalEntry[]>([
+    {
+      id: "welcome",
+      command: "",
+      stdout: "MetaFrame Cyber Terminal [PowerShell / Shell]\nType any shell command below (e.g. 'git status', 'bun test', 'dir').\nPress Ctrl+` or click the Terminal button to toggle.\n",
+      stderr: "",
+      exitCode: 0,
+      time: new Date().toLocaleTimeString(),
+      cwd: "",
+    },
+  ]);
+  const [terminalInput, setTerminalInput] = useState("");
+  const [isExecutingCmd, setIsExecutingCmd] = useState(false);
+  const [cmdHistoryList, setCmdHistoryList] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const [terminalCwd, setTerminalCwd] = useState<string>("");
+  const terminalEndRef = useRef<HTMLDivElement | null>(null);
+  const terminalInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleExecuteTerminal = async (cmdToRun?: string) => {
+    const cmd = (cmdToRun !== undefined ? cmdToRun : terminalInput).trim();
+    if (!cmd || isExecutingCmd) return;
+
+    setCmdHistoryList((prev) => [cmd, ...prev.filter((c) => c !== cmd)]);
+    setHistoryIndex(-1);
+    setTerminalInput("");
+    setIsExecutingCmd(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/terminal/exec`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: cmd }),
+      });
+      const data = await res.json();
+
+      if (data.clear) {
+        setTerminalHistory([]);
+      } else {
+        setTerminalHistory((prev) => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(7),
+            command: cmd,
+            stdout: data.stdout || "",
+            stderr: data.stderr || "",
+            exitCode: data.exitCode ?? 0,
+            time: new Date().toLocaleTimeString(),
+            cwd: data.cwd || terminalCwd || targetRepo,
+          },
+        ]);
+      }
+      if (data.cwd) setTerminalCwd(data.cwd);
+    } catch (e: any) {
+      setTerminalHistory((prev) => [
+        ...prev,
+        {
+          id: Math.random().toString(36).substring(7),
+          command: cmd,
+          stdout: "",
+          stderr: e.message || "Failed to reach backend terminal API",
+          exitCode: 1,
+          time: new Date().toLocaleTimeString(),
+          cwd: terminalCwd || targetRepo,
+        },
+      ]);
+    } finally {
+      setIsExecutingCmd(false);
+      setTimeout(() => {
+        terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        terminalInputRef.current?.focus();
+      }, 50);
+    }
+  };
+
+  const handleTerminalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleExecuteTerminal();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (cmdHistoryList.length === 0) return;
+      const nextIdx = Math.min(historyIndex + 1, cmdHistoryList.length - 1);
+      setHistoryIndex(nextIdx);
+      setTerminalInput(cmdHistoryList[nextIdx]);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex <= 0) {
+        setHistoryIndex(-1);
+        setTerminalInput("");
+      } else {
+        const nextIdx = historyIndex - 1;
+        setHistoryIndex(nextIdx);
+        setTerminalInput(cmdHistoryList[nextIdx]);
+      }
+    }
+  };
 
   const toggleStepExpand = (stepNum: number) => {
     setExpandedSteps((prev) => {
@@ -106,15 +681,152 @@ export function App() {
     "Theme Tokens": false,
     "Zero-Emoji": false,
     "i18n": true,
-    "AST Health": true,
+    "Anti-Cheat": true,
   });
 
   // Blast Radius State
   const [blastData, setBlastData] = useState<{ risk: "LOW" | "MEDIUM" | "HIGH"; affectedFiles: string[] } | null>(null);
 
+  // User Explicit AI Context Files
+  const [contextFiles, setContextFiles] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("metaframe_context_files");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+  const [showAddContextModal, setShowAddContextModal] = useState(false);
+  const [contextSearchQuery, setContextSearchQuery] = useState("");
+  const [atMentionQuery, setAtMentionQuery] = useState<string | null>(null);
+
+  // User Attached Images (Vision)
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (re) => {
+            if (re.target?.result) {
+              setAttachedImages((prev) => [...prev, re.target!.result as string]);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          if (re.target?.result) {
+            setAttachedImages((prev) => [...prev, re.target!.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    e.target.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = e.dataTransfer?.files;
+    if (!files) return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          if (re.target?.result) {
+            setAttachedImages((prev) => [...prev, re.target!.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("metaframe_context_files", JSON.stringify(contextFiles));
+    } catch {}
+  }, [contextFiles]);
+
+  const toggleContextFile = (filePath: string) => {
+    setContextFiles((prev) =>
+      prev.includes(filePath) ? prev.filter((p) => p !== filePath) : [...prev, filePath]
+    );
+  };
+
+  const addContextFile = (filePath: string) => {
+    setContextFiles((prev) => (prev.includes(filePath) ? prev : [...prev, filePath]));
+  };
+
+  const removeContextFile = (filePath: string) => {
+    setContextFiles((prev) => prev.filter((p) => p !== filePath));
+  };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setCopilotPrompt(val);
+
+    const cursorPos = e.target.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@([a-zA-Z0-9_\-./]*)$/);
+    if (atMatch) {
+      setAtMentionQuery(atMatch[1].toLowerCase());
+    } else {
+      setAtMentionQuery(null);
+    }
+  };
+
+  const handleSelectAtMention = (filePath: string) => {
+    addContextFile(filePath);
+    if (atMentionQuery !== null) {
+      const atRegex = new RegExp(`@${atMentionQuery}$`);
+      setCopilotPrompt((prev) => prev.replace(atRegex, "").trimEnd() + " ");
+    }
+    setAtMentionQuery(null);
+  };
+
+  const atMentionMatches = useMemo(() => {
+    if (atMentionQuery === null) return [];
+    return allProjectFiles
+      .filter((f) => {
+        const lower = f.toLowerCase();
+        return lower.includes(atMentionQuery) || (f.split("/").pop() || "").toLowerCase().includes(atMentionQuery);
+      })
+      .slice(0, 6);
+  }, [atMentionQuery, allProjectFiles]);
+
+  const modalFilteredFiles = useMemo(() => {
+    const q = contextSearchQuery.trim().toLowerCase();
+    if (!q) return allProjectFiles.slice(0, 60);
+    return allProjectFiles.filter((f) => f.toLowerCase().includes(q)).slice(0, 60);
+  }, [contextSearchQuery, allProjectFiles]);
+
   // Copilot State
   const [copilotPrompt, setCopilotPrompt] = useState("");
-  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string; plan?: any }>>(() => {
+  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string; images?: string[]; plan?: any }>>(() => {
     try {
       const saved = localStorage.getItem("metaframe_chat_messages");
       if (saved) return JSON.parse(saved);
@@ -127,43 +839,114 @@ export function App() {
     ];
   });
   const [isWorking, setIsWorking] = useState(false);
+  const [isChatStreaming, setIsChatStreaming] = useState(false);
+  const [chatStreamingText, setChatStreamingText] = useState("");
+  const currentEventSourceRef = useRef<EventSource | null>(null);
+  const terminalBodyRef = useRef<HTMLDivElement | null>(null);
+
   const [activeWorkflow, setActiveWorkflow] = useState<ActiveWorkflow | null>(() => {
     try {
       const saved = localStorage.getItem("metaframe_active_workflow");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.status === "running") parsed.status = "completed";
+        if (parsed.status === "running") parsed.status = "interrupted";
         return parsed;
       }
     } catch {}
     return null;
   });
-  const [autoCodeWrite, setAutoCodeWrite] = useState(true);
+
+  // Clear only telemetry activity feed logs
+  const handleClearTelemetry = () => {
+    setActiveWorkflow((prev) =>
+      prev
+        ? {
+            ...prev,
+            logs: [],
+          }
+        : null
+    );
+  };
+
+  // Immediate clean slate: Clears chat messages, workflow, and local storage without popup friction
+  const handleClearAll = () => {
+    if (currentEventSourceRef.current) {
+      currentEventSourceRef.current.close();
+      currentEventSourceRef.current = null;
+    }
+    setIsWorking(false);
+    setActiveWorkflow(null);
+    setVibeSession(null);
+    localStorage.removeItem("metaframe_active_workflow");
+    setChatMessages([
+      {
+        role: "system",
+        content: "MetaFrame Agentic Core online. Ready to plan, verify, and ground code in AST topology.",
+      },
+    ]);
+    localStorage.removeItem("metaframe_chat_messages");
+  };
+
+  // Immediate abort / cancel handler for in-flight streams
+  const handleAbortExecution = () => {
+    if (currentEventSourceRef.current) {
+      currentEventSourceRef.current.close();
+      currentEventSourceRef.current = null;
+    }
+    setIsWorking(false);
+    setActiveWorkflow((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "interrupted",
+            phaseMessage: "İşlem kullanıcı tarafından durduruldu.",
+            logs: [
+              ...prev.logs,
+              {
+                time: new Date().toTimeString().slice(0, 8),
+                agent: "System",
+                text: "⏹ İşlem kullanıcı tarafından durduruldu.",
+              },
+            ],
+          }
+        : null
+    );
+    setVibeSession((prev) =>
+      prev ? { ...prev, status: "idle", message: "İşlem durduruldu." } : null
+    );
+  };
 
   // Session Reset Handler
   const handleResetSession = () => {
-    if (confirm("Reset current workflow and session history?")) {
-      setActiveWorkflow(null);
-      localStorage.removeItem("metaframe_active_workflow");
-      setChatMessages([
-        {
-          role: "system",
-          content: "MetaFrame Agentic Core online. Ready to plan, verify, and ground code in AST topology.",
-        },
-      ]);
-      localStorage.removeItem("metaframe_chat_messages");
-    }
+    handleClearAll();
   };
 
-  // Sync state to localStorage
+  // Autoscroll terminal on streaming token updates
   useEffect(() => {
-    try {
-      if (activeWorkflow) {
-        localStorage.setItem("metaframe_active_workflow", JSON.stringify(activeWorkflow));
-      } else {
-        localStorage.removeItem("metaframe_active_workflow");
+    if (terminalBodyRef.current) {
+      terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+    }
+  }, [activeWorkflow?.streamingCode]);
+
+  // Sync state to localStorage with debouncing & sanitized transient stream payloads
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        if (activeWorkflow) {
+          const sanitized = {
+            ...activeWorkflow,
+            streamingCode: "", // transient, not needed after session restore
+          };
+          localStorage.setItem("metaframe_active_workflow", JSON.stringify(sanitized));
+        } else {
+          localStorage.removeItem("metaframe_active_workflow");
+        }
+      } catch (e) {
+        console.warn("Failed to persist workflow to localStorage:", e);
       }
-    } catch {}
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [activeWorkflow]);
 
   useEffect(() => {
@@ -198,10 +981,44 @@ export function App() {
       .then((res) => res.json())
       .then((data) => {
         setTargetRepo(data.targetRepo);
+        setTerminalCwd(data.targetRepo);
         setFileTree(data.tree);
       })
       .catch((err) => console.error("Failed to connect to Bun server:", err));
   }, []);
+
+  const handleSaveFileRef = useRef<() => void>(() => {});
+
+  // Global shortcuts (Ctrl+S for Save, Ctrl+` for Terminal) with capture phase priority
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 1. Ctrl+S or Cmd+S to save active file
+      if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S" || e.code === "KeyS")) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleSaveFileRef.current();
+        return;
+      }
+
+      // 2. Ctrl+` for Integrated Terminal
+      if ((e.ctrlKey || e.metaKey) && (e.key === "`" || e.key === "ñ" || e.code === "Backquote")) {
+        e.preventDefault();
+        setIsTerminalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown, true);
+  }, []);
+
+  // Monaco Editor did mount - register Ctrl+S command inside Monaco
+  const handleEditorDidMount = (editor: any, monaco: any) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      handleSaveFileRef.current();
+    });
+  };
 
   // Monaco Editor mount configuration - Custom MetaFrame Cyber theme matching Mindbook Pro
   const handleEditorWillMount = (monaco: any) => {
@@ -298,18 +1115,116 @@ export function App() {
     }
   };
 
-  // Open file in diff editor
-  const handleOpenDiff = (relPath: string, originalCode: string, generatedCode: string) => {
+  // Open file in diff editor with interactive StagedDiff review
+  const handleOpenDiff = (
+    relPath: string,
+    originalCode: string,
+    generatedCode: string,
+    summary?: { additions?: number; deletions?: number }
+  ) => {
     setActiveFilePath(relPath);
     setDiffOriginal(originalCode);
     setDiffModified(generatedCode);
     setEditorContent(generatedCode);
     setEditorMode("diff");
     fetchBlastRadius(relPath);
+
+    const origLines = new Set(originalCode.split("\n").map((l) => l.trim()));
+    const modLines = new Set(generatedCode.split("\n").map((l) => l.trim()));
+    let adds = 0;
+    let dels = 0;
+    for (const l of generatedCode.split("\n")) {
+      if (l.trim() && !origLines.has(l.trim())) adds++;
+    }
+    for (const l of originalCode.split("\n")) {
+      if (l.trim() && !modLines.has(l.trim())) dels++;
+    }
+
+    setStagedDiff({
+      targetFile: relPath,
+      originalCode,
+      stagedCode: generatedCode,
+      additions: summary?.additions ?? adds,
+      deletions: summary?.deletions ?? dels,
+    });
+
     const existing = openFiles.find((f) => f.path === relPath);
     if (!existing) {
       setOpenFiles((prev) => [...prev, { path: relPath, content: generatedCode }]);
     }
+  };
+
+  // Accept and commit staged diff to disk via Transactional Workspace Engine
+  const handleAcceptStagedDiff = async () => {
+    if (!stagedDiff) return;
+    const { targetFile, stagedCode, additions, deletions } = stagedDiff;
+    try {
+      const res = await fetch(`${API_BASE}/file?path=${encodeURIComponent(targetFile)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: stagedCode }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Değişiklik kaydedilemedi.");
+      }
+
+      setEditorContent(stagedCode);
+      setOpenFiles((prev) =>
+        prev.map((f) => (f.path === targetFile ? { ...f, content: stagedCode, isDirty: false } : f))
+      );
+      setEditorMode("code");
+      setStagedDiff(null);
+
+      const now = new Date().toTimeString().slice(0, 8);
+      setActiveWorkflow((prev) =>
+        prev
+          ? {
+              ...prev,
+              logs: [
+                ...prev.logs,
+                {
+                  time: now,
+                  agent: "System",
+                  text: `✔ Değişiklik onaylandı ve diske kaydedildi: ${targetFile} (+${additions}/-${deletions} satır)`,
+                },
+              ],
+            }
+          : null
+      );
+    } catch (err: any) {
+      console.error("Accept diff error:", err);
+      alert(`Değişiklik kaydedilemedi: ${err.message}`);
+    }
+  };
+
+  // Reject staged diff and preserve original file
+  const handleRejectStagedDiff = () => {
+    if (!stagedDiff) return;
+    const { targetFile, originalCode } = stagedDiff;
+    setEditorContent(originalCode);
+    setOpenFiles((prev) =>
+      prev.map((f) => (f.path === targetFile ? { ...f, content: originalCode, isDirty: false } : f))
+    );
+    setEditorMode("code");
+    setStagedDiff(null);
+
+    const now = new Date().toTimeString().slice(0, 8);
+    setActiveWorkflow((prev) =>
+      prev
+        ? {
+            ...prev,
+            logs: [
+              ...prev.logs,
+              {
+                time: now,
+                agent: "System",
+                text: `✖ Öneri kullanıcı tarafından reddedildi: ${targetFile} (orijinal kod korundu)`,
+              },
+            ],
+          }
+        : null
+    );
   };
 
   // Close tab
@@ -332,26 +1247,43 @@ export function App() {
 
   // Save File (Ctrl+S or Action)
   const handleSaveFile = async () => {
-    if (!activeFilePath) return;
+    const currentPath = activeFilePathRef.current || activeFilePath;
+    if (!currentPath) return;
+
+    // Direct buffer from Monaco Editor if mounted (instant, zero lag)
+    const contentToSave = editorRef.current ? editorRef.current.getValue() : (editorContentRef.current || editorContent);
+
     try {
-      const res = await fetch(`${API_BASE}/file?path=${encodeURIComponent(activeFilePath)}`, {
+      setSaveStatus("saving");
+      const res = await fetch(`${API_BASE}/file?path=${encodeURIComponent(currentPath)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: editorContent }),
+        body: JSON.stringify({ content: contentToSave }),
       });
       const data = await res.json();
       if (data.success) {
+        setEditorContent(contentToSave);
+        editorContentRef.current = contentToSave;
         setOpenFiles((prev) =>
-          prev.map((f) => (f.path === activeFilePath ? { ...f, content: editorContent, isDirty: false } : f))
+          prev.map((f) => (f.path === currentPath ? { ...f, content: contentToSave, isDirty: false } : f))
         );
         if (data.gateResult) {
           updateGateStatus(data.gateResult.gates);
         }
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2500);
+      } else {
+        setSaveStatus("error");
+        console.error("Save file error:", data.error);
+        alert(`Kayıt hatası: ${data.error || "Bilinmeyen hata"}`);
       }
-    } catch (e) {
+    } catch (e: any) {
+      setSaveStatus("error");
       console.error("Save file error:", e);
+      alert(`Kayıt bağlantı hatası: ${e.message}`);
     }
   };
+  handleSaveFileRef.current = handleSaveFile;
 
   // Fetch Blast Radius for active file
   const fetchBlastRadius = async (path: string) => {
@@ -408,20 +1340,470 @@ export function App() {
       if (g.gateName.includes("Theme")) map["Theme Tokens"] = g.passed;
       if (g.gateName.includes("Emoji")) map["Zero-Emoji"] = g.passed;
       if (g.gateName.includes("i18n")) map["i18n"] = g.passed;
-      if (g.gateName.includes("Code Health")) map["AST Health"] = g.passed;
+      if (g.gateName.includes("Code Health") || g.gateName.includes("Anti-Cheat")) map["Anti-Cheat"] = g.passed;
     });
     setGateResults((prev) => ({ ...prev, ...map }));
+  };
+
+  const isConversationalPrompt = (prompt: string): boolean => {
+    const p = prompt.trim().toLowerCase();
+    const starts = [
+      "merhaba", "selam", "günaydın", "iyi günler", "hey", "nasılsın", "ne haber", "naber",
+      "nasıl", "neden", "açıkla", "kim", "ne zaman", "anlat", "fikrin ne", "önerir misin",
+      "hangisi daha iyi", "ne düşünüyorsun", "farkı ne", "yardım et", "bana bilgi ver",
+      "what is", "how do", "why does", "explain", "who", "tell me"
+    ];
+    if (starts.some((s) => p.startsWith(s))) return true;
+    if (p.endsWith("?") && !p.includes("yap") && !p.includes("ekle") && !p.includes("düzelt") && !p.includes("oluştur") && !p.includes("yaz")) return true;
+    return false;
+  };
+
+  // Check if a prompt has code modification intent
+  const isCodeModificationPrompt = (prompt: string): boolean => {
+    const p = prompt.trim().toLowerCase();
+    return (
+      p.includes("değiştir") ||
+      p.includes("güncelle") ||
+      p.includes("ekle") ||
+      p.includes("düzelt") ||
+      p.includes("sil") ||
+      p.includes("yap") ||
+      p.includes("yaz") ||
+      p.includes("oluştur") ||
+      p.includes("koda uygula") ||
+      p.includes("kodda değiştir") ||
+      p.includes("modify") ||
+      p.includes("update") ||
+      p.includes("add") ||
+      p.includes("fix") ||
+      p.includes("change")
+    );
+  };
+
+  // Apply AI-generated code directly to editor & workspace file
+  const handleApplyCode = async (codeToApply: string, targetPath?: string): Promise<boolean> => {
+    let targetFile = targetPath;
+    const detectedComp = detectComponentNameFromCode(codeToApply);
+
+    // 1. First 4 lines comment
+    if (!targetFile) {
+      const firstLines = codeToApply.split("\n").slice(0, 4).join("\n");
+      const fileMatch = firstLines.match(/^(?:\/\/\s*|\/\*\s*)([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|css|html|json))\b/m);
+      if (fileMatch) {
+        targetFile = fileMatch[1].replace(/\\/g, "/");
+      }
+    }
+
+    // 2. Component name guard: If code declares a subcomponent, it can NEVER target App.tsx
+    if (detectedComp && detectedComp !== "App") {
+      if (!targetFile || targetFile === "src/App.tsx" || targetFile === "App.tsx") {
+        targetFile = `src/components/${detectedComp}.tsx`;
+      }
+    }
+
+    // 3. Fallback to activeFilePath only if safe
+    if (!targetFile) {
+      targetFile = activeFilePath || "src/App.tsx";
+    }
+
+    // 4. Absolute Guard: NEVER overwrite App.tsx with a non-App component!
+    if ((targetFile === "src/App.tsx" || targetFile === "App.tsx") && detectedComp && detectedComp !== "App") {
+      targetFile = `src/components/${detectedComp}.tsx`;
+    }
+
+    targetFile = targetFile.replace(/\\/g, "/");
+    if (!targetFile.startsWith("src/") && !targetFile.includes("/")) {
+      targetFile = `src/${targetFile}`;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/file?path=${encodeURIComponent(targetFile)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: codeToApply }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const finalSavedContent = data.content || codeToApply;
+        const isSurgicallyMerged = data.content && data.content !== codeToApply;
+
+        setActiveFilePath(targetFile);
+        setEditorContent(finalSavedContent);
+        setOpenFiles((prev) =>
+          prev.some((f) => f.path === targetFile)
+            ? prev.map((f) => (f.path === targetFile ? { ...f, content: finalSavedContent, isDirty: false } : f))
+            : [...prev, { path: targetFile, content: finalSavedContent, isDirty: false }]
+        );
+
+        fetch(`${API_BASE}/workspace`)
+          .then((r) => r.json())
+          .then((d) => setFileTree(d.tree));
+        fetchBlastRadius(targetFile);
+
+        if (data.gateResult) {
+          updateGateStatus(data.gateResult.gates);
+        }
+
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `⚡ **Kod Doğrudan Uygulandı!**\n\n\`${targetFile}\` dosyası diske kaydedildi ve Monaco editörüne yüklendi (${finalSavedContent.length} bayt).${isSurgicallyMerged ? " 🛡️ *(Cerrahi birleştirme: Mevcut kodlar ve importlar korunarak parça entegre edildi)*" : ""}`,
+          },
+        ]);
+
+        return true;
+      } else {
+        alert(`Kod uygulanamadı: ${data.error || "Bilinmeyen hata"}`);
+        return false;
+      }
+    } catch (err: any) {
+      console.error("handleApplyCode error:", err);
+      alert(`Kod uygulama hatası: ${err.message}`);
+      return false;
+    }
+  };
+
+  // Undo Last Transaction
+  const handleUndoLastTxn = async () => {
+    try {
+      const jRes = await fetch(`${API_BASE}/transactions/journal`);
+      const jData = await jRes.json();
+      if (!jData.journal || jData.journal.length === 0) {
+        alert("Geri alınabilecek işlem geçmişi bulunamadı.");
+        return;
+      }
+      const lastUndoable = jData.journal.find((tx: any) => tx.canUndo);
+      if (!lastUndoable) {
+        alert("Geri alınabilecek aktif bir işlem kalmadı.");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/transactions/undo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ txId: lastUndoable.txId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (activeFilePath && data.filesReverted?.includes(activeFilePath)) {
+          handleOpenFile(activeFilePath);
+        } else if (data.filesReverted?.[0]) {
+          handleOpenFile(data.filesReverted[0]);
+        }
+        fetch(`${API_BASE}/workspace`)
+          .then((r) => r.json())
+          .then((d) => setFileTree(d.tree));
+
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `↩ **İşlem Geri Alındı!**\n\n\`${lastUndoable.description}\` işlemi iptal edildi ve ${data.filesReverted?.join(", ")} dosyası önceki durumuna döndürüldü.`,
+          },
+        ]);
+      } else {
+        alert(`Geri alma hatası: ${data.error || "Bilinmeyen hata"}`);
+      }
+    } catch (err: any) {
+      alert(`Geri alma hatası: ${err.message}`);
+    }
+  };
+
+  // AI Copilot Chat Stream: Interactive Multi-Turn Conversation with Full Memory & Vision
+  const handleChatSubmit = async (userPrompt: string, imagesToSend?: string[]) => {
+    setIsWorking(true);
+    setIsChatStreaming(true);
+    setChatStreamingText("");
+
+    const currentImages = imagesToSend || attachedImages;
+
+    // Prepare conversation history (last 10 turns)
+    const history = chatMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-10)
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    try {
+      const res = await fetch(`${API_BASE}/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: userPrompt,
+          file: activeFilePath || "",
+          contextFiles,
+          images: currentImages,
+          history,
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Bağlantı hatası [${res.status}]`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullResponse = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const jsonStr = trimmed.slice(5).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data.type === "chat_token") {
+              fullResponse += data.token;
+              setChatStreamingText(fullResponse);
+            } else if (data.type === "chat_finish") {
+              setIsChatStreaming(false);
+              setIsWorking(false);
+              const finalAns = data.response || fullResponse;
+              setChatMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: finalAns },
+              ]);
+              setChatStreamingText("");
+
+              // If user prompt requested code modification and code was returned, auto-apply!
+              const isMod = isCodeModificationPrompt(userPrompt);
+              let target = data.detectedTargetFile;
+              const code = data.extractedCode;
+              const comp = code ? detectComponentNameFromCode(code) : null;
+
+              if (!target && comp) {
+                target = comp === "App" ? "src/App.tsx" : `src/components/${comp}.tsx`;
+              }
+              if (!target && activeFilePath && (activeFilePath !== "src/App.tsx" || comp === "App")) {
+                target = activeFilePath;
+              }
+              if ((target === "src/App.tsx" || target === "App.tsx") && comp && comp !== "App") {
+                target = `src/components/${comp}.tsx`;
+              }
+
+              if (isMod && code && target) {
+                handleApplyCode(code, target);
+              }
+            } else if (data.type === "chat_error") {
+              setIsChatStreaming(false);
+              setIsWorking(false);
+              setChatMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: `❌ Sohbet Hatası: ${data.message}` },
+              ]);
+              setChatStreamingText("");
+            }
+          } catch (pe) {
+            console.error("SSE parse error:", pe);
+          }
+        }
+      }
+
+      if (fullResponse && !chatMessages.some((m) => m.content === fullResponse)) {
+        setIsChatStreaming(false);
+        setIsWorking(false);
+      }
+    } catch (err: any) {
+      console.error("Chat fetch stream error:", err);
+      setIsChatStreaming(false);
+      setIsWorking(false);
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `❌ Sohbet Hatası: ${err.message}` },
+      ]);
+      setChatStreamingText("");
+    }
+  };
+
+  // Vibe Coding Mode: Direct Single-Turn Code Generation (Zero Ceremony)
+  const handleVibeSubmit = (userPrompt: string) => {
+    const target = activeFilePath || "src/App.tsx";
+    setVibeSession({
+      prompt: userPrompt,
+      targetFile: target,
+      status: "generating",
+      streamingCode: "",
+      tokenCount: 0,
+      logs: [
+        {
+          time: new Date().toTimeString().slice(0, 8),
+          text: `⚡ Vibe Mode: Doğrudan kod sentezi başlatıldı ("${userPrompt}")`,
+        },
+      ],
+    });
+
+    try {
+      const streamUrl = `${API_BASE}/vibe/stream?prompt=${encodeURIComponent(
+        userPrompt
+      )}&file=${encodeURIComponent(activeFilePath || "")}&contextFiles=${encodeURIComponent(
+        JSON.stringify(contextFiles)
+      )}`;
+
+      const eventSource = new EventSource(streamUrl);
+      currentEventSourceRef.current = eventSource;
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const now = new Date().toTimeString().slice(0, 8);
+
+          if (data.type === "vibe_context") {
+            setVibeSession((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    targetFile: data.targetFile,
+                    logs: [...prev.logs, { time: now, text: data.message }],
+                  }
+                : null
+            );
+          } else if (data.type === "vibe_token") {
+            setVibeSession((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    streamingCode: prev.streamingCode + data.token,
+                    tokenCount: data.tokenCount,
+                  }
+                : null
+            );
+          } else if (data.type === "vibe_applied") {
+            const { targetFile, code, bytes, durationMs } = data;
+            setVibeSession((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: "applied",
+                    targetFile,
+                    streamingCode: code,
+                    bytes,
+                    durationMs,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        text: `✔ Doğrudan diske ve editöre uygulandı (${bytes} bayt, ${Math.round(durationMs / 1000)}s)`,
+                      },
+                    ],
+                  }
+                : null
+            );
+
+            // Update Monaco editor content & open tab
+            setActiveFilePath(targetFile);
+            setEditorContent(code);
+            if (reviewMode && data.originalCode && data.code && data.originalCode !== data.code) {
+              handleOpenDiff(targetFile, data.originalCode, data.code, data.diffSummary);
+            } else {
+              setEditorMode("code");
+            }
+            setOpenFiles((prev) =>
+              prev.some((f) => f.path === targetFile)
+                ? prev.map((f) => (f.path === targetFile ? { ...f, content: code, isDirty: false } : f))
+                : [...prev, { path: targetFile, content: code, isDirty: false }]
+            );
+
+            // Refresh file tree & blast radius
+            fetch(`${API_BASE}/workspace`)
+              .then((res) => res.json())
+              .then((d) => setFileTree(d.tree));
+            fetchBlastRadius(targetFile);
+
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: `⚡ **Vibe Coding Applied!**\n\n\`${targetFile}\` doğrudan güncellendi (${bytes} bytes, ~${Math.round(durationMs / 1000)}s).\n\nKod editöre yansıtıldı.`,
+              },
+            ]);
+          } else if (data.type === "vibe_finish") {
+            eventSource.close();
+            currentEventSourceRef.current = null;
+            setIsWorking(false);
+          } else if (data.type === "vibe_error") {
+            eventSource.close();
+            currentEventSourceRef.current = null;
+            setIsWorking(false);
+            setVibeSession((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: "error",
+                    error: data.message,
+                    logs: [...prev.logs, { time: now, text: `✖ Hata: ${data.message}` }],
+                  }
+                : null
+            );
+          }
+        } catch (err) {
+          console.error("Vibe stream parse error:", err);
+        }
+      };
+
+      eventSource.onerror = () => {
+        if (eventSource.readyState === EventSource.CONNECTING) return;
+        eventSource.close();
+        currentEventSourceRef.current = null;
+        setIsWorking(false);
+        setVibeSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "error",
+                error: "Akış bağlantısı kesildi.",
+                logs: [...prev.logs, { time: new Date().toTimeString().slice(0, 8), text: "✖ Bağlantı kesildi" }],
+              }
+            : null
+        );
+      };
+    } catch (e: any) {
+      currentEventSourceRef.current = null;
+      setIsWorking(false);
+      console.error("Failed to connect to vibe stream:", e);
+    }
   };
 
   // Handle Copilot Plan Execution with Real-Time SSE Stream
   const handleCopilotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!copilotPrompt.trim() || isWorking) return;
+    const userPrompt = copilotPrompt.trim() || (attachedImages.length > 0 ? "Bu görseldeki tasarımı analiz et ve ilgili bileşeni kodla." : "");
+    if (!userPrompt || isWorking) return;
 
-    const userPrompt = copilotPrompt;
+    const currentImages = [...attachedImages];
     setCopilotPrompt("");
-    setChatMessages((prev) => [...prev, { role: "user", content: userPrompt }]);
+    setAttachedImages([]);
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: userPrompt,
+        images: currentImages.length > 0 ? currentImages : undefined,
+      },
+    ]);
     setIsWorking(true);
+
+    const isQuestion = isConversationalPrompt(userPrompt);
+
+    if (studioMode === "chat" || isQuestion || currentImages.length > 0) {
+      handleChatSubmit(userPrompt, currentImages);
+      return;
+    }
+
+    if (studioMode === "vibe") {
+      handleVibeSubmit(userPrompt);
+      return;
+    }
 
     const initialWorkflow: ActiveWorkflow = {
       prompt: userPrompt,
@@ -596,6 +1978,7 @@ export function App() {
                       total: data.total,
                     },
                     streamingCode: "",
+                    stepTokenCount: 0,
                     logs: [
                       ...prev.logs,
                       {
@@ -608,16 +1991,21 @@ export function App() {
                 : null
             );
           } else if (data.type === "code_token") {
+            const addedTokens = data.token ? Math.max(1, Math.ceil(data.token.length / 4)) : 0;
             setActiveWorkflow((prev) =>
               prev
                 ? {
                     ...prev,
-                    streamingCode: (prev.streamingCode || "") + data.token,
-                    tokenCount: (prev.tokenCount || 0) + 1,
+                    streamingCode: (prev.streamingCode || "") + (data.token || ""),
+                    tokenCount: (prev.tokenCount || 0) + addedTokens,
+                    stepTokenCount: (prev.stepTokenCount || 0) + addedTokens,
                   }
                 : null
             );
           } else if (data.type === "code_step_done") {
+            if (reviewMode && data.originalCode && data.generatedCode && data.originalCode !== data.generatedCode) {
+              handleOpenDiff(data.targetFile, data.originalCode, data.generatedCode, data.diffSummary);
+            }
             setActiveWorkflow((prev) =>
               prev
                 ? {
@@ -627,7 +2015,7 @@ export function App() {
                       {
                         time: now,
                         agent: "Gemma",
-                        text: `Written to disk: ${data.targetFile} (${data.codeLength} bytes).`,
+                        text: `Written to disk: ${data.targetFile} (${data.codeLength} bytes${data.diffSummary ? `, +${data.diffSummary.additions}/-${data.diffSummary.deletions} satır` : ""}).`,
                       },
                     ],
                   }
@@ -652,6 +2040,25 @@ export function App() {
                 })
                 .catch(() => {});
             }
+          } else if (data.type === "code_error") {
+            setActiveWorkflow((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentPhase: 5,
+                    error: Array.isArray(data.errors) ? data.errors.join("; ") : "Kod üretimi hatayla sonuçlandı",
+                    phaseMessage: `Kod sentezinde hata oluştu. Kalite kapılarına geçiliyor...`,
+                    logs: [
+                      ...prev.logs,
+                      {
+                        time: now,
+                        agent: "Gemma",
+                        text: `✖ Kod sentez hatası: ${Array.isArray(data.errors) ? data.errors.join(" | ") : data.errors}`,
+                      },
+                    ],
+                  }
+                : null
+            );
           } else if (data.type === "self_heal_start") {
             setActiveWorkflow((prev) =>
               prev
@@ -737,6 +2144,7 @@ export function App() {
                 : null
             );
             eventSource.close();
+            currentEventSourceRef.current = null;
             setIsWorking(false);
           } else if (data.type === "error") {
             setActiveWorkflow((prev) =>
@@ -757,6 +2165,7 @@ export function App() {
                 : null
             );
             eventSource.close();
+            currentEventSourceRef.current = null;
             setIsWorking(false);
           }
         } catch (parseErr) {
@@ -765,12 +2174,38 @@ export function App() {
       };
 
       eventSource.onerror = (err) => {
+        // If the browser is attempting an automatic reconnect (readyState === 0), do not abort!
+        if (eventSource.readyState === EventSource.CONNECTING) {
+          console.warn("EventSource reconnecting...");
+          return;
+        }
+
         console.error("EventSource stream error:", err);
         eventSource.close();
+        currentEventSourceRef.current = null;
         setIsWorking(false);
+        setActiveWorkflow((prev) =>
+          prev && prev.status === "running"
+            ? {
+                ...prev,
+                status: "error",
+                error: "Akış bağlantısı kesildi veya zaman aşımına uğradı.",
+                phaseMessage: "İşlem kesintiye uğradı.",
+                logs: [
+                  ...prev.logs,
+                  {
+                    time: new Date().toTimeString().slice(0, 8),
+                    agent: "System",
+                    text: "⚠ Sunucu bağlantısı kesildi veya zaman aşımına uğradı.",
+                  },
+                ],
+              }
+            : prev
+        );
       };
     } catch (err: any) {
       console.error("Failed to start SSE stream:", err);
+      currentEventSourceRef.current = null;
       setIsWorking(false);
     }
   };
@@ -806,15 +2241,46 @@ export function App() {
     }
 
     const isActive = activeFilePath === node.path;
+    const isContext = contextFiles.includes(node.path);
     return (
       <div
         key={node.path}
-        className={`tree-node ${isActive ? "active" : ""}`}
-        style={{ paddingLeft: `${level * 12 + 18}px` }}
+        className={`tree-node ${isActive ? "active" : ""} ${isContext ? "in-context" : ""}`}
+        style={{
+          paddingLeft: `${level * 12 + 18}px`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingRight: "6px",
+        }}
         onClick={() => handleOpenFile(node.path)}
       >
-        <FileCode size={13} color={node.name.endsWith(".tsx") ? "#38bdf8" : "#94a3b8"} />
-        <span>{node.name}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden", textOverflow: "ellipsis" }}>
+          <FileCode size={13} color={node.name.endsWith(".tsx") ? "#38bdf8" : "#94a3b8"} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.name}</span>
+        </div>
+        <button
+          type="button"
+          className="tree-context-pin"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleContextFile(node.path);
+          }}
+          title={isContext ? "Bağlamdan (Context) çıkar" : "AI Bağlamına (Context) ekle"}
+          style={{
+            background: isContext ? "rgba(16, 185, 129, 0.2)" : "transparent",
+            border: isContext ? "1px solid rgba(16, 185, 129, 0.4)" : "none",
+            borderRadius: "3px",
+            padding: "2px 4px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            opacity: isContext ? 1 : 0.4,
+            transition: "all 0.15s ease",
+          }}
+        >
+          <Paperclip size={11} color={isContext ? "#10b981" : "var(--text-muted)"} />
+        </button>
       </div>
     );
   };
@@ -835,6 +2301,41 @@ export function App() {
           </div>
         </div>
 
+        {/* Cyber Operation Mode Switcher */}
+        <div className="mode-selector-dock">
+          {(Object.values(STUDIO_MODES) as ModeConfig[]).map((m) => {
+            const Icon =
+              m.id === "vibe"
+                ? Headphones
+                : m.id === "engineering"
+                ? Shield
+                : m.id === "mimar"
+                ? Compass
+                : m.id === "autonomous"
+                ? Bot
+                : Bug;
+            const isActive = studioMode === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                className={`mode-pill-btn ${isActive ? "active" : ""}`}
+                style={{
+                  borderColor: isActive ? m.color : "transparent",
+                  color: isActive ? "#fff" : "var(--text-muted)",
+                  background: isActive ? m.glow : "transparent",
+                  boxShadow: isActive ? `0 0 10px ${m.glow}` : "none",
+                }}
+                onClick={() => handleSelectMode(m.id)}
+                title={`${m.name} Modu: ${m.tagline}`}
+              >
+                <Icon size={12} color={isActive ? m.color : "var(--text-dim)"} />
+                <span>{m.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* 6-Gate Status Pills */}
         <div className="gates-hud">
           {Object.entries(gateResults).map(([gateName, passed]) => (
@@ -852,6 +2353,23 @@ export function App() {
 
         {/* Actions */}
         <div className="hud-actions">
+          <button
+            className="btn-hud"
+            onClick={handleUndoLastTxn}
+            title="Son Kod Değişikliğini Geri Al (Undo)"
+            style={{ color: "#ec4899", borderColor: "rgba(236, 72, 153, 0.3)" }}
+          >
+            <RotateCcw size={13} color="#ec4899" />
+            <span>Geri Al</span>
+          </button>
+          <button
+            className={`btn-hud ${isTerminalOpen ? "active" : ""}`}
+            onClick={() => setIsTerminalOpen((prev) => !prev)}
+            title="Toggle Integrated Terminal (Ctrl+`)"
+          >
+            <TerminalIcon size={13} color="var(--accent)" />
+            <span>Terminal</span>
+          </button>
           <button className="btn-hud" onClick={handleRunIndex} disabled={isWorking} title="Re-Index AST Knowledge Graph">
             <Zap size={13} color="#f59e0b" />
             <span>Index AST</span>
@@ -864,9 +2382,9 @@ export function App() {
       </header>
 
       {/* ── Main Workspace ── */}
-      <div className="main-workspace">
+      <div className={`main-workspace ${isResizing ? `resizing-active resizing-${isResizing}` : ""}`}>
         {/* Left Sidebar: File Tree & Radar */}
-        <aside className="sidebar">
+        <aside ref={sidebarPanelRef} className="sidebar" style={{ width: sidebarWidth }}>
           <div className="sidebar-header">
             <span>Explorer</span>
             <span style={{ fontSize: "10px", color: "var(--accent)" }}>AST Live</span>
@@ -898,8 +2416,15 @@ export function App() {
           )}
         </aside>
 
+        {/* Resizer: Sidebar <-> Editor */}
+        <div
+          className={`gutter-handle gutter-col ${isResizing === "sidebar" ? "active" : ""}`}
+          onMouseDown={handleSidebarMouseDown}
+          title="Drag to resize Explorer"
+        />
+
         {/* Center: Monaco Code Editor */}
-        <main className="editor-panel">
+        <main ref={editorPanelRef} className="editor-panel">
           <div className="editor-tabs">
             {openFiles.map((tab) => (
               <div
@@ -920,6 +2445,28 @@ export function App() {
             ))}
             {activeFilePath && (
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, paddingRight: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => toggleContextFile(activeFilePath)}
+                  title={contextFiles.includes(activeFilePath) ? "Dosyayı AI bağlamından (Context) çıkar" : "Bu dosyayı AI bağlamına (Context) ekle"}
+                  style={{
+                    background: contextFiles.includes(activeFilePath) ? "rgba(16, 185, 129, 0.18)" : "rgba(255, 255, 255, 0.05)",
+                    color: contextFiles.includes(activeFilePath) ? "#10b981" : "var(--text-muted)",
+                    border: contextFiles.includes(activeFilePath) ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(255, 255, 255, 0.1)",
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <Paperclip size={11} color={contextFiles.includes(activeFilePath) ? "#10b981" : "var(--text-muted)"} />
+                  <span>{contextFiles.includes(activeFilePath) ? "Bağlamda ✓" : "Context'e Ekle"}</span>
+                </button>
                 <button
                   onClick={() => setEditorMode("code")}
                   style={{
@@ -957,6 +2504,29 @@ export function App() {
           </div>
 
           <div className="editor-wrapper">
+            {stagedDiff && (
+              <div className="diff-review-bar">
+                <div className="diff-review-info">
+                  <Sparkles size={14} color="#a855f7" />
+                  <span className="diff-file-badge">{stagedDiff.targetFile}</span>
+                  <span className="diff-stat-pill add">+{stagedDiff.additions} satır</span>
+                  <span className="diff-stat-pill del">-{stagedDiff.deletions} satır</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
+                    Satır bazlı değişiklik önerisi
+                  </span>
+                </div>
+                <div className="diff-review-actions">
+                  <button className="btn-diff-reject" onClick={handleRejectStagedDiff} title="Öneriyi reddet ve orijinal dosyayı koru">
+                    <X size={12} />
+                    <span>Reddet (Discard)</span>
+                  </button>
+                  <button className="btn-diff-accept" onClick={handleAcceptStagedDiff} title="Değişiklikleri onayla ve diske kaydet">
+                    <Check size={12} />
+                    <span>Değişikliği Onayla & Kaydet (Accept)</span>
+                  </button>
+                </div>
+              </div>
+            )}
             {activeFilePath ? (
               editorMode === "diff" ? (
                 <DiffEditor
@@ -983,10 +2553,13 @@ export function App() {
                   path={activeFilePath}
                   value={editorContent}
                   beforeMount={handleEditorWillMount}
+                  onMount={handleEditorDidMount}
                   onChange={(val) => {
-                    setEditorContent(val || "");
+                    const nextVal = val || "";
+                    setEditorContent(nextVal);
+                    editorContentRef.current = nextVal;
                     setOpenFiles((prev) =>
-                      prev.map((f) => (f.path === activeFilePath ? { ...f, content: val || "", isDirty: true } : f))
+                      prev.map((f) => (f.path === activeFilePath ? { ...f, content: nextVal, isDirty: true } : f))
                     );
                   }}
                   options={{
@@ -1021,42 +2594,341 @@ export function App() {
             )}
           </div>
 
-          {activeFilePath && (
-            <footer className="editor-footer">
-              <div>{activeFilePath}</div>
-              <div style={{ display: "flex", gap: "16px" }}>
-                <span>UTF-8</span>
-                <span>{activeFilePath.endsWith(".tsx") ? "TypeScript React" : "TypeScript"}</span>
-                <span style={{ cursor: "pointer", color: "var(--accent)" }} onClick={handleSaveFile}>
-                  Save & Test (Ctrl+S)
-                </span>
+          {/* Integrated Terminal Panel */}
+          {isTerminalOpen && (
+            <>
+              {/* Resizer: Editor <-> Terminal */}
+              <div
+                className={`gutter-handle gutter-row ${isResizing === "terminal" ? "active" : ""}`}
+                onMouseDown={handleTerminalMouseDown}
+                title="Drag to resize Terminal (↕)"
+              >
+                <div className="gutter-row-grip" />
               </div>
-            </footer>
-          )}
+              <div ref={terminalPanelRef} className="terminal-panel" style={{ height: terminalHeight }}>
+              <div className="terminal-dock-header">
+                <div className="terminal-dock-tabs">
+                  <div className="terminal-dock-tab active">
+                    <TerminalIcon size={12} color="var(--accent)" />
+                    <span>TERMINAL</span>
+                    <span className="terminal-status-dot" />
+                  </div>
+                  <div className="terminal-cwd-pill" title={terminalCwd || targetRepo}>
+                    <span>{terminalCwd || targetRepo}</span>
+                  </div>
+                </div>
+
+                {/* Quick command pills */}
+                <div className="terminal-quick-actions">
+                  <button className="quick-cmd-btn" onClick={() => handleExecuteTerminal("git status")}>git status</button>
+                  <button className="quick-cmd-btn" onClick={() => handleExecuteTerminal("bun test")}>bun test</button>
+                  <button className="quick-cmd-btn" onClick={() => handleExecuteTerminal("dir")}>dir</button>
+                </div>
+
+                <div className="terminal-dock-actions">
+                  <button
+                    className="dock-icon-btn"
+                    title={terminalHeight > 300 ? "Collapse Height" : "Expand Height"}
+                    onClick={() => setTerminalHeight((prev) => (prev > 300 ? 220 : 400))}
+                  >
+                    {terminalHeight > 300 ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                  </button>
+                  <button
+                    className="dock-icon-btn"
+                    title="Clear Terminal (cls)"
+                    onClick={() => setTerminalHistory([])}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                  <button
+                    className="dock-icon-btn"
+                    title="Close Terminal"
+                    onClick={() => setIsTerminalOpen(false)}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Terminal Logs & Output */}
+              <div
+                className="terminal-dock-body"
+                onClick={() => terminalInputRef.current?.focus()}
+              >
+                {terminalHistory.map((item) => (
+                  <div key={item.id} className="terminal-line-entry">
+                    {item.command && (
+                      <div className="terminal-cmd-row">
+                        <span className="terminal-ps-prompt">PS</span>
+                        <span className="terminal-prompt-path">
+                          {((item.cwd || "").split(/[\\/]/).pop() || "repo")}&gt;
+                        </span>
+                        <span className="terminal-cmd-text">{item.command}</span>
+                        <span className="terminal-time-tag">{item.time}</span>
+                      </div>
+                    )}
+                    {item.stdout && (
+                      <pre className="terminal-stdout">{item.stdout}</pre>
+                    )}
+                    {item.stderr && (
+                      <pre className="terminal-stderr">{item.stderr}</pre>
+                    )}
+                  </div>
+                ))}
+                {isExecutingCmd && (
+                  <div className="terminal-running-indicator">
+                    <span className="terminal-spinner">⚡</span> Running command...
+                  </div>
+                )}
+                <div ref={terminalEndRef} />
+              </div>
+
+              {/* Terminal Input Line */}
+              <div className="terminal-dock-input-bar">
+                <span className="terminal-ps-prompt">PS</span>
+                <span className="terminal-prompt-path">
+                  {((terminalCwd || targetRepo || "").split(/[\\/]/).pop() || "repo")}&gt;
+                </span>
+                <input
+                  ref={terminalInputRef}
+                  type="text"
+                  className="terminal-dock-input"
+                  placeholder="Enter shell command (e.g. git status, bun test, dir)..."
+                  value={terminalInput}
+                  onChange={(e) => setTerminalInput(e.target.value)}
+                  onKeyDown={handleTerminalKeyDown}
+                  disabled={isExecutingCmd}
+                  autoFocus
+                />
+                <button
+                  className="terminal-send-btn"
+                  onClick={() => handleExecuteTerminal()}
+                  disabled={isExecutingCmd || !terminalInput.trim()}
+                  title="Run (Enter)"
+                >
+                  <CornerDownLeft size={12} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+          <footer className="editor-footer">
+            <div>{activeFilePath || targetRepo || "Ready"}</div>
+            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              {activeFilePath && (
+                <>
+                  <span>UTF-8</span>
+                  <span>{activeFilePath.endsWith(".tsx") ? "TypeScript React" : "TypeScript"}</span>
+                  <span
+                    style={{
+                      cursor: "pointer",
+                      color:
+                        saveStatus === "saved"
+                          ? "#10b981"
+                          : saveStatus === "saving"
+                          ? "#f59e0b"
+                          : saveStatus === "error"
+                          ? "#ef4444"
+                          : "var(--accent)",
+                      fontWeight: 600,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      transition: "all 0.2s ease",
+                    }}
+                    onClick={handleSaveFile}
+                    title="Kaydet ve Doğrulama Kapılarını Çalıştır (Ctrl+S)"
+                  >
+                    {saveStatus === "saving"
+                      ? "⏳ Kaydediliyor..."
+                      : saveStatus === "saved"
+                      ? "✔ Kaydedildi (Ctrl+S)"
+                      : saveStatus === "error"
+                      ? "✖ Hata!"
+                      : "Save & Test (Ctrl+S)"}
+                  </span>
+                </>
+              )}
+              <span
+                style={{
+                  cursor: "pointer",
+                  color: isTerminalOpen ? "var(--accent)" : "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontWeight: 600,
+                }}
+                onClick={() => setIsTerminalOpen((prev) => !prev)}
+                title="Toggle Terminal (Ctrl+`)"
+              >
+                <TerminalIcon size={11} />
+                <span>Terminal (Ctrl+`)</span>
+              </span>
+            </div>
+          </footer>
         </main>
 
+        {/* Resizer: Editor <-> Copilot */}
+        <div
+          className={`gutter-handle gutter-col ${isResizing === "copilot" ? "active" : ""}`}
+          onMouseDown={handleCopilotMouseDown}
+          title="Drag to resize Copilot"
+        />
+
         {/* Right: MetaFrame Agent Copilot */}
-        <aside className="copilot-panel">
+        <aside ref={copilotPanelRef} className="copilot-panel" style={{ width: copilotWidth }}>
           <div className="copilot-header">
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700 }}>
               <Sparkles size={16} color="var(--accent)" />
               <span>Orchestrator Copilot</span>
             </div>
-            <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>AST-Grounded</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  color: STUDIO_MODES[studioMode].color,
+                  background: STUDIO_MODES[studioMode].glow,
+                  border: `1px solid ${STUDIO_MODES[studioMode].color}`,
+                }}
+              >
+                {STUDIO_MODES[studioMode].badge}
+              </span>
+              <button
+                type="button"
+                onClick={handleClearAll}
+                title="Sohbet geçmişini ve aktif workflow'u tamamen temizle (Yeni Oturum)"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  padding: "3px 8px",
+                  borderRadius: "4px",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                }}
+              >
+                <Trash2 size={10} />
+                <span>Temizle</span>
+              </button>
+            </div>
           </div>
 
           <div className="copilot-body">
             {chatMessages.map((msg, idx) => (
               <div key={idx} className={`agent-bubble ${msg.role}`}>
-                <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--accent)", marginBottom: 4 }}>
-                  {msg.role === "user" ? "YOU" : "METAFRAME AGENTS"}
+                <div style={{ fontSize: "10px", fontWeight: 700, color: msg.role === "user" ? "var(--accent)" : "#10b981", marginBottom: 6 }}>
+                  {msg.role === "user" ? "YOU" : "QWEN3 8B · SOHBET"}
                 </div>
-                <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+                {msg.role === "user" ? (
+                  <div>
+                    {msg.images && msg.images.length > 0 && (
+                      <div className="chat-images-grid">
+                        {msg.images.map((img, i) => (
+                          <img
+                            key={i}
+                            src={img}
+                            alt="Uploaded screenshot"
+                            className="chat-message-image"
+                            onClick={() => window.open(img, "_blank")}
+                            title="Büyük boyutta açmak için tıkla"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: "12.5px" }}>{msg.content}</div>
+                  </div>
+                ) : (
+                  <MarkdownRenderer content={msg.content} onApplyCode={handleApplyCode} />
+                )}
               </div>
             ))}
 
-            {/* Live Visual Workflow Execution Stepper */}
-            {activeWorkflow && (
+            {/* Live Streaming Chat Response Bubble */}
+            {isChatStreaming && (
+              <div className="agent-bubble assistant streaming" style={{ borderLeft: "3px solid #10b981", background: "rgba(16, 185, 129, 0.08)" }}>
+                <div style={{ fontSize: "10px", fontWeight: 700, color: "#10b981", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="vibe-pulse-indicator" style={{ background: "#10b981" }} />
+                  <span>QWEN3 8B · YAZIYOR...</span>
+                </div>
+                <MarkdownRenderer content={chatStreamingText || "Düşünüyor..."} onApplyCode={handleApplyCode} />
+              </div>
+            )}
+
+            {/* Vibe Mode Direct Synthesizer Panel */}
+            {studioMode === "vibe" && vibeSession && (
+              <div className="vibe-session-panel">
+                <div className="vibe-header">
+                  <div className="vibe-title">
+                    <span className="vibe-pulse-indicator" />
+                    <span>⚡ Vibe Coding · Doğrudan Kod Sentezi</span>
+                  </div>
+                  <div className="vibe-target-pill">
+                    <span>🎯 {vibeSession.targetFile}</span>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>{vibeSession.status === "generating" ? "⚡ Groq LPU ile canlı kod akışı (~500 tok/s)..." : vibeSession.status === "applied" ? "✔ Kod doğrudan diske ve editöre uygulandı" : "Hazır"}</span>
+                  {vibeSession.tokenCount > 0 && (
+                    <span style={{ fontFamily: "JetBrains Mono", color: "#ec4899", fontWeight: 700 }}>
+                      {vibeSession.tokenCount} tokens {vibeSession.durationMs ? `(${Math.round(vibeSession.durationMs / 1000)}s)` : ""}
+                    </span>
+                  )}
+                </div>
+
+                {vibeSession.streamingCode && (
+                  <div className="vibe-stream-box">
+                    {vibeSession.streamingCode}
+                  </div>
+                )}
+
+                <div className="vibe-actions-row">
+                  <span className="vibe-stats">
+                    {vibeSession.bytes ? `${vibeSession.bytes} bayt yazıldı` : "Zero-Ceremony: PRD & Plan atlandı"}
+                  </span>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    {vibeSession.status === "applied" && (
+                      <button
+                        type="button"
+                        className="vibe-btn"
+                        onClick={() => handleOpenFile(vibeSession.targetFile)}
+                      >
+                        <FileCode size={11} />
+                        <span>Editörde Aç</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="vibe-btn"
+                      style={{ borderColor: "rgba(255,255,255,0.15)", color: "var(--text-muted)" }}
+                      onClick={() => setVibeSession(null)}
+                    >
+                      <RotateCcw size={10} />
+                      <span>Kapat</span>
+                    </button>
+                  </div>
+                </div>
+
+                {vibeSession.logs && vibeSession.logs.length > 0 && (
+                  <div style={{ fontSize: "10px", color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: 2, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6 }}>
+                    {vibeSession.logs.map((l, i) => (
+                      <div key={i}>[{l.time}] {l.text}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Live Visual Workflow Execution Stepper (Formal Modes) */}
+            {studioMode !== "vibe" && activeWorkflow && (
               <div className="timeline-stepper">
                 {/* Stepper Header Status */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
@@ -1412,17 +3284,19 @@ export function App() {
 
                 {/* Step 5: Autonomous Code Generation & Disk Write */}
                 {autoCodeWrite && (
-                  <div className={`timeline-step ${activeWorkflow.currentPhase === 5 ? "active" : activeWorkflow.execution ? "completed" : ""}`}>
+                  <div className={`timeline-step ${activeWorkflow.currentPhase === 5 && activeWorkflow.status === "running" ? "active" : activeWorkflow.execution ? "completed" : activeWorkflow.status === "error" || activeWorkflow.status === "interrupted" ? "error" : ""}`}>
                     <div className="step-header accordion-toggle" onClick={() => toggleStepExpand(5)}>
                       <div className="step-title">
                         {activeWorkflow.execution?.overallSuccess ? (
                           <CheckCircle size={14} color="#10b981" />
-                        ) : activeWorkflow.currentPhase === 5 ? (
+                        ) : activeWorkflow.currentPhase === 5 && activeWorkflow.status === "running" ? (
                           <span className="pulse-dot" />
+                        ) : activeWorkflow.status === "error" || activeWorkflow.status === "interrupted" ? (
+                          <AlertTriangle size={14} color="#f87171" />
                         ) : (
                           <Cpu size={14} color="var(--text-dim)" />
                         )}
-                        <span>5. Groq LPU · Live Code Generation (gpt-oss-120b)</span>
+                        <span>5. Groq LPU · Live Code Generation (qwen3.8-27b)</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         {activeWorkflow.execution && Array.isArray(activeWorkflow.execution.executedSteps) && (
@@ -1498,7 +3372,7 @@ export function App() {
                               );
                             })}
                           </div>
-                        ) : activeWorkflow.currentPhase === 5 ? (
+                        ) : activeWorkflow.currentPhase === 5 && activeWorkflow.status === "running" ? (
                           <div>
                             <div style={{ fontSize: "11px", color: "#38bdf8", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
                               <span className="pulse-dot green" />
@@ -1516,18 +3390,26 @@ export function App() {
                                   {activeWorkflow.currentCodeStep?.targetFile || "source_stream.tsx"}
                                 </span>
                                 <span style={{ color: "#38bdf8", fontWeight: 700 }}>
-                                  {activeWorkflow.tokenCount || 0} tokens
+                                  {activeWorkflow.stepTokenCount || 0} tokens
                                 </span>
                               </div>
                               <div
                                 className="terminal-body"
-                                ref={(el) => {
-                                  if (el) el.scrollTop = el.scrollHeight;
-                                }}
+                                ref={terminalBodyRef}
                               >
                                 {activeWorkflow.streamingCode || "// Establishing GPU token stream...\n// Preparing syntax AST..."}
                                 <span className="terminal-cursor">▋</span>
                               </div>
+                            </div>
+                          </div>
+                        ) : activeWorkflow.status === "error" || activeWorkflow.status === "interrupted" ? (
+                          <div style={{ color: "#f87171", fontSize: "11px", background: "rgba(239, 68, 68, 0.08)", padding: "10px 12px", borderRadius: "6px", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
+                            <div style={{ fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                              <AlertTriangle size={12} color="#f87171" />
+                              <span>Kod sentezi tamamlanamadı veya kesintiye uğradı</span>
+                            </div>
+                            <div style={{ color: "var(--text-dim)", fontSize: "10px" }}>
+                              {activeWorkflow.currentCodeStep ? `Dosya: ${activeWorkflow.currentCodeStep.targetFile}` : ""} ({activeWorkflow.stepTokenCount || activeWorkflow.tokenCount || 0} token)
                             </div>
                           </div>
                         ) : (
@@ -1616,9 +3498,34 @@ export function App() {
                       <Activity size={12} color="var(--accent)" />
                       <span>Multi-Agent Live Activity Telemetry</span>
                     </div>
-                    <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
-                      {activeWorkflow.logs?.length || 0} events
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+                        {activeWorkflow.logs?.length || 0} events
+                      </span>
+                      {activeWorkflow.logs && activeWorkflow.logs.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearTelemetry}
+                          title="Telemetri loglarını temizle"
+                          style={{
+                            background: "rgba(255, 255, 255, 0.05)",
+                            border: "1px solid rgba(255, 255, 255, 0.12)",
+                            color: "var(--text-muted)",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <Trash2 size={10} />
+                          <span>Temizle</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="activity-feed">
                     {activeWorkflow.logs?.map((log, idx) => (
@@ -1642,47 +3549,406 @@ export function App() {
           </div>
 
           <form className="copilot-input-container" onSubmit={handleCopilotSubmit}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "11px", color: autoCodeWrite ? "#34d399" : "var(--text-muted)" }}>
-                <input
-                  type="checkbox"
-                  checked={autoCodeWrite}
-                  onChange={(e) => setAutoCodeWrite(e.target.checked)}
-                  style={{ accentColor: "#8b5cf6" }}
-                />
-                <span style={{ fontWeight: 600 }}>Auto-Write Code to Disk (Groq Cloud · gpt-oss-120b)</span>
-              </label>
-              <span style={{ fontSize: "10px", color: autoCodeWrite ? "#38bdf8" : "var(--text-dim)" }}>
-                {autoCodeWrite ? "⚡ Auto-Modify Active" : "📋 Plan Only"}
-              </span>
-            </div>
-            <textarea
-              className="copilot-textarea"
-              placeholder="Ask MetaFrame to write code, build a component, or refactor..."
-              value={copilotPrompt}
-              onChange={(e) => setCopilotPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleCopilotSubmit(e);
-                }
+            {/* Active Mode Banner */}
+            <div
+              className="copilot-mode-banner"
+              style={{
+                borderColor: STUDIO_MODES[studioMode].color,
+                background: STUDIO_MODES[studioMode].glow,
               }}
-            />
+            >
+              <div className="copilot-mode-info">
+                <div className="copilot-mode-title" style={{ color: STUDIO_MODES[studioMode].color }}>
+                  <span>{STUDIO_MODES[studioMode].name} Modu</span>
+                  <span className="badge-tag" style={{ color: STUDIO_MODES[studioMode].color, borderColor: STUDIO_MODES[studioMode].color }}>
+                    {STUDIO_MODES[studioMode].badge}
+                  </span>
+                </div>
+                <div className="copilot-mode-desc">{STUDIO_MODES[studioMode].tagline}</div>
+              </div>
+            </div>
+
+            {/* Mode Quick Suggestions */}
+            <div className="mode-suggestions-row">
+              {STUDIO_MODES[studioMode].suggestions.map((sug, sIdx) => (
+                <button
+                  key={sIdx}
+                  type="button"
+                  className="mode-suggestion-chip"
+                  onClick={() => setCopilotPrompt(sug)}
+                  title="Click to fill prompt"
+                >
+                  ⚡ {sug}
+                </button>
+              ))}
+            </div>
+
+            {studioMode === "vibe" ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "#ec4899", display: "flex", alignItems: "center", gap: 5 }}>
+                  <span className="vibe-pulse-indicator" />
+                  <span>Direct Code Generation: PRD/ADR Yok · Hızlı Sentez</span>
+                </span>
+                <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: "10.5px", color: reviewMode ? "#f472b6" : "var(--text-muted)" }}>
+                  <input
+                    type="checkbox"
+                    checked={reviewMode}
+                    onChange={(e) => setReviewMode(e.target.checked)}
+                    style={{ accentColor: "#ec4899" }}
+                  />
+                  <span>Diff İncele</span>
+                </label>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "11px", color: autoCodeWrite ? "#34d399" : "var(--text-muted)" }}>
+                    <input
+                      type="checkbox"
+                      checked={autoCodeWrite}
+                      onChange={(e) => setAutoCodeWrite(e.target.checked)}
+                      style={{ accentColor: STUDIO_MODES[studioMode].color }}
+                    />
+                    <span style={{ fontWeight: 600 }}>Auto-Write Code</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "11px", color: reviewMode ? "#a855f7" : "var(--text-muted)" }} title="Model kod ürettiğinde diske yazmadan önce Monaco Diff Editörde satır satır gösterip onay ister">
+                    <input
+                      type="checkbox"
+                      checked={reviewMode}
+                      onChange={(e) => setReviewMode(e.target.checked)}
+                      style={{ accentColor: "#a855f7" }}
+                    />
+                    <span style={{ fontWeight: 600 }}>Satır Bazlı İnceleme (Review & Diff)</span>
+                  </label>
+                </div>
+                <span style={{ fontSize: "10px", color: autoCodeWrite ? "#38bdf8" : "var(--text-dim)" }}>
+                  {autoCodeWrite ? "⚡ Auto-Modify Active" : "📋 Plan Only"}
+                </span>
+              </div>
+            )}
+            {/* AI Context Files Bar */}
+            <div className="copilot-context-bar">
+              <div className="context-bar-header">
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <Paperclip size={12} color="#10b981" />
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#10b981" }}>AI Bağlamı (Context):</span>
+                  <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+                    {contextFiles.length > 0 ? `${contextFiles.length} dosya yüklü` : "Dosya eklenmedi"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContextSearchQuery("");
+                      setShowAddContextModal(true);
+                    }}
+                    className="btn-context-add"
+                    title="Projeden bağlama dosya ekle veya @ yazarak ara"
+                  >
+                    <Plus size={11} />
+                    <span>Dosya Ekle (@)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="btn-context-add"
+                    title="Görsel / Ekran Görüntüsü Yükle (veya yapıştır Ctrl+V)"
+                  >
+                    <ImageIcon size={11} />
+                    <span>Resim Ekle</span>
+                  </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageFileSelect}
+                    style={{ display: "none" }}
+                  />
+                  {contextFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setContextFiles([])}
+                      className="btn-context-clear"
+                      title="Tüm bağlam dosyalarını temizle"
+                    >
+                      Temizle
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {contextFiles.length > 0 && (
+                <div className="context-chips-container">
+                  {contextFiles.map((filePath) => {
+                    const fileName = filePath.split(/[\\/]/).pop() || filePath;
+                    return (
+                      <div key={filePath} className="context-chip" title={filePath}>
+                        <FileCode size={11} color="#38bdf8" />
+                        <span className="context-chip-name">{fileName}</span>
+                        <span
+                          className="context-chip-remove"
+                          onClick={() => removeContextFile(filePath)}
+                          title="Bağlamdan çıkar"
+                        >
+                          <X size={10} />
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Attached Vision Images Preview */}
+            {attachedImages.length > 0 && (
+              <div className="attached-images-preview-row">
+                {attachedImages.map((img, idx) => (
+                  <div key={idx} className="attached-image-chip" title="Eklenen görsel">
+                    <img src={img} alt="Attached thumbnail" className="attached-image-thumb" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="attached-image-remove"
+                      title="Görseli kaldır"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+                <span style={{ fontSize: "10.5px", color: "var(--accent)", display: "flex", alignItems: "center", gap: 4 }}>
+                  <ImageIcon size={11} />
+                  <span>{attachedImages.length} görsel eklendi (Gemma4 Vision aktif)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAttachedImages([])}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--text-dim)",
+                    cursor: "pointer",
+                    fontSize: "10px",
+                    marginLeft: "auto",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Tümünü Kaldır
+                </button>
+              </div>
+            )}
+
+            <div style={{ position: "relative" }}>
+              {atMentionQuery !== null && atMentionMatches.length > 0 && (
+                <div className="at-mention-popup">
+                  <div className="at-mention-header">
+                    <span>📎 Bağlama Ekle (@{atMentionQuery})</span>
+                    <span style={{ fontSize: "9px", opacity: 0.7 }}>Tab veya Tıkla</span>
+                  </div>
+                  {atMentionMatches.map((filePath) => (
+                    <div
+                      key={filePath}
+                      className="at-mention-item"
+                      onClick={() => handleSelectAtMention(filePath)}
+                    >
+                      <FileCode size={12} color="#38bdf8" />
+                      <span>{filePath.split("/").pop()}</span>
+                      <span className="file-badge">{filePath}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <textarea
+                className="copilot-textarea"
+                placeholder={`${STUDIO_MODES[studioMode].name} Modu: ${
+                  studioMode === "chat"
+                    ? "Proje hakkında bir soru sor, mimari tartış veya kod analizi iste (örn: Navbar bileşeni nasıl çalışıyor?)..."
+                    : studioMode === "vibe"
+                    ? "Kodu tarif et, doğrudan yazsın (örn: Hero bölümüne neon gradient ve animasyonlu butonlar ekle)..."
+                    : studioMode === "engineering"
+                    ? "6-Gate uyumlu mimari görev veya tip güvenli refactor tarif et..."
+                    : studioMode === "mimar"
+                    ? "Sistem PRD, mimari karar (ADR) veya veri akışı tasarımı iste..."
+                    : studioMode === "autonomous"
+                    ? "Otonom uçtan uca özellik geliştirme ve self-heal talimatı ver..."
+                    : "Hata ayıklama, bozuk importlar veya AST çağrı analizini başlat..."
+                }`}
+                value={copilotPrompt}
+                onChange={handlePromptChange}
+                onPaste={handlePaste}
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onKeyDown={(e) => {
+                  if (atMentionQuery !== null && atMentionMatches.length > 0) {
+                    if (e.key === "Tab") {
+                      e.preventDefault();
+                      handleSelectAtMention(atMentionMatches[0]);
+                      return;
+                    }
+                    if (e.key === "Escape") {
+                      setAtMentionQuery(null);
+                      return;
+                    }
+                  }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleCopilotSubmit(e);
+                  }
+                }}
+              />
+            </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
               <span style={{ fontSize: "10px", color: "var(--text-dim)" }}>Enter to Send · Shift+Enter for newline</span>
-              <button
-                type="submit"
-                className="btn-hud primary"
-                style={{ padding: "4px 10px" }}
-                disabled={!copilotPrompt.trim() || isWorking}
-              >
-                <Send size={12} />
-                <span>Execute</span>
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="btn-hud"
+                  style={{
+                    padding: "4px 8px",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    color: "var(--text-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    cursor: "pointer",
+                    fontSize: "11px",
+                  }}
+                  title="Sohbet ve aktif iş akışını tamamen temizle (Yeni Oturum)"
+                >
+                  <Trash2 size={11} />
+                  <span>Temizle</span>
+                </button>
+                {isWorking && (
+                  <button
+                    type="button"
+                    onClick={handleAbortExecution}
+                    className="btn-hud"
+                    style={{
+                      padding: "4px 10px",
+                      background: "rgba(239, 68, 68, 0.15)",
+                      border: "1px solid rgba(239, 68, 68, 0.4)",
+                      color: "#f87171",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      cursor: "pointer",
+                    }}
+                    title="Devam eden işlemi hemen durdur"
+                  >
+                    <Square size={11} fill="#f87171" />
+                    <span>Durdur</span>
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="btn-hud primary"
+                  style={{ padding: "4px 10px" }}
+                  disabled={(!copilotPrompt.trim() && attachedImages.length === 0) || isWorking}
+                >
+                  <Send size={12} />
+                  <span>Execute</span>
+                </button>
+              </div>
             </div>
           </form>
         </aside>
       </div>
+
+      {/* Context Selection Modal */}
+      {showAddContextModal && (
+        <div className="context-modal-overlay" onClick={() => setShowAddContextModal(false)}>
+          <div className="context-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="context-modal-header">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Paperclip size={15} color="#10b981" />
+                <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff" }}>AI Bağlamına (Context) Dosya Ekle</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddContextModal(false)}
+                style={{ background: "transparent", border: "none", color: "var(--text-dim)", cursor: "pointer" }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="context-modal-search">
+              <Search size={14} color="var(--text-dim)" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Dosya ara (örn: Navbar, AuthContext, App.tsx)..."
+                value={contextSearchQuery}
+                onChange={(e) => setContextSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="context-modal-list">
+              {modalFilteredFiles.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-dim)", fontSize: "12px" }}>
+                  Eşleşen dosya bulunamadı.
+                </div>
+              ) : (
+                modalFilteredFiles.map((filePath) => {
+                  const isSelected = contextFiles.includes(filePath);
+                  const fileName = filePath.split("/").pop() || filePath;
+                  return (
+                    <div
+                      key={filePath}
+                      className={`context-modal-item ${isSelected ? "selected" : ""}`}
+                      onClick={() => toggleContextFile(filePath)}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+                        <FileCode size={14} color={isSelected ? "#10b981" : "#38bdf8"} />
+                        <div>
+                          <div style={{ fontSize: "12px", fontWeight: isSelected ? 700 : 500, color: isSelected ? "#fff" : "var(--text-muted)" }}>
+                            {fileName}
+                          </div>
+                          <div style={{ fontSize: "10px", color: "var(--text-dim)", fontFamily: "var(--font-mono, monospace)" }}>
+                            {filePath}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        {isSelected ? (
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: "#10b981", display: "flex", alignItems: "center", gap: 4 }}>
+                            <Check size={12} /> Eklendi
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>+ Ekle</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div className="context-modal-footer">
+              <span style={{ fontSize: "11px", color: "var(--text-dim)" }}>
+                {contextFiles.length} dosya bağlamda seçili
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowAddContextModal(false)}
+                className="btn-hud"
+                style={{
+                  background: "#10b981",
+                  color: "#000",
+                  border: "none",
+                  fontWeight: 700,
+                  padding: "5px 14px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Tamam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

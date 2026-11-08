@@ -251,7 +251,7 @@ export class ASTBridge {
   public findRelevantSourceFiles(
     prompt: string,
     candidateFiles: string[] = [],
-    maxFiles: number = 4
+    maxFiles: number = 2
   ): Array<{ path: string; content: string }> {
     const allFiles = this.getSourceFiles();
     if (allFiles.length === 0) return [];
@@ -286,7 +286,7 @@ export class ASTBridge {
         score += 30;
       }
 
-      const content = this.getFileContent(file, 2500);
+      const content = this.getFileContent(file, 1200);
       if (content) {
         for (const kw of keywords) {
           if (content.toLowerCase().includes(kw)) score += 5;

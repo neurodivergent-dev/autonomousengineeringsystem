@@ -50,9 +50,17 @@ export class GateRunner {
 
     const appTsConfig = join(this.repoRoot, "tsconfig.app.json");
     const tsFlag = existsSync(appTsConfig) ? "-p tsconfig.app.json" : "";
+    const localTsc = join(this.repoRoot, "node_modules", "typescript", "bin", "tsc");
 
-    // Run tsc via bun x (fastest) or npx
-    let res = this.runCommand(`bun x tsc ${tsFlag} --noEmit`, 20000);
+    // Prefer local typescript binary if present (avoids bun x timeout/network lock)
+    let cmd = existsSync(localTsc)
+      ? `node "${localTsc}" ${tsFlag} --noEmit`
+      : `bun x tsc ${tsFlag} --noEmit`;
+
+    let res = this.runCommand(cmd, 25000);
+    if (!res.success && (res.output.includes("not found") || res.output.includes("ETIMEDOUT"))) {
+      res = this.runCommand(`bun x tsc ${tsFlag} --noEmit`, 25000);
+    }
     if (!res.success && res.output.includes("not found")) {
       res = this.runCommand(`npx --no-install tsc ${tsFlag} --noEmit`, 25000);
     }
@@ -200,13 +208,13 @@ export class GateRunner {
   }
 
   /**
-   * Gate 6: AST Code Health & Anti-Patterns
+   * Gate 6: AST Code Health & Anti-Cheat Guard
    */
   public verifyCodeHealth(targetPath?: string): GateResult {
     const start = Date.now();
     const script = join(this.scriptsDir, "code-health.js");
     if (!existsSync(script)) {
-      return { gateName: "6. AST Code Health & Anti-Patterns", passed: true, durationMs: 0, errors: [], warnings: [] };
+      return { gateName: "6. AST Code Health & Anti-Cheat Guard", passed: true, durationMs: 0, errors: [], warnings: [] };
     }
 
     const cmd = targetPath ? `node "${script}" file "${targetPath}"` : `node "${script}" summary`;
@@ -215,11 +223,18 @@ export class GateRunner {
 
     const antiPatterns = res.output
       .split("\n")
-      .filter((l) => l.includes("NO_EMPTY_CATCH") || l.includes("DEBUGGER") || l.includes("ANY_ESCAPE"))
+      .filter((l) =>
+        l.includes("ANTI_CHEAT") ||
+        l.includes("NO_EMPTY_CATCH") ||
+        l.includes("NO_DEBUGGER") ||
+        l.includes("NO_EXPLICIT_ANY") ||
+        l.includes("ANY_ESCAPE") ||
+        l.includes("HOOKS_IN_LOOP_OR_CONDITION")
+      )
       .map((l) => l.trim());
 
     return {
-      gateName: "6. AST Code Health & Anti-Patterns",
+      gateName: "6. AST Code Health & Anti-Cheat Guard",
       passed: antiPatterns.length === 0,
       durationMs,
       errors: antiPatterns.slice(0, 10),
