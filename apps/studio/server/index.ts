@@ -405,7 +405,7 @@ const server = Bun.serve({
             const lowerPrompt = prompt.toLowerCase();
 
             // 1. Explicit file mentioned in prompt
-            const explicitMatch = prompt.match(/\b([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|css|html|json))\b/i);
+            const explicitMatch = prompt.match(/\b([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|mjs|cjs|mts|cts|css|scss|sass|less|html|json|md|ya?ml|svg|vue|svelte|astro|sql|prisma|sh|py|rs|go|java|kt|swift|xml|toml|env))\b/i);
             if (explicitMatch) {
               const raw = explicitMatch[1].replace(/\\/g, "/");
               targetFile = raw.startsWith("src/") ? raw : `src/${raw}`;
@@ -485,7 +485,7 @@ Philosophy: DIRECT CODE GENERATION ONLY.
 User Intent → Context Retrieval → Direct Code Generation → Applied to Editor.
 
 CRITICAL RULES:
-1. Output ONLY the raw, production-ready code inside \`\`\`${fileExt} and \`\`\` code blocks.
+1. Output ONLY the raw, production-ready code inside a fenced code block. Use a syntax label matching the target file extension (ts, tsx, js, jsx, css, json, html, py, rs, etc.).
 2. ZERO markdown prose, ZERO planning steps, ZERO explanations, ZERO thinking tags.
 3. Start immediately with the imports and code.
 4. If modifying existing code, preserve exports, styles, and existing functionality while cleanly implementing the requested feature.
@@ -822,7 +822,14 @@ Generate the complete, production-ready code for ${targetFile} now:`;
               }
             }
 
-            // 4. File Structure Summary
+            // 4. File Structure Summary (ls-style, paths only)
+            const flattenFileTree = (nodes: FileNode[], prefix = ""): string[] => nodes.flatMap((node) => {
+              const line = `${prefix}${node.isDirectory ? "📁 " : "📄 "}${node.name}`;
+              return node.isDirectory ? [line, ...flattenFileTree(node.children || [], `${prefix}  `)] : [line];
+            });
+            const projectTreeSummary = flattenFileTree(getFileTree(targetRepo, targetRepo)).slice(0, 250).join("\n");
+            const readmePath = resolve(targetRepo, "README.md");
+            const readmeContent = existsSync(readmePath) ? readFileSync(readmePath, "utf-8").slice(0, 20000) : "";
             const fileListSummary = allSourceFiles.slice(0, 30).map((f) => `- ${f}`).join("\n");
 
             const systemPrompt = `Sen MetaFrame Studio AI Copilot'sun. Kullanıcıyla birlikte çalışan kıdemli bir yazılım mimarı ve samimi bir pair-programming ortağısın.
@@ -831,27 +838,19 @@ Kullanıcıyla Türkçe, teknik açıdan yetkin, pratik ve çözüm odaklı konu
 Çalışma Alanı & Tüm Kod Tabanı Bağlamı (Full-Repo Context):
 - Proje Konumu: ${targetRepo}
 - Teknolojiler & Paketler: ${stackSummary}
+- Proje Dosya Ağacı (ls tarzı, ilk 250 kayıt; yalnızca yollar):
+${projectTreeSummary}
 - Projedeki Kaynak Dosyalar (${allSourceFiles.length} dosya):
 ${fileListSummary}
+${readmeContent ? `\n### Proje README.md:\n\`\`\`markdown\n${readmeContent}\n\`\`\`` : ""}
 ${userContextBlock ? `\n### 📎 KULLANICI TARAFINDAN BAĞLAMA (CONTEXT) EKLENEN DOSYALAR (${attachedFilesSummary.length} dosya):\nKullanıcı aşağıdaki dosyaları özellikle bağlama ekledi. Soruları yanıtlarken, kod önerirken veya değişiklik yaparken bu dosyaların içeriğini, export'larını, türlerini ve state yapılarını doğrudan temel al:\n${userContextBlock}` : ""}
 ${images.length > 0 ? `\n### 🖼️ KULLANICI GÖRSEL / EKRAN GÖRÜNTÜSÜ EKLEDİ (${images.length} adet görsel):\nKullanıcı mesaja ekran görüntüsü/tasarım görseli ekledi. Görseldeki UI elementlerini, renk paletini, boşlukları, butonları ve tasarım hiyerarşisini dikkatle analiz ederek istenen kodu bu tasarıma sadık kalarak üret.\n` : ""}
 ${relevantFilesBlock ? `\nKod Tabanından İlgili Diğer Dosya İçerikleri:\n${relevantFilesBlock}` : ""}
 
-KRİTİK DAVRANIŞ KURALLARI:
-1. Sen tüm projeyi ve dosya yapısını biliyorsun. Kullanıcının sorularına projenin gerçek kodlarına ve mimarisine dayanarak net, aydınlatıcı cevaplar ver.
-2. Zengin GitHub-flavored Markdown kullan: Başlıklar, listeler, kalın yazılar ve syntax-highlighted kod blokları (\`\`\`tsx).
-3. Asla cerrahi yama işaretleri (<<<<<<< SEARCH ... ======= ... >>>>>>> REPLACE) çıkarma! Doğrudan insan gibi sohbet et ve rehberlik yap.
-4. KOD DEĞİŞTİRME VE ÖNERİLER (KESİN SIFIR TOLERANS KURALLARI):
-   - KULLANICI SENİN KOD BLOKLARININ ÜSTÜNDEKİ '⚡ Editöre Uygula' BUTONUNA BASARAK KODU DOĞRUDAN DİSKE YAZAR.
-   - 🚨 ASLA VE ASLA \`// ... (önceki kodlar)\`, \`// ...\`, \`{/* ... */}\`, \`/* kalan kodlar */\`, \`// TODO\` GİBİ YER TUTUCU YORUMLAR YAZMA!
-   - EĞER BİR BİLEŞENİ VEYA DOSYAYI DEĞİŞTİRİYORSAN (Örn: Navbar, HeroCard, App, AuthModal):
-     * Dosyadaki TÜM İMPORTLARI, TÜM STATE VE YARDIMCI FONKSİYONLARI VE TÜM JSX GÖVDESİNİ EKSİKSİZ, BAŞTAN SONA YAZACAKSIN!
-     * Asla aradaki JSX veya mantık kodlarını '...' ile atlama! Atlarsan kullanıcının mevcut menüleri, butonları ve fonksiyonları silinir ve proje çöker.
-   - EĞER SADECE TEK BİR FONKSİYON VEYA YARDIMCI KOD VERİYORSAN:
-     * Tüm dosyanın iskeletini yarım yamalak açıp içine \`// ...\` koyma! Sadece o yeni bağımsız fonksiyonu ver.
-   - Dosya yolunu İLK SATIRDA belirt: \`// src/components/Navbar.tsx\`.
-   - İthalat yollarına dikkat et: \`src/components/\` içindeki bir dosya \`src/context/\` altındaki bir dosyayı import ediyorsa yolu \`./context\` DEĞİL, \`../context/AuthContext\` olmalıdır!
-5. Kullanıcı selam verdiğinde veya sohbet ettiğinde samimi, enerjik bir mühendis gibi karşılık ver.`;
+PROJEYİ İNCELEME: Kullanıcı proje yapısını sorduğunda dosya ağacını, README.md ve bağlama eklenmiş kaynakları kullan. İçeriği bağlamda olmayan bir dosyayı okumuş gibi anlatma.
+SOHBET MODU SALT-OKUNURDUR: Varsayılan olarak soruları yanıtla ve projeyi açıkla; kendiliğinden kod üretme, mevcut dosyanın içeriğini tekrar etme veya tam dosya yazma. Kullanıcı açıkça belirli bir kod örneği isterse yalnızca gerekli küçük parçayı ver; dosyadaki değişmeyen kodları dahil etme. Sohbet yanıtı hiçbir zaman dosyaya uygulanmamalıdır.
+1. Türkçe, kısa ve pratik yanıt ver; proje hakkındaki iddiaları yalnızca yukarıdaki gerçek bağlama dayandır.
+2. Kullanıcı sohbet ediyor veya soru soruyorsa kod bloğu üretmeden doğal dille yanıtla.`;
 
             const llm = new SharedLLMClient();
             let accumulatedText = "";
@@ -912,7 +911,7 @@ KRİTİK DAVRANIŞ KURALLARI:
 
               // 1. Check first lines of code block for explicit file comment
               const firstLines = extractedCode.split("\n").slice(0, 4).join("\n");
-              const fileMatch = firstLines.match(/^(?:(?:\/\/|\/\*)\s*)([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|css|html|json))\b/m);
+              const fileMatch = firstLines.match(/^(?:(?:\/\/|\/\*)\s*)([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|mjs|cjs|mts|cts|css|scss|sass|less|html|json|md|ya?ml|svg|vue|svelte|astro|sql|prisma|sh|py|rs|go|java|kt|swift|xml|toml|env))\b/m);
               if (fileMatch) {
                 const cand = fileMatch[1].replace(/\\/g, "/");
                 // Only allow App.tsx if component is App

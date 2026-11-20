@@ -24,7 +24,7 @@ renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
     ? hljs.highlight(text, { language: validLang, ignoreIllegals: true }).value
     : hljs.highlightAuto(text).value;
 
-  const fileMatch = text.match(/^(?:\/\/\s*|\/\*\s*)([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|css|html|json))\b/m);
+  const fileMatch = text.match(/^(?:\/\/\s*|\/\*\s*)([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|mjs|cjs|mts|cts|css|scss|sass|less|html|json|md|ya?ml|svg|vue|svelte|astro|sql|prisma|sh|py|rs|go|java|kt|swift|xml|toml|env))\b/m);
   let detectedFile = fileMatch ? fileMatch[1].replace(/\\/g, "/") : "";
 
   // If no explicit file comment, detect from component name
@@ -1347,124 +1347,19 @@ export function App() {
 
   const isConversationalPrompt = (prompt: string): boolean => {
     const p = prompt.trim().toLowerCase();
-    const starts = [
+    if (/^(?:chat|sohbet|soru)\s*:/i.test(p)) return true;
+    const conversationalStarts = [
       "merhaba", "selam", "günaydın", "iyi günler", "hey", "nasılsın", "ne haber", "naber",
       "nasıl", "neden", "açıkla", "kim", "ne zaman", "anlat", "fikrin ne", "önerir misin",
       "hangisi daha iyi", "ne düşünüyorsun", "farkı ne", "yardım et", "bana bilgi ver",
       "what is", "how do", "why does", "explain", "who", "tell me"
     ];
-    if (starts.some((s) => p.startsWith(s))) return true;
-    if (p.endsWith("?") && !p.includes("yap") && !p.includes("ekle") && !p.includes("düzelt") && !p.includes("oluştur") && !p.includes("yaz")) return true;
-    return false;
+    if (conversationalStarts.some((phrase) => p.startsWith(phrase))) return true;
+    if (/^readme.*\s+(?:özetle|anlat|açıkla|incele|analiz et)/i.test(p)) return true;
+    if (/^(?:bana\s+)?(?:bu\s+)?(?:projeyi|kodu|dosyayı|mimar[iı]yi)\s+(?:özetle|anlat|açıkla|incele|analiz et)/i.test(p)) return true;
+    const explicitCodeAction = /\b(?:yap|ekle|düzelt|oluştur|yaz|değiştir|güncelle|sil|uygula|build|add|fix|create|update|change)\b/i.test(p);
+    return p.endsWith("?") && !explicitCodeAction;
   };
-
-  // Check if a prompt has code modification intent
-  const isCodeModificationPrompt = (prompt: string): boolean => {
-    const p = prompt.trim().toLowerCase();
-    return (
-      p.includes("değiştir") ||
-      p.includes("güncelle") ||
-      p.includes("ekle") ||
-      p.includes("düzelt") ||
-      p.includes("sil") ||
-      p.includes("yap") ||
-      p.includes("yaz") ||
-      p.includes("oluştur") ||
-      p.includes("koda uygula") ||
-      p.includes("kodda değiştir") ||
-      p.includes("modify") ||
-      p.includes("update") ||
-      p.includes("add") ||
-      p.includes("fix") ||
-      p.includes("change")
-    );
-  };
-
-  // Apply AI-generated code directly to editor & workspace file
-  const handleApplyCode = async (codeToApply: string, targetPath?: string): Promise<boolean> => {
-    let targetFile = targetPath;
-    const detectedComp = detectComponentNameFromCode(codeToApply);
-
-    // 1. First 4 lines comment
-    if (!targetFile) {
-      const firstLines = codeToApply.split("\n").slice(0, 4).join("\n");
-      const fileMatch = firstLines.match(/^(?:\/\/\s*|\/\*\s*)([a-zA-Z0-9_\-./\\]+\.(?:tsx?|jsx?|css|html|json))\b/m);
-      if (fileMatch) {
-        targetFile = fileMatch[1].replace(/\\/g, "/");
-      }
-    }
-
-    // 2. Component name guard: If code declares a subcomponent, it can NEVER target App.tsx
-    if (detectedComp && detectedComp !== "App") {
-      if (!targetFile || targetFile === "src/App.tsx" || targetFile === "App.tsx") {
-        targetFile = `src/components/${detectedComp}.tsx`;
-      }
-    }
-
-    // 3. Fallback to activeFilePath only if safe
-    if (!targetFile) {
-      targetFile = activeFilePath || "src/App.tsx";
-    }
-
-    // 4. Absolute Guard: NEVER overwrite App.tsx with a non-App component!
-    if ((targetFile === "src/App.tsx" || targetFile === "App.tsx") && detectedComp && detectedComp !== "App") {
-      targetFile = `src/components/${detectedComp}.tsx`;
-    }
-
-    targetFile = targetFile.replace(/\\/g, "/");
-    if (!targetFile.startsWith("src/") && !targetFile.includes("/")) {
-      targetFile = `src/${targetFile}`;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/file?path=${encodeURIComponent(targetFile)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: codeToApply }),
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        const finalSavedContent = data.content || codeToApply;
-        const isSurgicallyMerged = data.content && data.content !== codeToApply;
-
-        setActiveFilePath(targetFile);
-        setEditorContent(finalSavedContent);
-        setOpenFiles((prev) =>
-          prev.some((f) => f.path === targetFile)
-            ? prev.map((f) => (f.path === targetFile ? { ...f, content: finalSavedContent, isDirty: false } : f))
-            : [...prev, { path: targetFile, content: finalSavedContent, isDirty: false }]
-        );
-
-        fetch(`${API_BASE}/workspace`)
-          .then((r) => r.json())
-          .then((d) => setFileTree(d.tree));
-        fetchBlastRadius(targetFile);
-
-        if (data.gateResult) {
-          updateGateStatus(data.gateResult.gates);
-        }
-
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `⚡ **Kod Doğrudan Uygulandı!**\n\n\`${targetFile}\` dosyası diske kaydedildi ve Monaco editörüne yüklendi (${finalSavedContent.length} bayt).${isSurgicallyMerged ? " 🛡️ *(Cerrahi birleştirme: Mevcut kodlar ve importlar korunarak parça entegre edildi)*" : ""}`,
-          },
-        ]);
-
-        return true;
-      } else {
-        alert(`Kod uygulanamadı: ${data.error || "Bilinmeyen hata"}`);
-        return false;
-      }
-    } catch (err: any) {
-      console.error("handleApplyCode error:", err);
-      alert(`Kod uygulama hatası: ${err.message}`);
-      return false;
-    }
-  };
-
   // Undo Last Transaction
   const handleUndoLastTxn = async () => {
     try {
@@ -1576,25 +1471,6 @@ export function App() {
               ]);
               setChatStreamingText("");
 
-              // If user prompt requested code modification and code was returned, auto-apply!
-              const isMod = isCodeModificationPrompt(userPrompt);
-              let target = data.detectedTargetFile;
-              const code = data.extractedCode;
-              const comp = code ? detectComponentNameFromCode(code) : null;
-
-              if (!target && comp) {
-                target = comp === "App" ? "src/App.tsx" : `src/components/${comp}.tsx`;
-              }
-              if (!target && activeFilePath && (activeFilePath !== "src/App.tsx" || comp === "App")) {
-                target = activeFilePath;
-              }
-              if ((target === "src/App.tsx" || target === "App.tsx") && comp && comp !== "App") {
-                target = `src/components/${comp}.tsx`;
-              }
-
-              if (isMod && code && target) {
-                handleApplyCode(code, target);
-              }
             } else if (data.type === "chat_error") {
               setIsChatStreaming(false);
               setIsWorking(false);
@@ -2846,7 +2722,7 @@ export function App() {
                     <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: "12.5px" }}>{msg.content}</div>
                   </div>
                 ) : (
-                  <MarkdownRenderer content={msg.content} onApplyCode={handleApplyCode} />
+                  <MarkdownRenderer content={msg.content} />
                 )}
               </div>
             ))}
@@ -2858,7 +2734,7 @@ export function App() {
                   <span className="vibe-pulse-indicator" style={{ background: "#10b981" }} />
                   <span>QWEN3 8B · YAZIYOR...</span>
                 </div>
-                <MarkdownRenderer content={chatStreamingText || "Düşünüyor..."} onApplyCode={handleApplyCode} />
+                <MarkdownRenderer content={chatStreamingText || "Düşünüyor..."} />
               </div>
             )}
 
@@ -3766,7 +3642,7 @@ export function App() {
                   studioMode === "chat"
                     ? "Proje hakkında bir soru sor, mimari tartış veya kod analizi iste (örn: Navbar bileşeni nasıl çalışıyor?)..."
                     : studioMode === "vibe"
-                    ? "Kodu tarif et, doğrudan yazsın (örn: Hero bölümüne neon gradient ve animasyonlu butonlar ekle)..."
+                    ? "Kod yazdır veya proje hakkında sohbet et; sorular ve açıklama istekleri sohbete yönlenir..."
                     : studioMode === "engineering"
                     ? "6-Gate uyumlu mimari görev veya tip güvenli refactor tarif et..."
                     : studioMode === "mimar"
